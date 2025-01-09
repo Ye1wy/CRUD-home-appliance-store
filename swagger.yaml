@@ -648,7 +648,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Image`"
+                $ref: "#/components/schemas/Image"
         '400':
           description: Bad request (e.g., invalid id)
           content:
@@ -916,7 +916,7 @@ components:
         image:
           type: string
           format: byte
-          exmaple: byte array of image
+          #exmaple: byte array of image
     Images:
       type: array
       items:
