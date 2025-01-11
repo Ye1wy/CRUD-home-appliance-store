@@ -41,10 +41,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Clients"
-        'default':
-          description: Something went wrong
+        '400':
+          description: Invalid query parameters (e.g., limit or offset is not a number)
           content:
             application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        '500':
+          description: Internal server error
+          content:
+            applocatopn/json:
               schema:
                 $ref: "#/components/schemas/Error"
     post:
@@ -71,10 +77,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        'default':
-          description: Somthing went wrong
+        '500':
+          description: Internal server error
           content:
-            application/json:
+            applocatopn/json:
               schema:
                 $ref: "#/components/schemas/Error"
   /api/v1/clients/search:
@@ -105,12 +111,22 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Client"
-        '404':
-          description: Client not found
-        'default':
-          description: Somthing went wrong
+        '400':
+          description: Bad request (e.g., invalid parameters)
           content:
             application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        '404':
+          description: Client not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        '500':
+          description: Internal server error
+          content:
+            applocatopn/json:
               schema:
                 $ref: "#/components/schemas/Error"
   /api/v1/clients/{id}:
@@ -145,10 +161,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        'default':
-          description: Somthing went wrong
+        '500':
+          description: Internal server error
           content:
-            application/json:
+            applocatopn/json:
               schema:
                 $ref: "#/components/schemas/Error"
   /api/v1/clients/{id}/address:
@@ -231,10 +247,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Products"
-        'default':
-          description: Something went wrong
+        '400':
+          description: Invalid query parameters (e.g., limit or offset is not a number)
           content:
             application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        '500':
+          description: Internal server error
+          content:
+            applocatopn/json:
               schema:
                 $ref: "#/components/schemas/Error"
     post:
@@ -257,10 +279,14 @@ paths:
                 $ref: "#/components/schemas/Products"
         '400':
           description: Bad request (e.g., invalid prise, invalid supplier_id and so on)
-        'default':
-          description: Somthing went wrong
           content:
             application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        '500':
+          description: Internal server error
+          content:
+            applocatopn/json:
               schema:
                 $ref: "#/components/schemas/Error"
   /api/v1/products/{id}:
@@ -296,10 +322,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        'default':
-          description: Somthing went wrong
+        '500':
+          description: Internal server error
           content:
-            application/json:
+            applocatopn/json:
               schema:
                 $ref: "#/components/schemas/Error"
     delete:
@@ -333,10 +359,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        'default':
-          description: Somthing went wrong
+        '500':
+          description: Internal server error
           content:
-            application/json:
+            applocatopn/json:
               schema:
                 $ref: "#/components/schemas/Error"
   /api/v1/products/{id}/decrease:
@@ -375,17 +401,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  id:
-                    type: integer
-                    format: int64
-                    example: 1
-                  updated_value:
-                    type: integer
-                    format: int64
-                    description: The updated value after the decrement
-                    example: 95
+                $ref: "#/components/schemas/Product"
         '400':
           description: Bad request (e.g., invalid decrement_value)
           content:
@@ -430,10 +446,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Suppliers"
-        'default':
-          description: Something went wrong
+        '400':
+          description: Invalid query parameters (e.g., limit or offset is not a number)
           content:
             application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        '500':
+          description: Internal server error
+          content:
+            applocatopn/json:
               schema:
                 $ref: "#/components/schemas/Error"
     post:
@@ -456,10 +478,14 @@ paths:
                 $ref: "#/components/schemas/Suppliers"
         '400':
           description: Bad request (e.g., invalid address_id, invalid phone_number and so on)
-        'default':
-          description: Somthing went wrong
           content:
             application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        '500':
+          description: Internal server error
+          content:
+            applocatopn/json:
               schema:
                 $ref: "#/components/schemas/Error"
   /api/v1/suppliers/{id}:
@@ -495,10 +521,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        'default':
-          description: Somthing went wrong
+        '500':
+          description: Internal server error
           content:
-            application/json:
+            applocatopn/json:
               schema:
                 $ref: "#/components/schemas/Error"
     delete:
@@ -532,10 +558,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        'default':
-          description: Somthing went wrong
+        '500':
+          description: Internal server error
           content:
-            application/json:
+            applocatopn/json:
               schema:
                 $ref: "#/components/schemas/Error"
   /api/v1/suppliers/{id}/changeAddress:
@@ -573,17 +599,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  id:
-                    type: integer
-                    format: int64
-                    example: 1
-                  address_id:
-                    type: integer
-                    format: int64
-                    description: The updated value after the update
-                    example: 95
+                $ref: "#/components/schemas/Supplier"
         '400':
           description: Bad request (e.g., invalid incoming id)
           content:
@@ -623,10 +639,10 @@ paths:
                 $ref: "#/components/schemas/Images"
         '400':
           description: Bad request (e.g., invalid byte of arrey and so on)
-        'default':
-          description: Somthing went wrong
+        '500':
+          description: Internal server error
           content:
-            application/json:
+            applocatopn/json:
               schema:
                 $ref: "#/components/schemas/Error"
   /api/v1/images/{id}:
@@ -661,10 +677,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        'default':
-          description: Somthing went wrong
+        '500':
+          description: Internal server error
           content:
-            application/json:
+            applocatopn/json:
               schema:
                 $ref: "#/components/schemas/Error"
     delete:
@@ -697,10 +713,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        'default':
-          description: Somthing went wrong
+        '500':
+          description: Internal server error
           content:
-            application/json:
+            applocatopn/json:
               schema:
                 $ref: "#/components/schemas/Error"
   /api/v1/images/{id}/changeImage:
@@ -789,10 +805,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        'default':
-          description: Somthing went wrong
+        '500':
+          description: Internal server error
           content:
-            application/json:
+            applocatopn/json:
               schema:
                 $ref: "#/components/schemas/Error"
 components:
