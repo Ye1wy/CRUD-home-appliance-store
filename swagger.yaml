@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   title: CRUD documentation
   description: Documentaion for product market api
-  license: 
+  license:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0
   version: 0.0.1
@@ -35,19 +35,21 @@ paths:
             type: integer
             example: 0
       responses:
-        '200':
+        "200":
           description: Successful operation
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Clients"
-        '400':
+                type: array
+                items:
+                  $ref: "#/components/schemas/Client"
+        "400":
           description: Invalid query parameters (e.g., limit or offset is not a number)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        '500':
+        "500":
           description: Internal server error
           content:
             applocatopn/json:
@@ -65,19 +67,21 @@ paths:
             schema:
               $ref: "#/components/schemas/Client"
       responses:
-        '201':
+        "201":
           description: Successful added new client
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Clients"
-        '400':
+                type: array
+                items:
+                  $ref: "#/components/schemas/Client"
+        "400":
           description: Bad request (e.g., invalid parameters)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        '500':
+        "500":
           description: Internal server error
           content:
             applocatopn/json:
@@ -89,7 +93,7 @@ paths:
         - Clients
       summary: Search client by name and surname
       operationId: searchClientByNameAndSurname
-      parameters: 
+      parameters:
         - name: client_name
           in: query
           required: true
@@ -105,25 +109,25 @@ paths:
             type: string
             example: Ignatev
       responses:
-        '200':
+        "200":
           description: Successful responses
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Client"
-        '400':
+        "400":
           description: Bad request (e.g., invalid parameters)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        '404':
+        "404":
           description: Client not found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        '500':
+        "500":
           description: Internal server error
           content:
             applocatopn/json:
@@ -145,23 +149,23 @@ paths:
             format: int64
             example: 0
       responses:
-        '204':
+        "204":
           description: Successful delete
           content:
             application/json: {}
-        '400':
+        "400":
           description: Bad request (e.g., invalid id)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        '404':
+        "404":
           description: Client not found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        '500':
+        "500":
           description: Internal server error
           content:
             applocatopn/json:
@@ -197,25 +201,25 @@ paths:
                   description: New address id to modify current client
                   example: 5
       responses:
-        '200':
+        "200":
           description: Address successfully changed
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Client"
-        '400':
+        "400":
           description: Bad request (e.g., invalid address id)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        '404':
+        "404":
           description: Client not found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
@@ -241,19 +245,21 @@ paths:
             type: integer
             example: 0
       responses:
-        '200':
+        "200":
           description: Successful operation
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Products"
-        '400':
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+        "400":
           description: Invalid query parameters (e.g., limit or offset is not a number)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        '500':
+        "500":
           description: Internal server error
           content:
             applocatopn/json:
@@ -271,19 +277,21 @@ paths:
             schema:
               $ref: "#/components/schemas/Product"
       responses:
-        '201':
+        "201":
           description: Successfully added new product
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Products"
-        '400':
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+        "400":
           description: Bad request (e.g., invalid prise, invalid supplier_id and so on)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        '500':
+        "500":
           description: Internal server error
           content:
             applocatopn/json:
@@ -295,7 +303,7 @@ paths:
         - Products
       summary: Get product by id
       operationId: searchProductById
-      parameters: 
+      parameters:
         - name: id
           in: path
           required: true
@@ -304,25 +312,25 @@ paths:
             format: int64
             example: 0
       responses:
-        '200':
+        "200":
           description: Successful responses
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Product"
-        '400':
+        "400":
           description: Bad request (e.g., invalid id)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        '404':
+        "404":
           description: Product not found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        '500':
+        "500":
           description: Internal server error
           content:
             applocatopn/json:
@@ -343,23 +351,23 @@ paths:
             format: int64
             example: 0
       responses:
-        '204':
+        "204":
           description: Successfully delete
           content:
             application/json: {}
-        '400':
+        "400":
           description: Bad request (e.g., invalid id)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        '404':
+        "404":
           description: Product not found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        '500':
+        "500":
           description: Internal server error
           content:
             applocatopn/json:
@@ -396,25 +404,25 @@ paths:
                   minimum: 0
                   example: 5
       responses:
-        '200':
+        "200":
           description: Parameter successfully decreased
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Product"
-        '400':
+        "400":
           description: Bad request (e.g., invalid decrement_value)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        '404':
+        "404":
           description: Product not found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
@@ -440,19 +448,21 @@ paths:
             type: integer
             example: 0
       responses:
-        '200':
+        "200":
           description: Successful operation
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Suppliers"
-        '400':
+                type: array
+                items:
+                  $ref: "#/components/schemas/Supplier"
+        "400":
           description: Invalid query parameters (e.g., limit or offset is not a number)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        '500':
+        "500":
           description: Internal server error
           content:
             applocatopn/json:
@@ -470,19 +480,21 @@ paths:
             schema:
               $ref: "#/components/schemas/Supplier"
       responses:
-        '201':
+        "201":
           description: Successfully added new supplier
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Suppliers"
-        '400':
+                type: array
+                items:
+                  $ref: "#/components/schemas/Supplier"
+        "400":
           description: Bad request (e.g., invalid address_id, invalid phone_number and so on)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        '500':
+        "500":
           description: Internal server error
           content:
             applocatopn/json:
@@ -494,7 +506,7 @@ paths:
         - Suppliers
       summary: Get supplier by id
       operationId: searchSupplierById
-      parameters: 
+      parameters:
         - name: id
           in: path
           required: true
@@ -503,25 +515,25 @@ paths:
             format: int64
             example: 0
       responses:
-        '200':
+        "200":
           description: Successful responses
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Supplier"
-        '400':
+        "400":
           description: Bad request (e.g., invalid id)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        '404':
+        "404":
           description: Supplier not found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        '500':
+        "500":
           description: Internal server error
           content:
             applocatopn/json:
@@ -542,23 +554,23 @@ paths:
             format: int64
             example: 0
       responses:
-        '204':
+        "204":
           description: Successfully delete
           content:
             application/json: {}
-        '400':
+        "400":
           description: Bad request (e.g., invalid id)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        '404':
+        "404":
           description: Supplier not found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        '500':
+        "500":
           description: Internal server error
           content:
             applocatopn/json:
@@ -594,25 +606,25 @@ paths:
                   description: The value by which to change the parameter
                   example: 5
       responses:
-        '200':
+        "200":
           description: Parameter successfully changed
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Supplier"
-        '400':
+        "400":
           description: Bad request (e.g., invalid incoming id)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        '404':
+        "404":
           description: Supplier not found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
@@ -631,15 +643,17 @@ paths:
             schema:
               $ref: "#/components/schemas/Image"
       responses:
-        '201':
+        "201":
           description: Successfully added new image
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Images"
-        '400':
+                type: array
+                items:
+                  $ref: "#/components/schemas/Image"
+        "400":
           description: Bad request (e.g., invalid byte of arrey and so on)
-        '500':
+        "500":
           description: Internal server error
           content:
             applocatopn/json:
@@ -651,7 +665,7 @@ paths:
         - Images
       summary: Get image by id
       operationId: searchImageById
-      parameters: 
+      parameters:
         - name: id
           in: path
           required: true
@@ -659,25 +673,25 @@ paths:
             type: string
             example: 103561b0-cb69-11ef-9cd2-0242ac120002
       responses:
-        '200':
+        "200":
           description: Successful responses
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Image"
-        '400':
+        "400":
           description: Bad request (e.g., invalid id)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        '404':
+        "404":
           description: Image not found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        '500':
+        "500":
           description: Internal server error
           content:
             applocatopn/json:
@@ -697,23 +711,23 @@ paths:
             type: string
             example: 103561b0-cb69-11ef-9cd2-0242ac120002
       responses:
-        '204':
+        "204":
           description: Successfully delete
           content:
             application/json: {}
-        '400':
+        "400":
           description: Bad request (e.g., invalid id)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        '404':
+        "404":
           description: Image not found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        '500':
+        "500":
           description: Internal server error
           content:
             applocatopn/json:
@@ -732,7 +746,7 @@ paths:
           description: The ID of the image to modify
           schema:
             type: string
-            example: 103561b0-cb69-11ef-9cd2-0242ac120002 
+            example: 103561b0-cb69-11ef-9cd2-0242ac120002
       requestBody:
         required: true
         content:
@@ -748,25 +762,27 @@ paths:
                   description: New image to change current image
                   example: byte array of image
       responses:
-        '200':
+        "200":
           description: Image successfully changed
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Images"
-        '400':
+                type: array
+                items:
+                  $ref: "#/components/schemas/Image"
+        "400":
           description: Bad request (e.g., invalid incoming id)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        '404':
+        "404":
           description: Image not found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
@@ -778,7 +794,7 @@ paths:
         - Images
       summary: Getting an image of a specific product
       operationId: searchProductImage
-      parameters: 
+      parameters:
         - name: id
           in: path
           required: true
@@ -787,25 +803,25 @@ paths:
             format: int64
             example: 0
       responses:
-        '200':
+        "200":
           description: Successful responses
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Image"
-        '400':
+        "400":
           description: Bad request (e.g., invalid id)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        '404':
+        "404":
           description: Product or Image not found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        '500':
+        "500":
           description: Internal server error
           content:
             applocatopn/json:
@@ -848,11 +864,7 @@ components:
         address_id:
           type: integer
           format: int64
-          example: 0 
-    Clients:
-      type: array
-      items:
-        $ref: "#/components/schemas/Client"
+          example: 0
     Product:
       required:
         - name
@@ -890,10 +902,6 @@ components:
         image_id:
           type: string
           example: b8934265-5e08-47dd-a1c8-e67228a12bec
-    Products:
-      type: array
-      items:
-        $ref: "#/components/schemas/Product"
     Supplier:
       type: object
       required:
@@ -916,10 +924,6 @@ components:
         phone_number:
           type: string
           example: 8-800-555-35-35
-    Suppliers:
-      type: array
-      items:
-        $ref: "#/components/schemas/Supplier"
     Image:
       type: object
       required:
@@ -933,10 +937,6 @@ components:
           type: string
           format: byte
           #exmaple: byte array of image
-    Images:
-      type: array
-      items:
-        $ref: "#/components/schemas/Image"
     Error:
       type: object
       required:
