@@ -9,14 +9,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-// type ClientRepository interface {
-// 	AddClient(model.Client) error
-// 	ChangeAddressId(id int) error
-// 	DeleteClientById(id int) error
-// 	GetAllClients(model.Client) ([]model.Client, error)
-// 	GetClientByNameAndSurname(name string, surname string) (model.Client, error)
-// }
-
 type ClientRepository struct {
 	Collection *mongo.Collection
 }
