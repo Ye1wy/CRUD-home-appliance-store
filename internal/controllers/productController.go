@@ -4,40 +4,40 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type ProductsAPI struct {
+type ProductsController struct {
 }
 
-// Post /api/v1/api/v1/products
+// Post /api/v1/products
 // Add product
-func (api *ProductsAPI) AddProduct(c *gin.Context) {
+func (ctrl *ProductsController) AddProduct(c *gin.Context) {
 	// Your handler implementation
 	c.JSON(200, gin.H{"status": "OK"})
 }
 
-// Patch /api/v1/api/v1/products/:id/decrease
+// Patch /api/v1/products/:id/decrease
 // Decrease a parameter by a given value
-func (api *ProductsAPI) DecreaseParametr(c *gin.Context) {
+func (ctrl *ProductsController) DecreaseParametr(c *gin.Context) {
 	// Your handler implementation
 	c.JSON(200, gin.H{"status": "OK"})
 }
 
-// Delete /api/v1/api/v1/products/:id
+// Delete /api/v1/products/:id
 // Delete product by identificator
-func (api *ProductsAPI) DeleteProductById(c *gin.Context) {
+func (ctrl *ProductsController) DeleteProductById(c *gin.Context) {
 	// Your handler implementation
 	c.JSON(200, gin.H{"status": "OK"})
 }
 
-// Get /api/v1/api/v1/products
+// Get /api/v1/products
 // Retrieve all product
-func (api *ProductsAPI) GetAllProduct(c *gin.Context) {
+func (ctrl *ProductsController) GetAllProduct(c *gin.Context) {
 	// Your handler implementation
 	c.JSON(200, gin.H{"status": "OK"})
 }
 
-// Get /api/v1/api/v1/products/:id
+// Get /api/v1/products/:id
 // Get product by id
-func (api *ProductsAPI) SearchProductById(c *gin.Context) {
+func (ctrl *ProductsController) SearchProductById(c *gin.Context) {
 	// Your handler implementation
 	c.JSON(200, gin.H{"status": "OK"})
 }

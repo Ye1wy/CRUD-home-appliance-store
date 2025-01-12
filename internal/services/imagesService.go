@@ -12,7 +12,7 @@ type ImagesService interface {
 	GetProductImages(ctx context.Context, id int) (*model.ProductImage, error)
 	GetImageById(ctx context.Context, id string) (*model.Image, error)
 	ChangeImage(ctx context.Context, id string, newImage []byte) error
-	DeleteImageById(ctx context.Context, id int) error
+	DeleteImageById(ctx context.Context, id string) error
 }
 
 type ImagesServiceImpl struct {

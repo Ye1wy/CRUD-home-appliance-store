@@ -30,9 +30,9 @@ func Connect(mongoURL string, log *slog.Logger) (*MongoStorage, error) {
 		return nil, fmt.Errorf("%s: %v", op, err)
 	}
 
-	db := client.Database("Store")
+	db := client.Database(database.DATABASE)
 
-	err = CreateCollections(client.Database("Store"))
+	err = CreateCollections(client.Database(database.DATABASE))
 	if err != nil {
 		return nil, fmt.Errorf("%s: %v", op, err)
 	}

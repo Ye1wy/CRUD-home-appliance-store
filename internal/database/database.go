@@ -3,6 +3,9 @@ package database
 import "errors"
 
 const (
+	// databases
+	DATABASE = "Store"
+	// collections
 	CLIENTS   = "clients"
 	PRODUCTS  = "products"
 	SUPPLIERS = "suppliers"
