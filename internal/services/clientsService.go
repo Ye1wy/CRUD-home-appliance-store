@@ -10,7 +10,7 @@ import (
 type ClientsService interface {
 	AddClient(ctx context.Context, client *model.Client) error
 	GetAllClients(ctx context.Context, limit, offset int) ([]model.Client, error)
-	GetClientById(ctx context.Context, id int) (*model.Client, error)
+	GetClientById(ctx context.Context, name, surname string) (*model.Client, error)
 	ChangeAddressParameter(ctx context.Context, id int, newAddressId int) error
 	DeleteClientById(ctx context.Context, id int) error
 }
@@ -52,7 +52,7 @@ func (s *ClientsServiceImpl) GetClientById(ctx context.Context, name, surname st
 	}
 
 	if client == nil {
-		return nil, errors.New("client not found")
+		return nil, nil
 	}
 
 	return client, nil
