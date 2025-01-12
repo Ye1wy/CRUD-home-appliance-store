@@ -7,6 +7,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type SuppliersRepository struct {
@@ -24,8 +25,12 @@ func (r *SuppliersRepository) AddSupplier(ctx context.Context, supplier *model.S
 	return err
 }
 
-func (r *SuppliersRepository) GetAllSuppliers(ctx context.Context) ([]model.Supplier, error) {
-	cursor, err := r.Collection.Find(ctx, bson.M{})
+func (r *SuppliersRepository) GetAllSuppliers(ctx context.Context, limit, offset int) ([]model.Supplier, error) {
+	findOption := options.Find()
+	findOption.SetLimit(int64(limit))
+	findOption.SetSkip(int64(offset))
+
+	cursor, err := r.Collection.Find(ctx, bson.M{}, findOption)
 	if err != nil {
 		return nil, err
 	}

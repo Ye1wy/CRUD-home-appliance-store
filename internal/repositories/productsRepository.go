@@ -4,10 +4,11 @@ import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/database"
 	"CRUD-HOME-APPLIANCE-STORE/internal/model"
 	"context"
-	"fmt"
+	"errors"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type ProductsRepository struct {
@@ -25,8 +26,12 @@ func (r *ProductsRepository) AddProduct(ctx context.Context, product *model.Prod
 	return err
 }
 
-func (r *ProductsRepository) GetAllProducts(ctx context.Context) ([]model.Product, error) {
-	cursor, err := r.Collection.Find(ctx, bson.M{})
+func (r *ProductsRepository) GetAllProducts(ctx context.Context, limit, offset int) ([]model.Product, error) {
+	findOption := options.Find()
+	findOption.SetLimit(int64(limit))
+	findOption.SetSkip(int64(offset))
+
+	cursor, err := r.Collection.Find(ctx, bson.M{}, findOption)
 	if err != nil {
 		return nil, err
 	}
@@ -52,21 +57,21 @@ func (r *ProductsRepository) GetProductById(ctx context.Context, id int) (*model
 }
 
 func (r *ProductsRepository) DecreaseParametr(ctx context.Context, id int, decrease int) error {
-	var product model.Product
-	err := r.Collection.FindOne(ctx, bson.M{"id": id}).Decode(&product)
-	if err == mongo.ErrNoDocuments {
-		return fmt.Errorf("product with id %d not found", id)
-
-	} else if err != nil {
+	result, err := r.Collection.UpdateOne(
+		ctx, bson.M{
+			"id":              id,
+			"available_stock": bson.M{"$gte": decrease},
+		},
+		bson.M{"$inc": bson.M{"available_stock": -decrease}})
+	if err != nil {
 		return err
 	}
 
-	if product.AvailableStock < int64(decrease) {
-		return fmt.Errorf("insufficient stock to decrease by %d", decrease)
+	if result.ModifiedCount == 0 {
+		return errors.New("insufficient stock or product not found")
 	}
 
-	_, err = r.Collection.UpdateOne(ctx, bson.M{"id": id}, bson.M{"$inc": bson.M{"available_stock": -decrease}})
-	return err
+	return nil
 }
 
 func (r *ProductsRepository) DeleteProductById(ctx context.Context, id int) error {

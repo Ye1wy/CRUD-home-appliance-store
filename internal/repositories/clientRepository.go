@@ -7,6 +7,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type ClientRepository struct {
@@ -24,8 +25,12 @@ func (r *ClientRepository) AddClient(ctx context.Context, client *model.Client) 
 	return err
 }
 
-func (r *ClientRepository) GetAllClients(ctx context.Context) ([]model.Client, error) {
-	cursor, err := r.Collection.Find(ctx, bson.M{})
+func (r *ClientRepository) GetAllClients(ctx context.Context, limit, offset int) ([]model.Client, error) {
+	findOptions := options.Find()
+	findOptions.SetLimit(int64(limit))
+	findOptions.SetSkip(int64(offset))
+
+	cursor, err := r.Collection.Find(ctx, bson.M{}, findOptions)
 	if err != nil {
 		return nil, err
 	}
