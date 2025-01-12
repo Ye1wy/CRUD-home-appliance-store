@@ -1,21 +1,30 @@
 package controllers
 
 import (
+	"CRUD-HOME-APPLIANCE-STORE/internal/logger"
 	"CRUD-HOME-APPLIANCE-STORE/internal/model"
 	"CRUD-HOME-APPLIANCE-STORE/internal/services"
+	"log/slog"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
+const (
+	DefaultLimit  = "10"
+	DefaultOffset = "0"
+)
+
 type ClientsController struct {
 	service services.ClientsService
+	logger  *slog.Logger
 }
 
-func NewClientController(clientService services.ClientsService) *ClientsController {
+func NewClientController(clientService services.ClientsService, logger *slog.Logger) *ClientsController {
 	return &ClientsController{
 		service: clientService,
+		logger:  logger,
 	}
 }
 
@@ -27,15 +36,18 @@ func NewClientController(clientService services.ClientsService) *ClientsControll
 func (ctrl *ClientsController) AddClient(c *gin.Context) {
 	var client model.Client
 	if err := c.ShouldBindJSON(&client); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctrl.logger.Error("[ERROR] Failed to bind JSON for AddClient", logger.Err(err))
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
 		return
 	}
 
 	if err := ctrl.service.AddClient(c.Request.Context(), &client); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctrl.logger.Error("[ERROR] Failed to add client: ", logger.Err(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add client"})
 		return
 	}
 
+	ctrl.logger.Info("[INFO] Client added successfully", "clientID", client.Id)
 	c.JSON(http.StatusCreated, gin.H{"message": "Client added successfully"})
 }
 
@@ -45,24 +57,28 @@ func (ctrl *ClientsController) AddClient(c *gin.Context) {
 // 400:
 // 500:
 func (ctrl *ClientsController) GetAllClients(c *gin.Context) {
-	limit, err := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	limit, err := strconv.Atoi(c.DefaultQuery("limit", DefaultLimit))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctrl.logger.Error("[ERROR] Invalid limit parameter", logger.Err(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid limit parameter"})
 		return
 	}
 
-	offset, err := strconv.Atoi(c.DefaultQuery("offset", "10"))
+	offset, err := strconv.Atoi(c.DefaultQuery("offset", DefaultOffset))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctrl.logger.Error("[ERROR] Invalid offset parameter", logger.Err(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid offset parameter"})
 		return
 	}
 
 	client, err := ctrl.service.GetAllClients(c.Request.Context(), limit, offset)
 	if err != nil {
+		ctrl.logger.Error("[ERROR] Failed to retrieve clients", logger.Err(err))
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
+	ctrl.logger.Info("[INFO] Retrieved all clients", "limit", limit, "offset", offset)
 	c.JSON(http.StatusOK, client)
 }
 
@@ -72,20 +88,23 @@ func (ctrl *ClientsController) GetAllClients(c *gin.Context) {
 // 400
 // 404
 func (ctrl *ClientsController) GetClientById(c *gin.Context) {
-	name := c.Param("client_name")
-	surname := c.Param("client_surname")
+	name := c.Query("client_name")
+	surname := c.Query("client_surname")
 
 	client, err := ctrl.service.GetClientById(c.Request.Context(), name, surname)
 	if client == nil && err == nil {
+		ctrl.logger.Warn("[WARN] Client not found", logger.Err(err))
 		c.JSON(http.StatusNotFound, gin.H{"error": "Client not found"})
 		return
 	}
 
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctrl.logger.Error("[ERROR] Error while searching client ", logger.Err(err))
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to found client"})
 		return
 	}
 
+	ctrl.logger.Info("[INFO] Client retrieved successfully", "name", name, "surname", surname)
 	c.JSON(http.StatusOK, client)
 }
 
@@ -94,25 +113,29 @@ func (ctrl *ClientsController) GetClientById(c *gin.Context) {
 // 200
 // 400
 // 500
-func (ctrl *ClientsController) ChangeAddressIdParameter(c *gin.Context) {
+func (ctrl *ClientsController) ChangeAddressParameter(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctrl.logger.Error("[ERROR] Invalid client ID parameter", logger.Err(err))
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid client ID"})
 		return
 	}
 
 	var updatedFields model.UpdateAddressID
 
 	if err := c.ShouldBindJSON(&updatedFields); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctrl.logger.Error("[ERROR] Failed to bind JSON for ChangeAddressIdParameter", logger.Err(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid request payload"})
 		return
 	}
 
 	if err := ctrl.service.ChangeAddressParameter(c.Request.Context(), id, int(updatedFields.AddressId)); err != nil {
+		ctrl.logger.Error("[ERROR] Failed to update address ID", "clientID", id, logger.Err(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update address ID"})
 		return
 	}
 
+	ctrl.logger.Info("[INFO] Address ID updated successfully", "clientID", id, "newAddressID", updatedFields.AddressId)
 	c.JSON(http.StatusOK, gin.H{"status": "Address ID updated"})
 }
 
@@ -124,14 +147,17 @@ func (ctrl *ClientsController) ChangeAddressIdParameter(c *gin.Context) {
 func (ctrl *ClientsController) DeleteClientById(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctrl.logger.Error("[ERROR] Invalid client ID parameter for DeleteClientById", logger.Err(err))
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid client ID"})
 		return
 	}
 
 	if err := ctrl.service.DeleteClientById(c.Request.Context(), id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctrl.logger.Error("Failed to delete client", "clientID", id, logger.Err(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete client"})
 		return
 	}
 
-	c.JSON(http.StatusNoContent, gin.H{"message": "Address deleted successfully"})
+	ctrl.logger.Info("Client deleted successfully", "clientID", id)
+	c.Status(http.StatusNoContent)
 }
