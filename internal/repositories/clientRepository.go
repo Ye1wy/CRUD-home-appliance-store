@@ -4,33 +4,43 @@ import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/database"
 	"CRUD-HOME-APPLIANCE-STORE/internal/model"
 	"context"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type ClientRepository struct {
-	Collection *mongo.Collection
+type ClientRepository interface {
+	AddClient(ctx context.Context, client *model.Client) (*mongo.InsertOneResult, error)
+	GetAllClients(ctx context.Context, limit, offset int) ([]model.Client, error)
+	GetClientByNameAndSurname(ctx context.Context, name string, surname string) (*model.Client, error)
+	UpdateAddress(ctx context.Context, id primitive.ObjectID, newAddressId string) error
+	DeleteClientById(ctx context.Context, id primitive.ObjectID) error
 }
 
-func NewClientRepository(db *mongo.Database) *ClientRepository {
-	return &ClientRepository{
-		Collection: db.Collection(database.CLIENTS),
+type mongoClientRepository struct {
+	collection *mongo.Collection
+}
+
+func NewMongoClientRepository(db *mongo.Database) *mongoClientRepository {
+	return &mongoClientRepository{
+		collection: db.Collection(database.CLIENTS),
 	}
 }
 
-func (r *ClientRepository) AddClient(ctx context.Context, client *model.Client) error {
-	_, err := r.Collection.InsertOne(ctx, client)
-	return err
+func (r *mongoClientRepository) AddClient(ctx context.Context, client *model.Client) (*mongo.InsertOneResult, error) {
+	client.RegistrationDate = time.Now()
+	return r.collection.InsertOne(ctx, client)
 }
 
-func (r *ClientRepository) GetAllClients(ctx context.Context, limit, offset int) ([]model.Client, error) {
+func (r *mongoClientRepository) GetAllClients(ctx context.Context, limit, offset int) ([]model.Client, error) {
 	findOptions := options.Find()
 	findOptions.SetLimit(int64(limit))
 	findOptions.SetSkip(int64(offset))
 
-	cursor, err := r.Collection.Find(ctx, bson.M{}, findOptions)
+	cursor, err := r.collection.Find(ctx, bson.M{}, findOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -45,9 +55,9 @@ func (r *ClientRepository) GetAllClients(ctx context.Context, limit, offset int)
 	return client, nil
 }
 
-func (r *ClientRepository) GetClientByNameAndSurname(ctx context.Context, name string, surname string) (*model.Client, error) {
+func (r *mongoClientRepository) GetClientByNameAndSurname(ctx context.Context, name string, surname string) (*model.Client, error) {
 	var client model.Client
-	err := r.Collection.FindOne(ctx, bson.M{"client_name": name, "client_surname": surname}).Decode(&client)
+	err := r.collection.FindOne(ctx, bson.M{"client_name": name, "client_surname": surname}).Decode(&client)
 	if err == mongo.ErrNoDocuments {
 		return nil, nil
 	}
@@ -55,12 +65,12 @@ func (r *ClientRepository) GetClientByNameAndSurname(ctx context.Context, name s
 	return &client, nil
 }
 
-func (r *ClientRepository) UpdateAddress(ctx context.Context, id int, newAddressId int) error {
-	_, err := r.Collection.UpdateOne(ctx, bson.M{"id": id}, bson.M{"$set": bson.M{"address_id": newAddressId}})
+func (r *mongoClientRepository) UpdateAddress(ctx context.Context, id primitive.ObjectID, newAddressId string) error {
+	_, err := r.collection.UpdateOne(ctx, bson.M{"id": id}, bson.M{"$set": bson.M{"address_id": newAddressId}})
 	return err
 }
 
-func (r *ClientRepository) DeleteClientById(ctx context.Context, id int) error {
-	_, err := r.Collection.DeleteOne(ctx, bson.M{"id": id})
+func (r *mongoClientRepository) DeleteClientById(ctx context.Context, id primitive.ObjectID) error {
+	_, err := r.collection.DeleteOne(ctx, bson.M{"_id": id})
 	return err
 }

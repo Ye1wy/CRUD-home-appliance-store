@@ -1,14 +1,16 @@
 package controllers
 
 import (
+	"CRUD-HOME-APPLIANCE-STORE/internal/dto"
 	"CRUD-HOME-APPLIANCE-STORE/internal/logger"
-	"CRUD-HOME-APPLIANCE-STORE/internal/model"
 	"CRUD-HOME-APPLIANCE-STORE/internal/services"
 	"log/slog"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type ClientsController struct {
@@ -16,14 +18,14 @@ type ClientsController struct {
 	logger  *slog.Logger
 }
 
-func NewClientsController(clientsService services.ClientsService, log *slog.Logger) *ClientsController {
+func NewClientsController(service services.ClientsService, log *slog.Logger) *ClientsController {
 	return &ClientsController{
-		service: clientsService,
+		service: service,
 		logger:  log,
 	}
 }
 
-// Postapi/v1/clients
+// Post /api/v1/clients
 // Add client
 // 201:
 // 400
@@ -31,21 +33,22 @@ func NewClientsController(clientsService services.ClientsService, log *slog.Logg
 func (ctrl *ClientsController) AddClient(c *gin.Context) {
 	op := "controllers.client.addClient"
 
-	var client model.Client
-	if err := c.ShouldBindJSON(&client); err != nil {
+	var clientDTO dto.ClientDTO
+	if err := c.ShouldBindJSON(&clientDTO); err != nil {
 		ctrl.logger.Error("Failed to bind JSON for AddClient", logger.Err(err), "op", op)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
 		return
 	}
 
-	if err := ctrl.service.AddClient(c.Request.Context(), &client); err != nil {
+	client, err := ctrl.service.AddClient(c.Request.Context(), &clientDTO)
+	if err != nil {
 		ctrl.logger.Error("Failed to add client: ", logger.Err(err), "op", op)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add client"})
 		return
 	}
 
 	ctrl.logger.Info("Client added successfully", "clientID", client.Id, "op", op)
-	c.JSON(http.StatusCreated, gin.H{"message": "Client added successfully"})
+	c.JSON(http.StatusCreated, client)
 }
 
 // Get /api/v1/clients
@@ -86,14 +89,15 @@ func (ctrl *ClientsController) GetAllClients(c *gin.Context) {
 // 200
 // 400
 // 404
-func (ctrl *ClientsController) GetClientById(c *gin.Context) {
-	op := "controllers.client.getClientById"
+func (ctrl *ClientsController) GetClientByNameAndSurname(c *gin.Context) {
+	op := "controllers.client.getClientByNameAndSurname"
 
 	name := c.Query("name")
 	surname := c.Query("surname")
 
-	client, err := ctrl.service.GetClientById(c.Request.Context(), name, surname)
-	if client == nil && err == nil {
+	client, err := ctrl.service.GetClientByNameAndSurname(c.Request.Context(), name, surname)
+
+	if err == mongo.ErrNoDocuments && client == nil {
 		ctrl.logger.Warn("Client not found", logger.Err(err), "op", op)
 		c.JSON(http.StatusNotFound, gin.H{"error": "Client not found"})
 		return
@@ -101,7 +105,7 @@ func (ctrl *ClientsController) GetClientById(c *gin.Context) {
 
 	if err != nil {
 		ctrl.logger.Error("Error while searching client ", logger.Err(err), "op", op)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to found client"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Name and surname cannot be empty!"})
 		return
 	}
 
@@ -117,28 +121,34 @@ func (ctrl *ClientsController) GetClientById(c *gin.Context) {
 func (ctrl *ClientsController) ChangeAddressParameter(c *gin.Context) {
 	op := "controllers.client.changeAddressParameter"
 
-	id, err := strconv.Atoi(c.Param("id"))
+	id := c.Param("id")
+	// if err != nil {
+	// 	ctrl.logger.Error("Invalid client ID parameter", logger.Err(err), "op", op)
+	// 	c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid client ID"})
+	// 	return
+	// }
+
+	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		ctrl.logger.Error("Invalid client ID parameter", logger.Err(err), "op", op)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid client ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
 		return
 	}
 
-	var updatedFields model.UpdateAddressID
+	var clientDTO dto.ClientDTO
 
-	if err := c.ShouldBindJSON(&updatedFields); err != nil {
+	if err := c.ShouldBindJSON(&clientDTO); err != nil {
 		ctrl.logger.Error("Failed to bind JSON for ChangeAddressIdParameter", logger.Err(err), "op", op)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid request payload"})
 		return
 	}
 
-	if err := ctrl.service.ChangeAddressParameter(c.Request.Context(), id, int(updatedFields.AddressId)); err != nil {
+	if err := ctrl.service.ChangeAddressParameter(c.Request.Context(), objectID, clientDTO.AddressID); err != nil {
 		ctrl.logger.Error("Failed to update address ID", "clientID", id, logger.Err(err), "op", op)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update address ID"})
 		return
 	}
 
-	ctrl.logger.Info("Address ID updated successfully", "clientID", id, "newAddressID", updatedFields.AddressId, "op", op)
+	ctrl.logger.Info("Address ID updated successfully", "clientID", id, "newAddressID", clientDTO.AddressID, "op", op)
 	c.JSON(http.StatusOK, gin.H{"status": "Address ID updated"})
 }
 
@@ -150,14 +160,20 @@ func (ctrl *ClientsController) ChangeAddressParameter(c *gin.Context) {
 func (ctrl *ClientsController) DeleteClientById(c *gin.Context) {
 	op := "controllers.client.deleteClientById"
 
-	id, err := strconv.Atoi(c.Param("id"))
+	id := c.Param("id")
+
+	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		ctrl.logger.Error("Invalid client ID parameter for DeleteClientById", logger.Err(err), "op", op)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid client ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
 		return
 	}
+	// if err != nil {
+	// 	ctrl.logger.Error("Invalid client ID parameter for DeleteClientById", logger.Err(err), "op", op)
+	// 	c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid client ID"})
+	// 	return
+	// }
 
-	if err := ctrl.service.DeleteClientById(c.Request.Context(), id); err != nil {
+	if err := ctrl.service.DeleteClientById(c.Request.Context(), objectID); err != nil {
 		ctrl.logger.Error("Failed to delete client", "clientID", id, logger.Err(err), "op", op)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete client"})
 		return
