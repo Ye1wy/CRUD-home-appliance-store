@@ -15,7 +15,7 @@ import (
 type ClientRepository interface {
 	AddClient(ctx context.Context, client *model.Client) (*mongo.InsertOneResult, error)
 	GetAllClients(ctx context.Context, limit, offset int) ([]model.Client, error)
-	GetClientByNameAndSurname(ctx context.Context, name string, surname string) (*model.Client, error)
+	GetClientByNameAndSurname(ctx context.Context, name string, surname string) ([]model.Client, error)
 	UpdateAddress(ctx context.Context, id primitive.ObjectID, newAddressId string) error
 	DeleteClientById(ctx context.Context, id primitive.ObjectID) error
 }
@@ -55,14 +55,28 @@ func (r *mongoClientRepository) GetAllClients(ctx context.Context, limit, offset
 	return client, nil
 }
 
-func (r *mongoClientRepository) GetClientByNameAndSurname(ctx context.Context, name string, surname string) (*model.Client, error) {
-	var client model.Client
-	err := r.collection.FindOne(ctx, bson.M{"client_name": name, "client_surname": surname}).Decode(&client)
-	if err == mongo.ErrNoDocuments {
+func (r *mongoClientRepository) GetClientByNameAndSurname(ctx context.Context, name string, surname string) ([]model.Client, error) {
+	var clients []model.Client
+	cursor, err := r.collection.Find(ctx, bson.M{"client_name": name, "client_surname": surname})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var client model.Client
+		if err := cursor.Decode(&client); err != nil {
+			return nil, err
+		}
+
+		clients = append(clients, client)
+	}
+
+	if len(clients) == 0 {
 		return nil, nil
 	}
 
-	return &client, nil
+	return clients, nil
 }
 
 func (r *mongoClientRepository) UpdateAddress(ctx context.Context, id primitive.ObjectID, newAddressId string) error {

@@ -2,6 +2,7 @@ package services
 
 import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/dto"
+	"CRUD-HOME-APPLIANCE-STORE/internal/mapper"
 	"CRUD-HOME-APPLIANCE-STORE/internal/model"
 	"CRUD-HOME-APPLIANCE-STORE/internal/repositories"
 	"context"
@@ -9,13 +10,12 @@ import (
 	"fmt"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type ClientsService interface {
 	AddClient(ctx context.Context, dto *dto.ClientDTO) (*model.Client, error)
-	GetAllClients(ctx context.Context, limit, offset int) ([]model.Client, error)
-	GetClientByNameAndSurname(ctx context.Context, name, surname string) (*model.Client, error)
+	GetAllClients(ctx context.Context, limit, offset int) ([]dto.ClientDTO, error)
+	GetClientByNameAndSurname(ctx context.Context, name, surname string) ([]dto.ClientDTO, error)
 	ChangeAddressParameter(ctx context.Context, id primitive.ObjectID, newAddressId string) error
 	DeleteClientById(ctx context.Context, id primitive.ObjectID) error
 }
@@ -31,11 +31,9 @@ func NewClientService(rep repositories.ClientRepository) *clientsServiceImpl {
 }
 
 func (s *clientsServiceImpl) AddClient(ctx context.Context, dto *dto.ClientDTO) (*model.Client, error) {
-	client := &model.Client{
-		ClientName:    dto.Name,
-		ClientSurname: dto.Surname,
-		Gender:        dto.Gender,
-		AddressId:     dto.AddressID,
+	client, err := mapper.ToClientModel(dto)
+	if err != nil {
+		return nil, err
 	}
 
 	result, err := s.Repo.AddClient(ctx, client)
@@ -53,21 +51,28 @@ func (s *clientsServiceImpl) AddClient(ctx context.Context, dto *dto.ClientDTO) 
 	return client, nil
 }
 
-func (s *clientsServiceImpl) GetAllClients(ctx context.Context, limit, offset int) ([]model.Client, error) {
+func (s *clientsServiceImpl) GetAllClients(ctx context.Context, limit, offset int) ([]dto.ClientDTO, error) {
 	if limit < 0 || offset < 0 {
 		return nil, errors.New("limit and offset cannot be less of 0")
 	}
 
-	return s.Repo.GetAllClients(ctx, limit, offset)
+	clients, err := s.Repo.GetAllClients(ctx, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	dto := mapper.ToClientDTOs(clients)
+
+	return dto, nil
 }
 
-func (s *clientsServiceImpl) GetClientByNameAndSurname(ctx context.Context, name, surname string) (*model.Client, error) {
+func (s *clientsServiceImpl) GetClientByNameAndSurname(ctx context.Context, name, surname string) ([]dto.ClientDTO, error) {
 	if name == "" || surname == "" {
 		return nil, errors.New("client name and surname cannot be empty")
 	}
 
-	client, err := s.Repo.GetClientByNameAndSurname(ctx, name, surname)
-	if err == mongo.ErrNoDocuments {
+	clients, err := s.Repo.GetClientByNameAndSurname(ctx, name, surname)
+	if clients == nil && err == nil {
 		return nil, nil
 	}
 
@@ -75,7 +80,9 @@ func (s *clientsServiceImpl) GetClientByNameAndSurname(ctx context.Context, name
 		return nil, err
 	}
 
-	return client, nil
+	dtos := mapper.ToClientDTOs(clients)
+
+	return dtos, nil
 }
 
 func (s *clientsServiceImpl) ChangeAddressParameter(ctx context.Context, id primitive.ObjectID, newAddressId string) error {

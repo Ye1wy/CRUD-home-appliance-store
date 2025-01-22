@@ -10,7 +10,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type ClientsController struct {
@@ -95,10 +94,10 @@ func (ctrl *ClientsController) GetClientByNameAndSurname(c *gin.Context) {
 	name := c.Query("name")
 	surname := c.Query("surname")
 
-	client, err := ctrl.service.GetClientByNameAndSurname(c.Request.Context(), name, surname)
+	clientDTO, err := ctrl.service.GetClientByNameAndSurname(c.Request.Context(), name, surname)
 
-	if err == mongo.ErrNoDocuments && client == nil {
-		ctrl.logger.Warn("Client not found", logger.Err(err), "op", op)
+	if clientDTO == nil && err == nil {
+		ctrl.logger.Warn("Client not found", "op", op)
 		c.JSON(http.StatusNotFound, gin.H{"error": "Client not found"})
 		return
 	}
@@ -110,7 +109,7 @@ func (ctrl *ClientsController) GetClientByNameAndSurname(c *gin.Context) {
 	}
 
 	ctrl.logger.Info("Client retrieved successfully", "name", name, "surname", surname, "op", op)
-	c.JSON(http.StatusOK, client)
+	c.JSON(http.StatusOK, clientDTO)
 }
 
 // Patch /api/v1/clients/:id/address
@@ -122,11 +121,6 @@ func (ctrl *ClientsController) ChangeAddressParameter(c *gin.Context) {
 	op := "controllers.client.changeAddressParameter"
 
 	id := c.Param("id")
-	// if err != nil {
-	// 	ctrl.logger.Error("Invalid client ID parameter", logger.Err(err), "op", op)
-	// 	c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid client ID"})
-	// 	return
-	// }
 
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
@@ -167,11 +161,6 @@ func (ctrl *ClientsController) DeleteClientById(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
 		return
 	}
-	// if err != nil {
-	// 	ctrl.logger.Error("Invalid client ID parameter for DeleteClientById", logger.Err(err), "op", op)
-	// 	c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid client ID"})
-	// 	return
-	// }
 
 	if err := ctrl.service.DeleteClientById(c.Request.Context(), objectID); err != nil {
 		ctrl.logger.Error("Failed to delete client", "clientID", id, logger.Err(err), "op", op)
