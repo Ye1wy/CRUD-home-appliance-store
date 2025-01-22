@@ -7,3 +7,7 @@ type ClientDTO struct {
 	Gender    string `json:"gender" binding:"required"`
 	AddressID string `json:"address_id" binding:"required"`
 }
+
+type UpdateClientAddressDTO struct {
+	AddressID string `json:"address_id" binding:"required"`
+}

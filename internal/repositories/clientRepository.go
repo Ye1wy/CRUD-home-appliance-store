@@ -16,8 +16,8 @@ type ClientRepository interface {
 	AddClient(ctx context.Context, client *model.Client) (*mongo.InsertOneResult, error)
 	GetAllClients(ctx context.Context, limit, offset int) ([]model.Client, error)
 	GetClientByNameAndSurname(ctx context.Context, name string, surname string) ([]model.Client, error)
-	UpdateAddress(ctx context.Context, id primitive.ObjectID, newAddressId string) error
-	DeleteClientById(ctx context.Context, id primitive.ObjectID) error
+	UpdateAddress(ctx context.Context, id string, newAddressId string) error
+	DeleteClientById(ctx context.Context, id string) error
 }
 
 type mongoClientRepository struct {
@@ -79,12 +79,27 @@ func (r *mongoClientRepository) GetClientByNameAndSurname(ctx context.Context, n
 	return clients, nil
 }
 
-func (r *mongoClientRepository) UpdateAddress(ctx context.Context, id primitive.ObjectID, newAddressId string) error {
-	_, err := r.collection.UpdateOne(ctx, bson.M{"id": id}, bson.M{"$set": bson.M{"address_id": newAddressId}})
+func (r *mongoClientRepository) UpdateAddress(ctx context.Context, id string, newAddressId string) error {
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	objectAddressID, err := primitive.ObjectIDFromHex(newAddressId)
+	if err != nil {
+		return err
+	}
+
+	_, err = r.collection.UpdateOne(ctx, bson.M{"_id": objectID}, bson.M{"$set": bson.M{"address_id": objectAddressID}})
 	return err
 }
 
-func (r *mongoClientRepository) DeleteClientById(ctx context.Context, id primitive.ObjectID) error {
-	_, err := r.collection.DeleteOne(ctx, bson.M{"_id": id})
+func (r *mongoClientRepository) DeleteClientById(ctx context.Context, id string) error {
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	_, err = r.collection.DeleteOne(ctx, bson.M{"_id": objectID})
 	return err
 }

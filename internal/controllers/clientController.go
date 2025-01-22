@@ -9,7 +9,6 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type ClientsController struct {
@@ -122,13 +121,7 @@ func (ctrl *ClientsController) ChangeAddressParameter(c *gin.Context) {
 
 	id := c.Param("id")
 
-	objectID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
-		return
-	}
-
-	var clientDTO dto.ClientDTO
+	var clientDTO dto.UpdateClientAddressDTO
 
 	if err := c.ShouldBindJSON(&clientDTO); err != nil {
 		ctrl.logger.Error("Failed to bind JSON for ChangeAddressIdParameter", logger.Err(err), "op", op)
@@ -136,7 +129,7 @@ func (ctrl *ClientsController) ChangeAddressParameter(c *gin.Context) {
 		return
 	}
 
-	if err := ctrl.service.ChangeAddressParameter(c.Request.Context(), objectID, clientDTO.AddressID); err != nil {
+	if err := ctrl.service.ChangeAddressParameter(c.Request.Context(), id, clientDTO.AddressID); err != nil {
 		ctrl.logger.Error("Failed to update address ID", "clientID", id, logger.Err(err), "op", op)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update address ID"})
 		return
@@ -156,13 +149,7 @@ func (ctrl *ClientsController) DeleteClientById(c *gin.Context) {
 
 	id := c.Param("id")
 
-	objectID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
-		return
-	}
-
-	if err := ctrl.service.DeleteClientById(c.Request.Context(), objectID); err != nil {
+	if err := ctrl.service.DeleteClientById(c.Request.Context(), id); err != nil {
 		ctrl.logger.Error("Failed to delete client", "clientID", id, logger.Err(err), "op", op)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete client"})
 		return

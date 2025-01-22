@@ -23,6 +23,7 @@ func NewRouter(clientController *controllers.ClientsController) routes {
 		clientGroup.GET("", clientController.GetAllClients)
 		clientGroup.POST("", clientController.AddClient)
 		clientGroup.GET("/search", clientController.GetClientByNameAndSurname)
+		clientGroup.PATCH("/:id/address", clientController.ChangeAddressParameter)
 		clientGroup.DELETE("/:id", clientController.DeleteClientById)
 	}
 

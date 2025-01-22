@@ -16,8 +16,8 @@ type ClientsService interface {
 	AddClient(ctx context.Context, dto *dto.ClientDTO) (*model.Client, error)
 	GetAllClients(ctx context.Context, limit, offset int) ([]dto.ClientDTO, error)
 	GetClientByNameAndSurname(ctx context.Context, name, surname string) ([]dto.ClientDTO, error)
-	ChangeAddressParameter(ctx context.Context, id primitive.ObjectID, newAddressId string) error
-	DeleteClientById(ctx context.Context, id primitive.ObjectID) error
+	ChangeAddressParameter(ctx context.Context, id string, newAddressId string) error
+	DeleteClientById(ctx context.Context, id string) error
 }
 
 type clientsServiceImpl struct {
@@ -85,7 +85,7 @@ func (s *clientsServiceImpl) GetClientByNameAndSurname(ctx context.Context, name
 	return dtos, nil
 }
 
-func (s *clientsServiceImpl) ChangeAddressParameter(ctx context.Context, id primitive.ObjectID, newAddressId string) error {
+func (s *clientsServiceImpl) ChangeAddressParameter(ctx context.Context, id string, newAddressId string) error {
 	if newAddressId == "" {
 		return errors.New("invalid new address id")
 	}
@@ -98,6 +98,6 @@ func (s *clientsServiceImpl) ChangeAddressParameter(ctx context.Context, id prim
 	return nil
 }
 
-func (s *clientsServiceImpl) DeleteClientById(ctx context.Context, id primitive.ObjectID) error {
+func (s *clientsServiceImpl) DeleteClientById(ctx context.Context, id string) error {
 	return s.Repo.DeleteClientById(ctx, id)
 }
