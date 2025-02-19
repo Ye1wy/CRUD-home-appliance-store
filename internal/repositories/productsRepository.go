@@ -5,28 +5,38 @@ import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/model"
 	"context"
 	"errors"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type ProductsRepository struct {
+type ProductRepository interface {
+	AddClient(ctx context.Context, product *model.Product) (*mongo.InsertOneResult, error)
+	GetAllClients(ctx context.Context, limit, offset int) ([]model.Product, error)
+	GetClientByNameAndSurname(ctx context.Context, id string) ([]model.Product, error)
+	UpdateAddress(ctx context.Context, id string, newAddressId string) error
+	DeleteClientById(ctx context.Context, id string) error
+}
+
+type mongoProductsRepository struct {
 	Collection *mongo.Collection
 }
 
-func NewProductsRepository(db *mongo.Database) *ProductsRepository {
-	return &ProductsRepository{
+func NewMongoProductsRepository(db *mongo.Database) *mongoProductsRepository {
+	return &mongoProductsRepository{
 		Collection: db.Collection(database.PRODUCTS),
 	}
 }
 
-func (r *ProductsRepository) AddProduct(ctx context.Context, product *model.Product) error {
-	_, err := r.Collection.InsertOne(ctx, product)
-	return err
+func (r *mongoProductsRepository) AddProduct(ctx context.Context, product *model.Product) (*mongo.InsertOneResult, error) {
+	product.LastUpdateDate = time.Now()
+	return r.Collection.InsertOne(ctx, product)
 }
 
-func (r *ProductsRepository) GetAllProducts(ctx context.Context, limit, offset int) ([]model.Product, error) {
+func (r *mongoProductsRepository) GetAllProducts(ctx context.Context, limit, offset int) ([]model.Product, error) {
 	findOption := options.Find()
 	findOption.SetLimit(int64(limit))
 	findOption.SetSkip(int64(offset))
@@ -46,9 +56,14 @@ func (r *ProductsRepository) GetAllProducts(ctx context.Context, limit, offset i
 	return products, nil
 }
 
-func (r *ProductsRepository) GetProductById(ctx context.Context, id int) (*model.Product, error) {
+func (r *mongoProductsRepository) GetProductById(ctx context.Context, id string) (*model.Product, error) {
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
+
 	var product model.Product
-	err := r.Collection.FindOne(ctx, bson.M{"id": id}).Decode(&product)
+	err = r.Collection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&product)
 	if err == mongo.ErrNoDocuments {
 		return nil, nil
 	}
@@ -56,7 +71,7 @@ func (r *ProductsRepository) GetProductById(ctx context.Context, id int) (*model
 	return &product, nil
 }
 
-func (r *ProductsRepository) DecreaseParametr(ctx context.Context, id int, decrease int) error {
+func (r *mongoProductsRepository) DecreaseParametr(ctx context.Context, id int, decrease int) error {
 	result, err := r.Collection.UpdateOne(
 		ctx, bson.M{
 			"id":              id,
@@ -74,7 +89,7 @@ func (r *ProductsRepository) DecreaseParametr(ctx context.Context, id int, decre
 	return nil
 }
 
-func (r *ProductsRepository) DeleteProductById(ctx context.Context, id int) error {
+func (r *mongoProductsRepository) DeleteProductById(ctx context.Context, id int) error {
 	_, err := r.Collection.DeleteOne(ctx, bson.M{"id": id})
 	return err
 }
