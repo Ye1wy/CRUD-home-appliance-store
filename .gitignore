@@ -1,1 +1,5 @@
 local.yaml
+
+model_change_image_*.go
+model_decrease_*.go
+model_error.go

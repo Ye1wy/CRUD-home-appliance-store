@@ -1,0 +1,1031 @@
+openapi: 3.0.0
+info:
+  description: Documentaion for product market api
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+  title: CRUD documentation
+  version: 0.0.1
+servers:
+- description: dev server
+  url: http://localhost:3000/api/v1/
+tags:
+- name: Clients
+- name: Products
+- name: Suppliers
+- name: Images
+paths:
+  /api/v1/clients:
+    get:
+      operationId: getAllClients
+      parameters:
+      - description: Maximum number of clients to retrieve
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          example: 10
+          type: integer
+        style: form
+      - description: Number of clients to skip
+        explode: true
+        in: query
+        name: offset
+        required: false
+        schema:
+          example: 0
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Client'
+                type: array
+          description: Successful operation
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "Invalid query parameters (e.g., limit or offset is not a number)"
+        "500":
+          content:
+            applocatopn/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal server error
+      summary: Retrieve all clients
+      tags:
+      - Clients
+    post:
+      operationId: addClient
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Client'
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Client'
+                type: array
+          description: Successful added new client
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "Bad request (e.g., invalid parameters)"
+        "500":
+          content:
+            applocatopn/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal server error
+      summary: Add client
+      tags:
+      - Clients
+  /api/v1/clients/search:
+    get:
+      operationId: searchClientByNameAndSurname
+      parameters:
+      - description: Client's first name
+        explode: true
+        in: query
+        name: client_name
+        required: true
+        schema:
+          example: Yura
+          type: string
+        style: form
+      - description: Client's last name
+        explode: true
+        in: query
+        name: client_surname
+        required: true
+        schema:
+          example: Ignatev
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Client'
+          description: Successful responses
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "Bad request (e.g., invalid parameters)"
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Client not found
+        "500":
+          content:
+            applocatopn/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal server error
+      summary: Search client by name and surname
+      tags:
+      - Clients
+  /api/v1/clients/{id}:
+    delete:
+      operationId: deleteClientById
+      parameters:
+      - description: Client indentificator
+        explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          example: 0
+          format: int64
+          type: integer
+        style: simple
+      responses:
+        "204":
+          content:
+            application/json: {}
+          description: Successful delete
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "Bad request (e.g., invalid id)"
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Client not found
+        "500":
+          content:
+            applocatopn/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal server error
+      summary: Delete client by identificator
+      tags:
+      - Clients
+  /api/v1/clients/{id}/address:
+    patch:
+      operationId: changeAddressIdParameter
+      parameters:
+      - description: The ID of the client to modify
+        explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          example: 0
+          format: int64
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/changeAddressIdParameter_request'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Client'
+          description: Address successfully changed
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "Bad request (e.g., invalid address id)"
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Client not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal server error
+      summary: Change a address id parameter by a given new id parameter
+      tags:
+      - Clients
+  /api/v1/products:
+    get:
+      operationId: getAllProduct
+      parameters:
+      - description: Maximum number of product to retrieve
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          example: 10
+          type: integer
+        style: form
+      - description: Number of product to skip
+        explode: true
+        in: query
+        name: offset
+        required: false
+        schema:
+          example: 0
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Product'
+                type: array
+          description: Successful operation
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "Invalid query parameters (e.g., limit or offset is not a number)"
+        "500":
+          content:
+            applocatopn/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal server error
+      summary: Retrieve all product
+      tags:
+      - Products
+    post:
+      operationId: addProduct
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Product'
+                type: array
+          description: Successfully added new product
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "Bad request (e.g., invalid prise, invalid supplier_id and\
+            \ so on)"
+        "500":
+          content:
+            applocatopn/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal server error
+      summary: Add product
+      tags:
+      - Products
+  /api/v1/products/{id}:
+    delete:
+      operationId: deleteProductById
+      parameters:
+      - description: Product indentificator
+        explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          example: 0
+          format: int64
+          type: integer
+        style: simple
+      responses:
+        "204":
+          content:
+            application/json: {}
+          description: Successfully delete
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "Bad request (e.g., invalid id)"
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Product not found
+        "500":
+          content:
+            applocatopn/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal server error
+      summary: Delete product by identificator
+      tags:
+      - Products
+    get:
+      operationId: searchProductById
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          example: 0
+          format: int64
+          type: integer
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: Successful responses
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "Bad request (e.g., invalid id)"
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Product not found
+        "500":
+          content:
+            applocatopn/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal server error
+      summary: Get product by id
+      tags:
+      - Products
+  /api/v1/products/{id}/decrease:
+    patch:
+      operationId: decreaseParametr
+      parameters:
+      - description: The ID of the product to modify
+        explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          example: 0
+          format: int64
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/decreaseParametr_request'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: Parameter successfully decreased
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "Bad request (e.g., invalid decrement_value)"
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Product not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal server error
+      summary: Decrease a parameter by a given value
+      tags:
+      - Products
+  /api/v1/suppliers:
+    get:
+      operationId: getAllSuppliers
+      parameters:
+      - description: Maximum number of suppliers to retrieve
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          example: 10
+          type: integer
+        style: form
+      - description: Number of supplier to skip
+        explode: true
+        in: query
+        name: offset
+        required: false
+        schema:
+          example: 0
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Supplier'
+                type: array
+          description: Successful operation
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "Invalid query parameters (e.g., limit or offset is not a number)"
+        "500":
+          content:
+            applocatopn/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal server error
+      summary: Retrieve all suppliers
+      tags:
+      - Suppliers
+    post:
+      operationId: addSupplier
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Supplier'
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Supplier'
+                type: array
+          description: Successfully added new supplier
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "Bad request (e.g., invalid address_id, invalid phone_number\
+            \ and so on)"
+        "500":
+          content:
+            applocatopn/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal server error
+      summary: Add supplier
+      tags:
+      - Suppliers
+  /api/v1/suppliers/{id}:
+    delete:
+      operationId: deleteSupplierById
+      parameters:
+      - description: Supplier indentificator
+        explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          example: 0
+          format: int64
+          type: integer
+        style: simple
+      responses:
+        "204":
+          content:
+            application/json: {}
+          description: Successfully delete
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "Bad request (e.g., invalid id)"
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Supplier not found
+        "500":
+          content:
+            applocatopn/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal server error
+      summary: Delete supplier by identificator
+      tags:
+      - Suppliers
+    get:
+      operationId: searchSupplierById
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          example: 0
+          format: int64
+          type: integer
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Supplier'
+          description: Successful responses
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "Bad request (e.g., invalid id)"
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Supplier not found
+        "500":
+          content:
+            applocatopn/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal server error
+      summary: Get supplier by id
+      tags:
+      - Suppliers
+  /api/v1/suppliers/{id}/changeAddress:
+    patch:
+      operationId: changeAddressParametr
+      parameters:
+      - description: The ID of the supplier to modify
+        explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          example: 0
+          format: int64
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/changeAddressParametr_request'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Supplier'
+          description: Parameter successfully changed
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "Bad request (e.g., invalid incoming id)"
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Supplier not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal server error
+      summary: Change a address id parameter by a given value
+      tags:
+      - Suppliers
+  /api/v1/images:
+    post:
+      operationId: addImage
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Image'
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Image'
+                type: array
+          description: Successfully added new image
+        "400":
+          description: "Bad request (e.g., invalid byte of arrey and so on)"
+        "500":
+          content:
+            applocatopn/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal server error
+      summary: Add image
+      tags:
+      - Images
+  /api/v1/images/{id}:
+    delete:
+      operationId: deleteImageById
+      parameters:
+      - description: Image indentificator
+        explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          example: 103561b0-cb69-11ef-9cd2-0242ac120002
+          type: string
+        style: simple
+      responses:
+        "204":
+          content:
+            application/json: {}
+          description: Successfully delete
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "Bad request (e.g., invalid id)"
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Image not found
+        "500":
+          content:
+            applocatopn/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal server error
+      summary: Delete image by identificator
+      tags:
+      - Images
+    get:
+      operationId: searchImageById
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          example: 103561b0-cb69-11ef-9cd2-0242ac120002
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Image'
+          description: Successful responses
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "Bad request (e.g., invalid id)"
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Image not found
+        "500":
+          content:
+            applocatopn/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal server error
+      summary: Get image by id
+      tags:
+      - Images
+  /api/v1/images/{id}/changeImage:
+    patch:
+      operationId: changeImage
+      parameters:
+      - description: The ID of the image to modify
+        explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          example: 103561b0-cb69-11ef-9cd2-0242ac120002
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/changeImage_request'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Image'
+                type: array
+          description: Image successfully changed
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "Bad request (e.g., invalid incoming id)"
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Image not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal server error
+      summary: Change a image
+      tags:
+      - Images
+  /api/v1/images/products/{id}:
+    get:
+      operationId: searchProductImage
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          example: 0
+          format: int64
+          type: integer
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Image'
+          description: Successful responses
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "Bad request (e.g., invalid id)"
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Product or Image not found
+        "500":
+          content:
+            applocatopn/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal server error
+      summary: Getting an image of a specific product
+      tags:
+      - Images
+components:
+  schemas:
+    Client:
+      example:
+        birthday: 2001-09-01
+        registration_date: 2000-01-23
+        gender: male
+        client_surname: Ivanova
+        address_id: 0
+        id: 1
+        client_name: Yulia
+      properties:
+        id:
+          example: 1
+          format: int64
+          type: integer
+        client_name:
+          example: Yulia
+          type: string
+        client_surname:
+          example: Ivanova
+          type: string
+        birthday:
+          example: 2001-09-01
+          format: date
+          type: string
+        gender:
+          description: Client gender
+          enum:
+          - male
+          - female
+          type: string
+        registration_date:
+          format: date
+          type: string
+        address_id:
+          example: 0
+          format: int64
+          type: integer
+      required:
+      - birthday
+      - client_name
+      - client_surname
+      - gender
+      type: object
+    Product:
+      example:
+        price: 699.99
+        name: Fridge
+        id: 0
+        category: Kitchen appliances
+        image_id: b8934265-5e08-47dd-a1c8-e67228a12bec
+        available_stock: 300
+        supplier_id: 0
+        last_update_date: 2000-01-23
+      properties:
+        id:
+          example: 0
+          format: int64
+          type: integer
+        name:
+          example: Fridge
+          type: string
+        category:
+          example: Kitchen appliances
+          type: string
+        price:
+          example: 699.99
+          format: float
+          type: number
+        available_stock:
+          example: 300
+          format: int64
+          type: integer
+        last_update_date:
+          format: date
+          type: string
+        supplier_id:
+          example: 0
+          format: int64
+          type: integer
+        image_id:
+          example: b8934265-5e08-47dd-a1c8-e67228a12bec
+          type: string
+      required:
+      - available_stock
+      - category
+      - name
+      - price
+      type: object
+    Supplier:
+      example:
+        name: Upstreman
+        address_id: 0
+        phone_number: 8-800-555-35-35
+        id: 0
+      properties:
+        id:
+          example: 0
+          format: int64
+          type: integer
+        name:
+          example: Upstreman
+          type: string
+        address_id:
+          example: 0
+          format: int64
+          type: integer
+        phone_number:
+          example: 8-800-555-35-35
+          type: string
+      required:
+      - address_id
+      - id
+      - name
+      - phone_number
+      type: object
+    Image:
+      example:
+        image: image
+        id: 103561b0-cb69-11ef-9cd2-0242ac120002
+      properties:
+        id:
+          example: 103561b0-cb69-11ef-9cd2-0242ac120002
+          type: string
+        image:
+          format: byte
+          type: string
+      required:
+      - id
+      - image
+      type: object
+    Error:
+      example:
+        code: 0
+        message: message
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+      required:
+      - code
+      - message
+      type: object
+    changeAddressIdParameter_request:
+      properties:
+        address_id:
+          description: New address id to modify current client
+          example: 5
+          format: int64
+          type: integer
+      required:
+      - address_id
+      type: object
+    decreaseParametr_request:
+      properties:
+        decrement_value:
+          description: The value by which to decrease the parameter
+          example: 5
+          format: int64
+          minimum: 0
+          type: integer
+      required:
+      - decrement_value
+      type: object
+    changeAddressParametr_request:
+      properties:
+        address_id:
+          description: The value by which to change the parameter
+          example: 5
+          format: int64
+          type: integer
+      required:
+      - address_id
+      type: object
+    changeImage_request:
+      properties:
+        image:
+          description: New image to change current image
+          example: !!binary |-
+            Ynl0ZSBhcnJheSBvZiBpbWFnZQ==
+          format: byte
+          type: string
+      required:
+      - image
+      type: object
