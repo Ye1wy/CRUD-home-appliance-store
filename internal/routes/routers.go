@@ -17,6 +17,9 @@ func NewRouter(clientController *controllers.ClientsController) routes {
 	}
 
 	r.router.GET("/api/v1/swagger/index.html", swaggerGive)
+	r.router.GET("/", func(c *gin.Context) {
+		c.File("./misc/images/amogus.gif")
+	})
 
 	clientGroup := r.router.Group("/api/v1/clients")
 	{
