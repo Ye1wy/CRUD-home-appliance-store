@@ -14,11 +14,11 @@ import (
 )
 
 type ProductRepository interface {
-	AddClient(ctx context.Context, product *model.Product) (*mongo.InsertOneResult, error)
-	GetAllClients(ctx context.Context, limit, offset int) ([]model.Product, error)
-	GetClientByNameAndSurname(ctx context.Context, id string) ([]model.Product, error)
-	UpdateAddress(ctx context.Context, id string, newAddressId string) error
-	DeleteClientById(ctx context.Context, id string) error
+	AddProduct(ctx context.Context, product *model.Product) (*mongo.InsertOneResult, error)
+	GetAllProducts(ctx context.Context, limit, offset int) ([]model.Product, error)
+	GetProductById(ctx context.Context, id string) (*model.Product, error)
+	DecreaseParametr(ctx context.Context, id string, decrease int) error
+	DeleteProductById(ctx context.Context, id string) error
 }
 
 type mongoProductsRepository struct {
@@ -71,10 +71,10 @@ func (r *mongoProductsRepository) GetProductById(ctx context.Context, id string)
 	return &product, nil
 }
 
-func (r *mongoProductsRepository) DecreaseParametr(ctx context.Context, id int, decrease int) error {
+func (r *mongoProductsRepository) DecreaseParametr(ctx context.Context, id string, decrease int) error {
 	result, err := r.Collection.UpdateOne(
 		ctx, bson.M{
-			"id":              id,
+			"_id":             id,
 			"available_stock": bson.M{"$gte": decrease},
 		},
 		bson.M{"$inc": bson.M{"available_stock": -decrease}})
@@ -89,7 +89,7 @@ func (r *mongoProductsRepository) DecreaseParametr(ctx context.Context, id int, 
 	return nil
 }
 
-func (r *mongoProductsRepository) DeleteProductById(ctx context.Context, id int) error {
-	_, err := r.Collection.DeleteOne(ctx, bson.M{"id": id})
+func (r *mongoProductsRepository) DeleteProductById(ctx context.Context, id string) error {
+	_, err := r.Collection.DeleteOne(ctx, bson.M{"_id": id})
 	return err
 }
