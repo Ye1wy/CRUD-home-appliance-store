@@ -11,7 +11,12 @@ type routes struct {
 	router *gin.Engine
 }
 
-func NewRouter(clientController *controllers.ClientsController) routes {
+type RouterConfig struct {
+	ClientController  *controllers.ClientsController
+	ProductController *controllers.ProductsController
+}
+
+func NewRouter(cfg RouterConfig) routes {
 	r := routes{
 		router: gin.Default(),
 	}
@@ -23,11 +28,20 @@ func NewRouter(clientController *controllers.ClientsController) routes {
 
 	clientGroup := r.router.Group("/api/v1/clients")
 	{
-		clientGroup.GET("", clientController.GetAllClients)
-		clientGroup.POST("", clientController.AddClient)
-		clientGroup.GET("/search", clientController.GetClientByNameAndSurname)
-		clientGroup.PATCH("/:id/address", clientController.ChangeAddressParameter)
-		clientGroup.DELETE("/:id", clientController.DeleteClientById)
+		clientGroup.GET("", cfg.ClientController.GetAllClients)
+		clientGroup.POST("", cfg.ClientController.AddClient)
+		clientGroup.GET("/search", cfg.ClientController.GetClientByNameAndSurname)
+		clientGroup.PATCH("/:id/address", cfg.ClientController.ChangeAddressParameter)
+		clientGroup.DELETE("/:id", cfg.ClientController.DeleteClientById)
+	}
+
+	productGroup := r.router.Group("/api/v1/products")
+	{
+		productGroup.GET("", cfg.ProductController.GetAllProduct)
+		productGroup.POST("", cfg.ProductController.AddProduct)
+		productGroup.GET("/:id", cfg.ProductController.GetProductById)
+		productGroup.PATCH("/:id/decrease", cfg.ProductController.DecreaseParameter)
+		productGroup.DELETE("/:id", cfg.ProductController.DeleteProductById)
 	}
 
 	return r

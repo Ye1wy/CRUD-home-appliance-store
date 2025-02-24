@@ -26,6 +26,15 @@ func main() {
 	clientService := services.NewClientService(clientRepo)
 	clientController := controllers.NewClientsController(clientService, log)
 
-	router := routes.NewRouter(clientController)
+	productRepo := repositories.NewMongoProductsRepository(storage.Database)
+	productService := services.NewProductService(productRepo)
+	productController := controllers.NewProductController(productService, log)
+
+	routerConfig := routes.RouterConfig{
+		ClientController:  clientController,
+		ProductController: productController,
+	}
+
+	router := routes.NewRouter(routerConfig)
 	router.Run(":8080")
 }
