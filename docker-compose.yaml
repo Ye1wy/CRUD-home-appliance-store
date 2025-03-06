@@ -1,0 +1,47 @@
+version: "3.9"
+
+services:
+  mongodb:
+    image: mongo:6-jammy
+    container_name: mongodb
+    env_file:
+    - ./.config-mongodb.env
+    
+    volumes:
+      - dbdata6:/data/db
+      - dbconfig:/data/configdb
+    
+    healthcheck:
+      test:  ["CMD-SHELL", "echo 'db.runCommand(\"ping\").ok' | mongosh localhost:27017/test --quiet"]
+      interval: 5s
+      timeout: 30s
+      retries: 30
+    ports:
+      - '27017:27017'
+    restart: always
+    networks:
+      - crud-service-networks
+  crud-service:
+    build:
+      context: ./
+      dockerfile: ./docker/Dockerfile
+    container_name: crud-service
+    environment:
+      - CONFIG_PATH=/service/.config-mongodb.env
+    env_file:
+      - ./.config-mongodb.env
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+    restart: always
+    networks:
+      - crud-service-networks
+      
+volumes:
+  dbdata6:
+  dbconfig:
+networks:
+  crud-service-networks:
+    driver: bridge
