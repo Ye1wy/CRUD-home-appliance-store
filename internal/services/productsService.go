@@ -7,9 +7,6 @@ import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/repositories"
 	"context"
 	"errors"
-	"fmt"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type ProductService interface {
@@ -32,16 +29,9 @@ func NewProductService(rep repositories.ProductRepository) *ProductServiceImpl {
 
 func (ps *ProductServiceImpl) AddProduct(ctx context.Context, dto *dto.ProductDTO) (*model.Product, error) {
 	product := mapper.ToProductModel(dto)
-	result, err := ps.Repo.AddProduct(ctx, product)
+	_, err := ps.Repo.AddProduct(ctx, product)
 	if err != nil {
 		return nil, err
-	}
-
-	if objectID, ok := result.InsertedID.(primitive.ObjectID); ok {
-		product.Id = objectID.Hex()
-
-	} else {
-		return nil, fmt.Errorf("failed to parse inserted ID")
 	}
 
 	return product, nil

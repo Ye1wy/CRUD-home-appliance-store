@@ -1,6 +1,8 @@
 package config
 
 import (
+	"CRUD-HOME-APPLIANCE-STORE/internal/logger"
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -9,18 +11,21 @@ import (
 )
 
 type Config struct {
-	Env        string `yaml:"env" env-default:"local"`
-	MongoURL   string `yaml:"MONGO_URL" env-required:"true"`
-	HTTPServer `yaml:"http_server"`
+	Env        string `env:"env" env-default:"local"`
+	MongoURL   string `env:"MONGO_URL" env-required:"true"`
+	HTTPServer `env:"http_server"`
 }
 
 type HTTPServer struct {
-	Address      string        `yaml:"address" env-default:"localhost:8080"`
-	Timeout      time.Duration `yaml:"timeout" env-default:"5s"`
-	IddleTimeout time.Duration `yaml:"idle_timeout" env-default:"60s"`
+	Address      string        `env:"address" env-default:"localhost"`
+	Port         string        `env:"port" env-default:"8080"`
+	Timeout      time.Duration `env:"timeout" env-default:"5s"`
+	IddleTimeout time.Duration `env:"idle_timeout" env-default:"60s"`
 }
 
 func MustLoad() *Config {
+	op := "config.MustLoad"
+
 	configPath := os.Getenv("CONFIG_PATH")
 	if configPath == "" {
 		log.Fatal("[ERROR] CONFIG_PATH is empty")
@@ -33,8 +38,18 @@ func MustLoad() *Config {
 	var cfg Config
 
 	if err := cleanenv.ReadConfig(configPath, &cfg); err != nil {
-		log.Fatalf("[ERROR] Cannot read config: %s", err)
+		log.Fatal("[ERROR] Cannot read config: ", logger.Err(err), "op", op)
 	}
 
 	return &cfg
+}
+
+func (cfg *Config) PrintInfo() {
+	fmt.Println("---------------------")
+	fmt.Println("env: " + cfg.Env)
+	fmt.Println("address: " + cfg.Address)
+	fmt.Println("port: " + cfg.Port)
+	fmt.Println("mongourl: " + cfg.MongoURL)
+	fmt.Println("---------------------")
+
 }

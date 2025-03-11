@@ -7,6 +7,7 @@ import (
 
 func ToProductDTO(product *model.Product) *dto.ProductDTO {
 	return &dto.ProductDTO{
+		Id:             product.Id,
 		Name:           product.Name,
 		Category:       product.Category,
 		Price:          product.Price,
@@ -18,6 +19,7 @@ func ToProductDTO(product *model.Product) *dto.ProductDTO {
 
 func ToProductModel(dto *dto.ProductDTO) *model.Product {
 	return &model.Product{
+		Id:             dto.Id,
 		Name:           dto.Name,
 		Category:       dto.Category,
 		Price:          dto.Price,

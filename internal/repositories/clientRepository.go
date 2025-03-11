@@ -4,7 +4,6 @@ import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/database"
 	"CRUD-HOME-APPLIANCE-STORE/internal/model"
 	"context"
-	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -16,8 +15,8 @@ type ClientRepository interface {
 	AddClient(ctx context.Context, client *model.Client) (*mongo.InsertOneResult, error)
 	GetAllClients(ctx context.Context, limit, offset int) ([]model.Client, error)
 	GetClientByNameAndSurname(ctx context.Context, name string, surname string) ([]model.Client, error)
-	UpdateAddress(ctx context.Context, id string, newAddressId string) error
-	DeleteClientById(ctx context.Context, id string) error
+	UpdateAddress(ctx context.Context, id primitive.ObjectID, newAddressId primitive.ObjectID) error
+	DeleteClientById(ctx context.Context, id primitive.ObjectID) error
 }
 
 type mongoClientRepository struct {
@@ -31,7 +30,6 @@ func NewMongoClientRepository(db *mongo.Database) *mongoClientRepository {
 }
 
 func (r *mongoClientRepository) AddClient(ctx context.Context, client *model.Client) (*mongo.InsertOneResult, error) {
-	client.RegistrationDate = time.Now()
 	return r.collection.InsertOne(ctx, client)
 }
 
@@ -79,27 +77,12 @@ func (r *mongoClientRepository) GetClientByNameAndSurname(ctx context.Context, n
 	return clients, nil
 }
 
-func (r *mongoClientRepository) UpdateAddress(ctx context.Context, id string, newAddressId string) error {
-	objectID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return err
-	}
-
-	objectAddressID, err := primitive.ObjectIDFromHex(newAddressId)
-	if err != nil {
-		return err
-	}
-
-	_, err = r.collection.UpdateOne(ctx, bson.M{"_id": objectID}, bson.M{"$set": bson.M{"address_id": objectAddressID}})
+func (r *mongoClientRepository) UpdateAddress(ctx context.Context, id primitive.ObjectID, newAddressId primitive.ObjectID) error {
+	_, err := r.collection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"address_id": newAddressId}})
 	return err
 }
 
-func (r *mongoClientRepository) DeleteClientById(ctx context.Context, id string) error {
-	objectID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return err
-	}
-
-	_, err = r.collection.DeleteOne(ctx, bson.M{"_id": objectID})
+func (r *mongoClientRepository) DeleteClientById(ctx context.Context, id primitive.ObjectID) error {
+	_, err := r.collection.DeleteOne(ctx, bson.M{"_id": id})
 	return err
 }

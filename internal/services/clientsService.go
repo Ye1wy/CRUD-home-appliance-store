@@ -7,7 +7,7 @@ import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/repositories"
 	"context"
 	"errors"
-	"fmt"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -36,17 +36,19 @@ func (s *clientsServiceImpl) AddClient(ctx context.Context, dto *dto.ClientDTO) 
 		return nil, err
 	}
 
-	result, err := s.Repo.AddClient(ctx, client)
+	client.RegistrationDate = time.Now()
+
+	_, err = s.Repo.AddClient(ctx, client)
 	if err != nil {
 		return nil, err
 	}
 
-	if objectID, ok := result.InsertedID.(primitive.ObjectID); ok {
-		client.Id = objectID.Hex()
+	// if objectID, ok := result.InsertedID.(primitive.ObjectID); ok {
+	// 	client.Id = objectID.Hex()
 
-	} else {
-		return nil, fmt.Errorf("failed to parse inserted ID")
-	}
+	// } else {
+	// 	return nil, fmt.Errorf("failed to parse inserted ID")
+	// }
 
 	return client, nil
 }
@@ -90,7 +92,17 @@ func (s *clientsServiceImpl) ChangeAddressParameter(ctx context.Context, id stri
 		return errors.New("invalid new address id")
 	}
 
-	err := s.Repo.UpdateAddress(ctx, id, newAddressId)
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	objectAddressID, err := primitive.ObjectIDFromHex(newAddressId)
+	if err != nil {
+		return err
+	}
+
+	err = s.Repo.UpdateAddress(ctx, objectID, objectAddressID)
 	if err != nil {
 		return err
 	}
@@ -99,5 +111,10 @@ func (s *clientsServiceImpl) ChangeAddressParameter(ctx context.Context, id stri
 }
 
 func (s *clientsServiceImpl) DeleteClientById(ctx context.Context, id string) error {
-	return s.Repo.DeleteClientById(ctx, id)
+	objectId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	return s.Repo.DeleteClientById(ctx, objectId)
 }
