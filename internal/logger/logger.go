@@ -11,7 +11,14 @@ const (
 	envDev   = "dev"
 )
 
-func NewLogger(env string) *slog.Logger {
+type LoggerInterface interface {
+}
+
+type Logger struct {
+	*slog.Logger
+}
+
+func NewLogger(env string) *Logger {
 	var log *slog.Logger
 
 	switch env {
@@ -23,7 +30,7 @@ func NewLogger(env string) *slog.Logger {
 		log = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	}
 
-	return log
+	return &Logger{log}
 }
 
 func Err(err error) slog.Attr {
