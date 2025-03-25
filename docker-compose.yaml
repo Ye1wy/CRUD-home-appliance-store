@@ -38,7 +38,7 @@ services:
       - crud-service-networks
       
 volumes:
-  dbdata6:
+  dbdata6: 
   dbconfig:
 networks:
   crud-service-networks:
