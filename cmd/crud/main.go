@@ -13,10 +13,12 @@ import (
 
 func main() {
 	cfg := config.MustLoad()
+
+	cfg.PrintInfo()
 	cfg.PrintInfo()
 	log := logger.NewLogger(cfg.Env)
 	log.Info("Logger is created")
-	storage, err := mongodb.Connect(cfg.MongoURL, log)
+	storage, err := mongodb.Connect(cfg.MongoURI, log)
 	log.Info("Connection is established")
 	if err != nil {
 		log.Error("Error in connetion to mongoDB: ", logger.Err(err))

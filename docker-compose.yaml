@@ -1,11 +1,9 @@
-version: "3.9"
-
 services:
   mongodb:
     image: mongo:6-jammy
     container_name: mongodb
     env_file:
-    - ./.config-mongodb.env
+    - ./.env
     
     volumes:
       - dbdata6:/data/db
@@ -27,9 +25,9 @@ services:
       dockerfile: ./docker/Dockerfile
     container_name: crud-service
     environment:
-      - CONFIG_PATH=/service/.config-mongodb.env
+      - CONFIG_PATH=/service/.env
     env_file:
-      - ./.config-mongodb.env
+      - ./.env
     depends_on:
       mongodb:
         condition: service_healthy

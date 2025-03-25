@@ -4,6 +4,7 @@ import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/database"
 	"CRUD-HOME-APPLIANCE-STORE/internal/model"
 	"context"
+	"fmt"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -40,14 +41,13 @@ func (r *mongoClientRepository) GetAllClients(ctx context.Context, limit, offset
 
 	cursor, err := r.collection.Find(ctx, bson.M{}, findOptions)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Client repository: Customer search error: %v", err)
 	}
-
 	defer cursor.Close(ctx)
 
 	var client []model.Client
 	if err = cursor.All(ctx, &client); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Client repository: Error extracting all data into structures: %v", err)
 	}
 
 	return client, nil
@@ -57,14 +57,14 @@ func (r *mongoClientRepository) GetClientByNameAndSurname(ctx context.Context, n
 	var clients []model.Client
 	cursor, err := r.collection.Find(ctx, bson.M{"client_name": name, "client_surname": surname})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Client repository: Error find client: %v", err)
 	}
 	defer cursor.Close(ctx)
 
 	for cursor.Next(ctx) {
 		var client model.Client
 		if err := cursor.Decode(&client); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("Client repository: Error in decode cursor to struct: %v", err)
 		}
 
 		clients = append(clients, client)
@@ -79,10 +79,10 @@ func (r *mongoClientRepository) GetClientByNameAndSurname(ctx context.Context, n
 
 func (r *mongoClientRepository) UpdateAddress(ctx context.Context, id primitive.ObjectID, newAddressId primitive.ObjectID) error {
 	_, err := r.collection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"address_id": newAddressId}})
-	return err
+	return fmt.Errorf("Client repository: Error update client: %v", err)
 }
 
 func (r *mongoClientRepository) DeleteClientById(ctx context.Context, id primitive.ObjectID) error {
 	_, err := r.collection.DeleteOne(ctx, bson.M{"_id": id})
-	return err
+	return fmt.Errorf("Client repository: Deleting error: %v", err)
 }
