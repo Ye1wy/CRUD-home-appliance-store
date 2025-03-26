@@ -18,7 +18,7 @@ func main() {
 	cfg.PrintInfo()
 	log := logger.NewLogger(cfg.Env)
 	log.Info("Logger is created")
-	storage, err := mongodb.Connect(cfg.MongoURI, log)
+	storage, err := mongodb.Connect(cfg.MongoURI)
 	log.Info("Connection is established")
 	if err != nil {
 		log.Error("Error in connetion to mongoDB: ", logger.Err(err))

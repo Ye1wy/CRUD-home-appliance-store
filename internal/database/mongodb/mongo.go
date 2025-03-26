@@ -4,7 +4,6 @@ import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/database"
 	"context"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -16,7 +15,7 @@ type MongoStorage struct {
 	Database *mongo.Database
 }
 
-func Connect(mongoURL string, log *slog.Logger) (*MongoStorage, error) {
+func Connect(mongoURL string) (*MongoStorage, error) {
 	const op = "database.mongodb.Connect"
 
 	clientOption := options.Client().ApplyURI(mongoURL)
