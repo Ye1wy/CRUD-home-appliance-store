@@ -31,7 +31,12 @@ func NewClientsController(service services.ClientsService, logger *logger.Logger
 func (ctrl *ClientsController) AddClient(c *gin.Context) {
 	op := "controllers.client.addClient"
 	var clientDTO dto.ClientDTO
-	if err := c.ShouldBindJSON(&clientDTO); err != nil {
+	// if err := c.ShouldBindJSON(&clientDTO); err != nil {
+	// 	ctrl.logger.Error("Failed to bind JSON for AddClient", logger.Err(err), "op", op)
+	// 	ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+	// 	return
+	// }
+	if err := ctrl.mapping(c, &clientDTO); err != nil {
 		ctrl.logger.Error("Failed to bind JSON for AddClient", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
 		return
@@ -117,7 +122,13 @@ func (ctrl *ClientsController) ChangeAddressParameter(c *gin.Context) {
 	id := c.Param("id")
 	var clientDTO dto.UpdateClientAddressDTO
 
-	if err := c.ShouldBindJSON(&clientDTO); err != nil {
+	// if err := c.ShouldBindJSON(&clientDTO); err != nil {
+	// 	ctrl.logger.Error("Failed to bind JSON for ChangeAddressIdParameter", logger.Err(err), "op", op)
+	// 	ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Invalid request payload"})
+	// 	return
+	// }
+
+	if err := ctrl.mapping(c, &clientDTO); err != nil {
 		ctrl.logger.Error("Failed to bind JSON for ChangeAddressIdParameter", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Invalid request payload"})
 		return
