@@ -42,14 +42,14 @@ func (ctrl *ClientsController) AddClient(c *gin.Context) {
 		return
 	}
 
-	client, err := ctrl.service.AddClient(c.Request.Context(), &clientDTO)
+	client, err := ctrl.service.Create(c.Request.Context(), clientDTO)
 	if err != nil {
 		ctrl.logger.Error("Failed to add client: ", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Failed to add client"})
 		return
 	}
 
-	ctrl.logger.Info("Client added successfully", "clientID", client.Id, "op", op)
+	ctrl.logger.Info("Client added successfully", "op", op)
 	ctrl.responce(c, http.StatusCreated, client)
 }
 
@@ -74,7 +74,7 @@ func (ctrl *ClientsController) GetAllClients(c *gin.Context) {
 		return
 	}
 
-	client, err := ctrl.service.GetAllClients(c.Request.Context(), limit, offset)
+	client, err := ctrl.service.GetAll(c.Request.Context(), limit, offset)
 	if err != nil {
 		ctrl.logger.Error("Failed to retrieve clients", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Failed to retrieve client"})
@@ -154,7 +154,7 @@ func (ctrl *ClientsController) DeleteClientById(c *gin.Context) {
 
 	id := c.Param("id")
 
-	if err := ctrl.service.DeleteClientById(c.Request.Context(), id); err != nil {
+	if err := ctrl.service.Delete(c.Request.Context(), id); err != nil {
 		ctrl.logger.Error("Failed to delete client", "clientID", id, logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Failed to delete client"})
 		return

@@ -4,7 +4,6 @@ import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/dto"
 	"CRUD-HOME-APPLIANCE-STORE/internal/logger"
 	"CRUD-HOME-APPLIANCE-STORE/internal/services"
-	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -13,10 +12,10 @@ import (
 
 type ProductsController struct {
 	service services.ProductService
-	logger  *slog.Logger
+	logger  *logger.Logger
 }
 
-func NewProductController(service services.ProductService, log *slog.Logger) *ProductsController {
+func NewProductController(service services.ProductService, log *logger.Logger) *ProductsController {
 	return &ProductsController{
 		service: service,
 		logger:  log,
