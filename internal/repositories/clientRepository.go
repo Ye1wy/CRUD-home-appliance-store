@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	"CRUD-HOME-APPLIANCE-STORE/internal/database"
+	"CRUD-HOME-APPLIANCE-STORE/internal/logger"
 	"CRUD-HOME-APPLIANCE-STORE/internal/model"
 	"context"
 	"fmt"
@@ -9,53 +9,30 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type ClientRepository interface {
-	AddClient(ctx context.Context, client *model.Client) (*mongo.InsertOneResult, error)
-	GetAllClients(ctx context.Context, limit, offset int) ([]model.Client, error)
+type ClientRepositoryInterface interface {
+	CrudRepositoryInterface[model.Client]
 	GetClientByNameAndSurname(ctx context.Context, name string, surname string) ([]model.Client, error)
 	UpdateAddress(ctx context.Context, id primitive.ObjectID, newAddressId primitive.ObjectID) error
-	DeleteClientById(ctx context.Context, id primitive.ObjectID) error
 }
 
-type mongoClientRepository struct {
-	collection *mongo.Collection
+type MongoClientRepository struct {
+	*CrudRepository[model.Client]
 }
 
-func NewMongoClientRepository(db *mongo.Database) *mongoClientRepository {
-	return &mongoClientRepository{
-		collection: db.Collection(database.CLIENTS),
+func NewMongoClientRepository(db *mongo.Database, collection string, logger *logger.Logger) *MongoClientRepository {
+	rep := NewCrudRepository[model.Client](db, collection, logger)
+	return &MongoClientRepository{
+		CrudRepository: rep,
 	}
 }
 
-func (r *mongoClientRepository) AddClient(ctx context.Context, client *model.Client) (*mongo.InsertOneResult, error) {
-	return r.collection.InsertOne(ctx, client)
-}
+func (r *MongoClientRepository) GetClientByNameAndSurname(ctx context.Context, name string, surname string) ([]model.Client, error) {
+	op := "repositories.clientRepository.GetClientByNameAndSurname"
 
-func (r *mongoClientRepository) GetAllClients(ctx context.Context, limit, offset int) ([]model.Client, error) {
-	findOptions := options.Find()
-	findOptions.SetLimit(int64(limit))
-	findOptions.SetSkip(int64(offset))
-
-	cursor, err := r.collection.Find(ctx, bson.M{}, findOptions)
-	if err != nil {
-		return nil, fmt.Errorf("Client repository: Customer search error: %v", err)
-	}
-	defer cursor.Close(ctx)
-
-	var client []model.Client
-	if err = cursor.All(ctx, &client); err != nil {
-		return nil, fmt.Errorf("Client repository: Error extracting all data into structures: %v", err)
-	}
-
-	return client, nil
-}
-
-func (r *mongoClientRepository) GetClientByNameAndSurname(ctx context.Context, name string, surname string) ([]model.Client, error) {
 	var clients []model.Client
-	cursor, err := r.collection.Find(ctx, bson.M{"client_name": name, "client_surname": surname})
+	cursor, err := r.Collection.Find(ctx, bson.M{"client_name": name, "client_surname": surname})
 	if err != nil {
 		return nil, fmt.Errorf("Client repository: Error find client: %v", err)
 	}
@@ -74,15 +51,17 @@ func (r *mongoClientRepository) GetClientByNameAndSurname(ctx context.Context, n
 		return nil, nil
 	}
 
+	r.Logger.Debug("ClientRepository: all clients with name and surname is retrived", "op", op)
 	return clients, nil
 }
 
-func (r *mongoClientRepository) UpdateAddress(ctx context.Context, id primitive.ObjectID, newAddressId primitive.ObjectID) error {
-	_, err := r.collection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"address_id": newAddressId}})
-	return fmt.Errorf("Client repository: Error update client: %v", err)
-}
+func (r *MongoClientRepository) UpdateAddress(ctx context.Context, id primitive.ObjectID, newAddressId primitive.ObjectID) error {
+	op := "repositories.clientRepository.UpdateAddress"
+	_, err := r.Collection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"address_id": newAddressId}})
+	if err != nil {
+		return fmt.Errorf("Client repository: Error update client: %v", err)
+	}
 
-func (r *mongoClientRepository) DeleteClientById(ctx context.Context, id primitive.ObjectID) error {
-	_, err := r.collection.DeleteOne(ctx, bson.M{"_id": id})
-	return fmt.Errorf("Client repository: Deleting error: %v", err)
+	r.Logger.Debug("ClientRepository: Updated succesufully", "op", op)
+	return nil
 }
