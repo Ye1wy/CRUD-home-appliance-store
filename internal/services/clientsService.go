@@ -21,12 +21,12 @@ type ClientsService interface {
 }
 
 type clientsServiceImpl struct {
-	Repo repositories.ClientRepository
+	repo repositories.ClientRepositoryInterface
 }
 
-func NewClientService(rep repositories.ClientRepository) *clientsServiceImpl {
+func NewClientService(rep repositories.ClientRepositoryInterface) *clientsServiceImpl {
 	return &clientsServiceImpl{
-		Repo: rep,
+		repo: rep,
 	}
 }
 
@@ -38,7 +38,7 @@ func (s *clientsServiceImpl) AddClient(ctx context.Context, dto *dto.ClientDTO) 
 
 	client.RegistrationDate = time.Now()
 
-	_, err = s.Repo.AddClient(ctx, client)
+	_, err = s.repo.Create(ctx, *client)
 	if err != nil {
 		return nil, fmt.Errorf("Client service: Error adding a client: %v", err)
 	}
@@ -58,7 +58,7 @@ func (s *clientsServiceImpl) GetAllClients(ctx context.Context, limit, offset in
 		return nil, fmt.Errorf("Client service: limit and offset cannot be less of 0")
 	}
 
-	clients, err := s.Repo.GetAllClients(ctx, limit, offset)
+	clients, err := s.repo.GetAll(ctx, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("Client service: Error receriving all the client: %v", err)
 	}
@@ -73,7 +73,7 @@ func (s *clientsServiceImpl) GetClientByNameAndSurname(ctx context.Context, name
 		return nil, fmt.Errorf("Service: client name and surname cannot be empty")
 	}
 
-	clients, err := s.Repo.GetClientByNameAndSurname(ctx, name, surname)
+	clients, err := s.repo.GetClientByNameAndSurname(ctx, name, surname)
 	if clients == nil && err == nil {
 		return nil, nil
 	}
@@ -102,7 +102,7 @@ func (s *clientsServiceImpl) ChangeAddressParameter(ctx context.Context, id stri
 		return fmt.Errorf("Service: Error change address parameter: %v", err)
 	}
 
-	err = s.Repo.UpdateAddress(ctx, objectID, objectAddressID)
+	err = s.repo.Update(ctx, objectID, objectAddressID)
 	if err != nil {
 		return fmt.Errorf("Service: Error change address parameter: %v", err)
 	}
@@ -116,5 +116,5 @@ func (s *clientsServiceImpl) DeleteClientById(ctx context.Context, id string) er
 		return fmt.Errorf("Service: Error delete client by id: %v", err)
 	}
 
-	return s.Repo.DeleteClientById(ctx, objectId)
+	return s.repo.Delete(ctx, objectId)
 }
