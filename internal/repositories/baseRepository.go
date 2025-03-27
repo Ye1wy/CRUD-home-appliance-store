@@ -15,5 +15,6 @@ type BaseMongoRepository struct {
 }
 
 func NewBaseRepository(collection *mongo.Collection, logger *logger.Logger) *BaseMongoRepository {
+	logger.Debug("Base Repository is created")
 	return &BaseMongoRepository{Collection: collection, Logger: logger}
 }

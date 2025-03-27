@@ -23,6 +23,7 @@ type MongoClientRepository struct {
 
 func NewMongoClientRepository(db *mongo.Database, collection string, logger *logger.Logger) *MongoClientRepository {
 	rep := NewCrudRepository[model.Client](db, collection, logger)
+	logger.Info("Mongo Client Repository is created")
 	return &MongoClientRepository{
 		CrudRepository: rep,
 	}
@@ -30,10 +31,10 @@ func NewMongoClientRepository(db *mongo.Database, collection string, logger *log
 
 func (r *MongoClientRepository) GetClientByNameAndSurname(ctx context.Context, name string, surname string) ([]model.Client, error) {
 	op := "repositories.clientRepository.GetClientByNameAndSurname"
-
 	var clients []model.Client
 	cursor, err := r.Collection.Find(ctx, bson.M{"client_name": name, "client_surname": surname})
 	if err != nil {
+		r.Logger.Debug("Failed on find", logger.Err(err), "op", op)
 		return nil, fmt.Errorf("Client repository: Error find client: %v", err)
 	}
 	defer cursor.Close(ctx)
@@ -41,6 +42,7 @@ func (r *MongoClientRepository) GetClientByNameAndSurname(ctx context.Context, n
 	for cursor.Next(ctx) {
 		var client model.Client
 		if err := cursor.Decode(&client); err != nil {
+			r.Logger.Debug("Failed on decode cursor", logger.Err(err), "op", op)
 			return nil, fmt.Errorf("Client repository: Error in decode cursor to struct: %v", err)
 		}
 
@@ -51,7 +53,7 @@ func (r *MongoClientRepository) GetClientByNameAndSurname(ctx context.Context, n
 		return nil, nil
 	}
 
-	r.Logger.Debug("ClientRepository: all clients with name and surname is retrived", "op", op)
+	r.Logger.Debug("All clients with name and surname is retrived", "op", op)
 	return clients, nil
 }
 
@@ -59,9 +61,10 @@ func (r *MongoClientRepository) UpdateAddress(ctx context.Context, id primitive.
 	op := "repositories.clientRepository.UpdateAddress"
 	_, err := r.Collection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"address_id": newAddressId}})
 	if err != nil {
+		r.Logger.Debug("Failed on update address", logger.Err(err), "op", op)
 		return fmt.Errorf("Client repository: Error update client: %v", err)
 	}
 
-	r.Logger.Debug("ClientRepository: Updated succesufully", "op", op)
+	r.Logger.Debug("Updated succesufully", "op", op)
 	return nil
 }
