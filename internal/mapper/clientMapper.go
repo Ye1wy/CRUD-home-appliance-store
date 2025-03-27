@@ -8,8 +8,8 @@ import (
 
 const dateFormat = "2006-01-02"
 
-func ToClientDTO(client *model.Client) *dto.ClientDTO {
-	return &dto.ClientDTO{
+func ClientToDTO(client model.Client) dto.ClientDTO {
+	return dto.ClientDTO{
 		Name:      client.ClientName,
 		Surname:   client.ClientSurname,
 		Birthday:  client.Birthday.Format(dateFormat),
@@ -18,9 +18,8 @@ func ToClientDTO(client *model.Client) *dto.ClientDTO {
 	}
 }
 
-func ToClientModel(dto *dto.ClientDTO) (*model.Client, error) {
+func ClientToModel(dto dto.ClientDTO) (*model.Client, error) {
 	dtoBirthday, err := time.Parse(dateFormat, dto.Birthday)
-
 	if err != nil {
 		return nil, err
 	}
@@ -34,27 +33,27 @@ func ToClientModel(dto *dto.ClientDTO) (*model.Client, error) {
 	}, nil
 }
 
-func ToClientDTOs(clients []model.Client) []dto.ClientDTO {
-	dtos := make([]dto.ClientDTO, len(clients))
+//// func ToClientDTOs(clients []model.Client) []dto.ClientDTO {
+//// 	dtos := make([]dto.ClientDTO, len(clients))
 
-	for i, client := range clients {
-		dtos[i] = *ToClientDTO(&client)
-	}
+//// 	for i, client := range clients {
+//// 		dtos[i] = *ToClientDTO(&client)
+//// }
 
-	return dtos
-}
+//// 	return dtos
+//// }
 
-func ToClientModels(dtos []dto.ClientDTO) ([]model.Client, error) {
-	models := make([]model.Client, len(dtos))
+//// func ToClientModels(dtos []dto.ClientDTO) ([]model.Client, error) {
+//// 	models := make([]model.Client, len(dtos))
 
-	for i, dto := range dtos {
-		client, err := ToClientModel(&dto)
-		if err != nil {
-			return nil, err
-		}
+//// 	for i, dto := range dtos {
+//// 		client, err := ToClientModel(&dto)
+// // 		if err != nil {
+// // 			return nil, err
+// // 		}
 
-		models[i] = *client
-	}
+// // 		models[i] = *client
+// // 	}
 
-	return models, nil
-}
+// // 	return models, nil
+// // }
