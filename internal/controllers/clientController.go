@@ -12,10 +12,10 @@ import (
 
 type ClientsController struct {
 	*BaseController
-	service services.ClientsService
+	service services.ClientsServiceInterface
 }
 
-func NewClientsController(service services.ClientsService, logger *logger.Logger) *ClientsController {
+func NewClientsController(service services.ClientsServiceInterface, logger *logger.Logger) *ClientsController {
 	controller := NewBaseContorller(logger)
 	return &ClientsController{
 		BaseController: controller,
@@ -42,7 +42,7 @@ func (ctrl *ClientsController) AddClient(c *gin.Context) {
 		return
 	}
 
-	client, err := ctrl.service.Create(c.Request.Context(), clientDTO)
+	client, err := ctrl.service.Create(c.Request.Context(), &clientDTO)
 	if err != nil {
 		ctrl.logger.Error("Failed to add client: ", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Failed to add client"})
@@ -63,14 +63,14 @@ func (ctrl *ClientsController) GetAllClients(c *gin.Context) {
 	limit, err := strconv.Atoi(c.DefaultQuery("limit", defaultLimit))
 	if err != nil {
 		ctrl.logger.Error("Invalid limit parameter", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Server is busy"})
+		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Invalid payload"})
 		return
 	}
 
 	offset, err := strconv.Atoi(c.DefaultQuery("offset", defaultOffset))
 	if err != nil {
 		ctrl.logger.Error("Invalid offset parameter", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Server is busy"})
+		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Invalid payload"})
 		return
 	}
 
