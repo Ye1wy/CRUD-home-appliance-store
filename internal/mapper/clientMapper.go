@@ -8,17 +8,25 @@ import (
 
 const dateFormat = "2006-01-02"
 
-func ClientToDTO(client model.Client) dto.ClientDTO {
-	return dto.ClientDTO{
+func ClientToDTO(client *model.Client) (*dto.ClientDTO, error) {
+	if client == nil {
+		return nil, nil
+	}
+
+	return &dto.ClientDTO{
 		Name:      client.ClientName,
 		Surname:   client.ClientSurname,
 		Birthday:  client.Birthday.Format(dateFormat),
 		Gender:    client.Gender,
 		AddressID: client.AddressId,
-	}
+	}, nil
 }
 
-func ClientToModel(dto dto.ClientDTO) (*model.Client, error) {
+func ClientToModel(dto *dto.ClientDTO) (*model.Client, error) {
+	if dto == nil {
+		return nil, nil
+	}
+
 	dtoBirthday, err := time.Parse(dateFormat, dto.Birthday)
 	if err != nil {
 		return nil, err

@@ -5,7 +5,11 @@ import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/model"
 )
 
-func ToProductDTO(product *model.Product) *dto.ProductDTO {
+func ProductToDTO(product *model.Product) (*dto.ProductDTO, error) {
+	if product == nil {
+		return nil, nil
+	}
+
 	return &dto.ProductDTO{
 		Id:             product.Id,
 		Name:           product.Name,
@@ -14,10 +18,14 @@ func ToProductDTO(product *model.Product) *dto.ProductDTO {
 		AvailableStock: product.AvailableStock,
 		SupplierId:     product.SupplierId,
 		ImageId:        product.ImageId,
-	}
+	}, nil
 }
 
-func ToProductModel(dto *dto.ProductDTO) *model.Product {
+func ProductToModel(dto *dto.ProductDTO) (*model.Product, error) {
+	if dto == nil {
+		return nil, nil
+	}
+
 	return &model.Product{
 		Id:             dto.Id,
 		Name:           dto.Name,
@@ -26,26 +34,5 @@ func ToProductModel(dto *dto.ProductDTO) *model.Product {
 		AvailableStock: dto.AvailableStock,
 		SupplierId:     dto.SupplierId,
 		ImageId:        dto.ImageId,
-	}
-}
-
-func ToProductDTOs(products []model.Product) []dto.ProductDTO {
-	dtos := make([]dto.ProductDTO, len(products))
-
-	for i, product := range products {
-		dtos[i] = *ToProductDTO(&product)
-	}
-
-	return dtos
-}
-
-func ToProductModels(dtos []dto.ProductDTO) []model.Product {
-	models := make([]model.Product, len(dtos))
-
-	for i, dto := range dtos {
-		product := ToProductModel(&dto)
-		models[i] = *product
-	}
-
-	return models
+	}, nil
 }
