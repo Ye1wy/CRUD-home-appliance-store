@@ -25,7 +25,7 @@ type CrudRepository[T any] struct {
 
 func NewCrudRepository[T any](db *mongo.Database, collection string, logger *logger.Logger) *CrudRepository[T] {
 	repo := NewBaseRepository(db.Collection(collection), logger)
-	logger.Info("Crud Repository is created")
+	logger.Debug("Crud Repository is created")
 	return &CrudRepository[T]{
 		BaseMongoRepository: repo,
 	}
