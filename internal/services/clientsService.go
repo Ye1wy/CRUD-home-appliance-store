@@ -12,7 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type ClientsService interface {
+type ClientsServiceInterface interface {
 	CrudServiceInterface[model.Client, dto.ClientDTO]
 	// Create(ctx context.Context, dto dto.ClientDTO) (*model.Client, error)
 	GetClientByNameAndSurname(ctx context.Context, name, surname string) ([]dto.ClientDTO, error)
@@ -21,14 +21,14 @@ type ClientsService interface {
 
 type clientsServiceImpl struct {
 	*CrudService[model.Client, dto.ClientDTO]
-	repository repositories.ClientRepositoryInterface
+	repo repositories.ClientRepositoryInterface
 }
 
 func NewClientService(rep repositories.ClientRepositoryInterface, logger *logger.Logger) *clientsServiceImpl {
 	crudService := NewCrudService(rep, mapper.ClientToDTO, mapper.ClientToModel, logger)
 	return &clientsServiceImpl{
 		CrudService: crudService,
-		repository:  rep,
+		repo:        rep,
 	}
 }
 
@@ -53,7 +53,7 @@ func (s *clientsServiceImpl) GetClientByNameAndSurname(ctx context.Context, name
 		return nil, fmt.Errorf("Service: client name and surname cannot be empty")
 	}
 
-	clients, err := s.repository.GetClientByNameAndSurname(ctx, name, surname)
+	clients, err := s.repo.GetClientByNameAndSurname(ctx, name, surname)
 	if clients == nil && err == nil {
 		return nil, nil
 	}
@@ -65,7 +65,12 @@ func (s *clientsServiceImpl) GetClientByNameAndSurname(ctx context.Context, name
 	dtos := make([]dto.ClientDTO, len(clients))
 
 	for i, item := range clients {
-		dtos[i] = s.mapperD(item)
+		dto, err := s.mapperD(&item)
+		if err != nil {
+			return nil, err
+		}
+
+		dtos[i] = *dto
 	}
 
 	return dtos, nil
@@ -86,7 +91,7 @@ func (s *clientsServiceImpl) ChangeAddressParameter(ctx context.Context, id stri
 		return fmt.Errorf("Service: Error change address parameter: %v", err)
 	}
 
-	err = s.repository.Update(ctx, objectID, objectAddressID)
+	err = s.repo.Update(ctx, objectID, objectAddressID)
 	if err != nil {
 		return fmt.Errorf("Service: Error change address parameter: %v", err)
 	}

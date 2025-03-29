@@ -10,7 +10,7 @@ import (
 )
 
 type CrudServiceInterface[T any, D any] interface {
-	Create(ctx context.Context, dto D) (*D, error)
+	Create(ctx context.Context, dto *D) (*D, error)
 	GetAll(ctx context.Context, limit, offset int) ([]D, error)
 	GetById(ctx context.Context, id string) (*D, error)
 	Update(ctx context.Context, id string, item any) error
@@ -20,11 +20,11 @@ type CrudServiceInterface[T any, D any] interface {
 type CrudService[T any, D any] struct {
 	*BaseService
 	repository repositories.CrudRepositoryInterface[T]
-	mapperD    func(T) D
-	mapperT    func(D) (*T, error)
+	mapperD    func(*T) (*D, error)
+	mapperT    func(*D) (*T, error)
 }
 
-func NewCrudService[T any, D any](repository repositories.CrudRepositoryInterface[T], mapperD func(T) D, mapperT func(D) (*T, error), logger *logger.Logger) *CrudService[T, D] {
+func NewCrudService[T any, D any](repository repositories.CrudRepositoryInterface[T], mapperD func(*T) (*D, error), mapperT func(*D) (*T, error), logger *logger.Logger) *CrudService[T, D] {
 	service := NewBaseService(nil, logger)
 	logger.Debug("Crud Service is created")
 	return &CrudService[T, D]{
@@ -35,7 +35,7 @@ func NewCrudService[T any, D any](repository repositories.CrudRepositoryInterfac
 	}
 }
 
-func (s *CrudService[T, D]) Create(ctx context.Context, dto D) (*D, error) {
+func (s *CrudService[T, D]) Create(ctx context.Context, dto *D) (*D, error) {
 	obj, err := s.mapperT(dto)
 	if err != nil {
 		return nil, fmt.Errorf("Service: Error adding a client: %v", err)
@@ -46,7 +46,7 @@ func (s *CrudService[T, D]) Create(ctx context.Context, dto D) (*D, error) {
 		return nil, fmt.Errorf("Service: Error adding a client: %v", err)
 	}
 
-	return &dto, nil
+	return dto, nil
 }
 
 func (s *CrudService[T, D]) GetAll(ctx context.Context, limit, offset int) ([]D, error) {
@@ -62,7 +62,12 @@ func (s *CrudService[T, D]) GetAll(ctx context.Context, limit, offset int) ([]D,
 	dtos := make([]D, len(objs))
 
 	for i, item := range objs {
-		dtos[i] = s.mapperD(item)
+		dto, err := s.mapperD(&item)
+		if err != nil {
+			return nil, nil
+		}
+
+		dtos[i] = *dto
 	}
 
 	return dtos, nil
@@ -83,9 +88,12 @@ func (s *CrudService[T, D]) GetById(ctx context.Context, id string) (*D, error) 
 		return nil, err
 	}
 
-	dto := s.mapperD(*obj)
+	dto, err := s.mapperD(obj)
+	if err != nil {
+		return nil, fmt.Errorf("Service: Error mapping obj to dto: %v", err)
+	}
 
-	return &dto, nil
+	return dto, nil
 }
 
 func (s *CrudService[T, D]) Update(ctx context.Context, id string, item any) error {
