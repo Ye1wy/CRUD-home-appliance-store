@@ -3,6 +3,7 @@ package main
 import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/config"
 	"CRUD-HOME-APPLIANCE-STORE/internal/controllers"
+	"CRUD-HOME-APPLIANCE-STORE/internal/database"
 	"CRUD-HOME-APPLIANCE-STORE/internal/database/mongodb"
 	"CRUD-HOME-APPLIANCE-STORE/internal/logger"
 	"CRUD-HOME-APPLIANCE-STORE/internal/repositories"
@@ -25,19 +26,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	clientRepo := repositories.NewMongoClientRepository(storage.Database)
-	log.Info("MongoDB client repository is created")
-	clientService := services.NewClientService(clientRepo)
-	log.Info("MongoDB client service is created")
+	clientRepo := repositories.NewMongoClientRepository(storage.Database, database.CLIENTS, log)
+	clientService := services.NewClientService(clientRepo, log)
 	clientController := controllers.NewClientsController(clientService, log)
-	log.Info("MongoDB client controller is created")
 
-	productRepo := repositories.NewMongoProductsRepository(storage.Database)
-	log.Info("MongoDB product repository is created")
-	productService := services.NewProductService(productRepo)
-	log.Info("MongoDB product service is created")
+	productRepo := repositories.NewMongoProductsRepository(storage.Database, database.PRODUCTS, log)
+	productService := services.NewProductService(productRepo, log)
 	productController := controllers.NewProductController(productService, log)
-	log.Info("MongoDB product controller is created")
 
 	routerConfig := routes.RouterConfig{
 		ClientController:  clientController,
