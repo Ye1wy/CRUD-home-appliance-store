@@ -23,11 +23,23 @@ func NewClientsController(service services.ClientsServiceInterface, logger *logg
 	}
 }
 
-// Post /api/v1/clients
-// Add client
-// 201:
-// 400
-// 500
+// Create Client godoc
+//
+//		@Summary		Create client
+//		@Description	Client created from JSON or XML, for create endpoint required: name, surname, birthday, gender, address_id
+//		@Tags			clients
+//		@Accept			json/xml
+//		@Produce		json/xml
+//		@Param			name	path	string true "Client name"
+//	 @Param			surname path	string true "Client surname"
+//	 @Param			birthday path 	string true "Client birthday"
+//	 @Param			gender path		string true "Client gender"
+//	 @Param			address_id path string true uuid.UUID "Client living address"
+//		@Success		200	{object}	dto.ClientDTO
+//		@Failure		400	{object}	dto.ErrorDTO
+//		@Failure		404	{object}	dto.ErrorDTO
+//		@Failure		500	{object}	dto.ErrorDTO
+//		@Router			/api/v1/clients [post]
 func (ctrl *ClientsController) AddClient(c *gin.Context) {
 	op := "controllers.client.addClient"
 	var clientDTO dto.ClientDTO
