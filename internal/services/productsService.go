@@ -7,7 +7,7 @@ import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/model"
 	"CRUD-HOME-APPLIANCE-STORE/internal/repositories"
 	"context"
-	"errors"
+	"fmt"
 )
 
 type ProductServiceInterface interface {
@@ -20,19 +20,22 @@ type productServiceImpl struct {
 	repo repositories.ProductRepositoryInterface
 }
 
-func NewProductService(rep repositories.ProductRepositoryInterface, logger *logger.Logger) *productServiceImpl {
-	service := NewCrudService(rep, mapper.ProductToDTO, mapper.ProductToModel, logger)
+func NewProductService(repo repositories.ProductRepositoryInterface, logger *logger.Logger) *productServiceImpl {
+	service := NewCrudService(repo, mapper.ProductToDTO, mapper.ProductToModel, logger)
 	logger.Debug("Product service is created")
 	return &productServiceImpl{
 		CrudService: service,
-		repo:        rep,
+		repo:        repo,
 	}
 }
 
 func (ps *productServiceImpl) DecreaseStock(ctx context.Context, id string, decrease int) error {
+	op := "services.productsService.DecreaseStock"
 	if decrease <= 0 {
-		return errors.New("decrease value must be greater that 0")
+		ps.Logger.Debug("Not valid input value", "value", decrease, "op", op)
+		return fmt.Errorf("Product Service: Decrease value must be greater that 0")
 	}
 
+	ps.Logger.Debug("Data is updated", "op", op)
 	return ps.repo.DecreaseParameter(ctx, id, decrease)
 }

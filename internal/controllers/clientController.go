@@ -10,14 +10,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type ClientsController struct {
+type ClientController struct {
 	*BaseController
 	service services.ClientsServiceInterface
 }
 
-func NewClientsController(service services.ClientsServiceInterface, logger *logger.Logger) *ClientsController {
+func NewClientsController(service services.ClientsServiceInterface, logger *logger.Logger) *ClientController {
 	controller := NewBaseContorller(logger)
-	return &ClientsController{
+	return &ClientController{
 		BaseController: controller,
 		service:        service,
 	}
@@ -40,16 +40,12 @@ func NewClientsController(service services.ClientsServiceInterface, logger *logg
 //		@Failure		404	{object}	dto.ErrorDTO
 //		@Failure		500	{object}	dto.ErrorDTO
 //		@Router			/api/v1/clients [post]
-func (ctrl *ClientsController) AddClient(c *gin.Context) {
-	op := "controllers.client.addClient"
+func (ctrl *ClientController) Create(c *gin.Context) {
+	op := "controllers.clientController.Create"
 	var clientDTO dto.ClientDTO
-	// if err := c.ShouldBindJSON(&clientDTO); err != nil {
-	// 	ctrl.logger.Error("Failed to bind JSON for AddClient", logger.Err(err), "op", op)
-	// 	ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
-	// 	return
-	// }
+
 	if err := ctrl.mapping(c, &clientDTO); err != nil {
-		ctrl.logger.Error("Failed to bind JSON for AddClient", logger.Err(err), "op", op)
+		ctrl.logger.Error("Failed to bind JSON for Create", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
 		return
 	}
@@ -70,8 +66,8 @@ func (ctrl *ClientsController) AddClient(c *gin.Context) {
 // 200:
 // 400:
 // 500:
-func (ctrl *ClientsController) GetAllClients(c *gin.Context) {
-	op := "controllers.client.getAllClients"
+func (ctrl *ClientController) GetAll(c *gin.Context) {
+	op := "controllers.clientController.getAll"
 	limit, err := strconv.Atoi(c.DefaultQuery("limit", defaultLimit))
 	if err != nil {
 		ctrl.logger.Error("Invalid limit parameter", logger.Err(err), "op", op)
@@ -93,7 +89,7 @@ func (ctrl *ClientsController) GetAllClients(c *gin.Context) {
 		return
 	}
 
-	ctrl.logger.Info("Retrieved all clients", "limit", limit, "offset", offset, "op", op)
+	ctrl.logger.Debug("Retrieved all clients", "limit", limit, "offset", offset, "op", op)
 	ctrl.responce(c, http.StatusOK, client)
 }
 
@@ -102,12 +98,12 @@ func (ctrl *ClientsController) GetAllClients(c *gin.Context) {
 // 200
 // 400
 // 404
-func (ctrl *ClientsController) GetClientByNameAndSurname(c *gin.Context) {
-	op := "controllers.client.getClientByNameAndSurname"
+func (ctrl *ClientController) GetByNameAndSurname(c *gin.Context) {
+	op := "controllers.clientController.getByNameAndSurname"
 	name := c.Query("name")
 	surname := c.Query("surname")
-	clientDTO, err := ctrl.service.GetClientByNameAndSurname(c.Request.Context(), name, surname)
 
+	clientDTO, err := ctrl.service.GetByNameAndSurname(c.Request.Context(), name, surname)
 	if clientDTO == nil && err == nil {
 		ctrl.logger.Warn("Client not found", "op", op)
 		ctrl.responce(c, http.StatusNotFound, gin.H{"error": "Client not found"})
@@ -120,7 +116,7 @@ func (ctrl *ClientsController) GetClientByNameAndSurname(c *gin.Context) {
 		return
 	}
 
-	ctrl.logger.Info("Client retrieved successfully", "name", name, "surname", surname, "op", op)
+	ctrl.logger.Debug("Client retrieved successfully", "name", name, "surname", surname, "op", op)
 	ctrl.responce(c, http.StatusOK, clientDTO)
 }
 
@@ -129,16 +125,10 @@ func (ctrl *ClientsController) GetClientByNameAndSurname(c *gin.Context) {
 // 200
 // 400
 // 500
-func (ctrl *ClientsController) ChangeAddressParameter(c *gin.Context) {
-	op := "controllers.client.changeAddressParameter"
+func (ctrl *ClientController) UpdateAddress(c *gin.Context) {
+	op := "controllers.clientController.UpdateAddress"
 	id := c.Param("id")
-	var clientDTO dto.UpdateClientAddressDTO
-
-	// if err := c.ShouldBindJSON(&clientDTO); err != nil {
-	// 	ctrl.logger.Error("Failed to bind JSON for ChangeAddressIdParameter", logger.Err(err), "op", op)
-	// 	ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Invalid request payload"})
-	// 	return
-	// }
+	var clientDTO dto.UpdateAddressDTO
 
 	if err := ctrl.mapping(c, &clientDTO); err != nil {
 		ctrl.logger.Error("Failed to bind JSON for ChangeAddressIdParameter", logger.Err(err), "op", op)
@@ -146,13 +136,13 @@ func (ctrl *ClientsController) ChangeAddressParameter(c *gin.Context) {
 		return
 	}
 
-	if err := ctrl.service.ChangeAddressParameter(c.Request.Context(), id, clientDTO.AddressID); err != nil {
+	if err := ctrl.service.UpdateAddress(c.Request.Context(), id, clientDTO.AddressID); err != nil {
 		ctrl.logger.Error("Failed to update address ID", "clientID", id, logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Failed to update address ID"})
 		return
 	}
 
-	ctrl.logger.Info("Address ID updated successfully", "clientID", id, "newAddressID", clientDTO.AddressID, "op", op)
+	ctrl.logger.Debug("Address ID updated successfully", "clientID", id, "newAddressID", clientDTO.AddressID, "op", op)
 	ctrl.responce(c, http.StatusOK, gin.H{"status": "Address ID updated"})
 }
 
@@ -161,8 +151,8 @@ func (ctrl *ClientsController) ChangeAddressParameter(c *gin.Context) {
 // 204
 // 400
 // 500
-func (ctrl *ClientsController) DeleteClientById(c *gin.Context) {
-	op := "controllers.client.deleteClientById"
+func (ctrl *ClientController) Delete(c *gin.Context) {
+	op := "controllers.clientController.Delete"
 
 	id := c.Param("id")
 
@@ -172,6 +162,6 @@ func (ctrl *ClientsController) DeleteClientById(c *gin.Context) {
 		return
 	}
 
-	ctrl.logger.Info("Client deleted successfully", "clientID", id, "op", op)
+	ctrl.logger.Debug("Client deleted successfully", "clientID", id, "op", op)
 	c.Status(http.StatusNoContent)
 }

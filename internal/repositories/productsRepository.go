@@ -4,7 +4,7 @@ import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/logger"
 	"CRUD-HOME-APPLIANCE-STORE/internal/model"
 	"context"
-	"errors"
+	"fmt"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -21,12 +21,14 @@ type mongoProductsRepository struct {
 
 func NewMongoProductsRepository(db *mongo.Database, collection string, logger *logger.Logger) *mongoProductsRepository {
 	repo := NewCrudRepository[model.Product](db, collection, logger)
+	logger.Debug(" Product Repository is created (mongo)")
 	return &mongoProductsRepository{
 		CrudRepository: repo,
 	}
 }
 
 func (r *mongoProductsRepository) DecreaseParameter(ctx context.Context, id string, decrease int) error {
+	op := "repositories.productRepository.DecreaseParameter"
 	result, err := r.Collection.UpdateOne(
 		ctx, bson.M{
 			"_id":             id,
@@ -34,12 +36,15 @@ func (r *mongoProductsRepository) DecreaseParameter(ctx context.Context, id stri
 		},
 		bson.M{"$inc": bson.M{"available_stock": -decrease}})
 	if err != nil {
-		return err
+		r.Logger.Debug("Failed update stock parameter", logger.Err(err), "op", op)
+		return fmt.Errorf("Product Repository: failed update: %v", err)
 	}
 
 	if result.ModifiedCount == 0 {
-		return errors.New("insufficient stock or product not found")
+		r.Logger.Debug("Insufficient stock or product not found", "op", op)
+		return fmt.Errorf("Product Repository: Insufficient stock or product not found")
 	}
 
+	r.Logger.Debug("Updated successfully", "op", op)
 	return nil
 }

@@ -13,24 +13,24 @@ import (
 
 type ClientRepositoryInterface interface {
 	CrudRepositoryInterface[model.Client]
-	GetClientByNameAndSurname(ctx context.Context, name string, surname string) ([]model.Client, error)
+	GetByNameAndSurname(ctx context.Context, name string, surname string) ([]model.Client, error)
 	UpdateAddress(ctx context.Context, id primitive.ObjectID, newAddressId primitive.ObjectID) error
 }
 
-type MongoClientRepository struct {
+type mongoClientRepository struct {
 	*CrudRepository[model.Client]
 }
 
-func NewMongoClientRepository(db *mongo.Database, collection string, logger *logger.Logger) *MongoClientRepository {
+func NewMongoClientRepository(db *mongo.Database, collection string, logger *logger.Logger) *mongoClientRepository {
 	rep := NewCrudRepository[model.Client](db, collection, logger)
-	logger.Info("Mongo Client Repository is created")
-	return &MongoClientRepository{
+	logger.Debug("Client Repository is created (mongo)")
+	return &mongoClientRepository{
 		CrudRepository: rep,
 	}
 }
 
-func (r *MongoClientRepository) GetClientByNameAndSurname(ctx context.Context, name string, surname string) ([]model.Client, error) {
-	op := "repositories.clientRepository.GetClientByNameAndSurname"
+func (r *mongoClientRepository) GetByNameAndSurname(ctx context.Context, name string, surname string) ([]model.Client, error) {
+	op := "repositories.clientRepository.GetByNameAndSurname"
 	var clients []model.Client
 	cursor, err := r.Collection.Find(ctx, bson.M{"client_name": name, "client_surname": surname})
 	if err != nil {
@@ -57,7 +57,7 @@ func (r *MongoClientRepository) GetClientByNameAndSurname(ctx context.Context, n
 	return clients, nil
 }
 
-func (r *MongoClientRepository) UpdateAddress(ctx context.Context, id primitive.ObjectID, newAddressId primitive.ObjectID) error {
+func (r *mongoClientRepository) UpdateAddress(ctx context.Context, id primitive.ObjectID, newAddressId primitive.ObjectID) error {
 	op := "repositories.clientRepository.UpdateAddress"
 	_, err := r.Collection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"address_id": newAddressId}})
 	if err != nil {

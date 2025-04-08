@@ -12,8 +12,9 @@ type routes struct {
 }
 
 type RouterConfig struct {
-	ClientController  *controllers.ClientsController
-	ProductController *controllers.ProductsController
+	ClientController   *controllers.ClientController
+	ProductController  *controllers.ProductController
+	SupplierController *controllers.SupplierController
 }
 
 func NewRouter(cfg RouterConfig) routes {
@@ -28,20 +29,29 @@ func NewRouter(cfg RouterConfig) routes {
 
 	clientGroup := r.router.Group("/api/v1/clients")
 	{
-		clientGroup.GET("", cfg.ClientController.GetAllClients)
-		clientGroup.POST("", cfg.ClientController.AddClient)
-		clientGroup.GET("/search", cfg.ClientController.GetClientByNameAndSurname)
-		clientGroup.PATCH("/:id/address", cfg.ClientController.ChangeAddressParameter)
-		clientGroup.DELETE("/:id", cfg.ClientController.DeleteClientById)
+		clientGroup.GET("", cfg.ClientController.GetAll)
+		clientGroup.POST("", cfg.ClientController.Create)
+		clientGroup.GET("/search", cfg.ClientController.GetByNameAndSurname)
+		clientGroup.PATCH("/:id/address", cfg.ClientController.UpdateAddress)
+		clientGroup.DELETE("/:id", cfg.ClientController.Delete)
 	}
 
 	productGroup := r.router.Group("/api/v1/products")
 	{
-		productGroup.GET("", cfg.ProductController.GetAllProduct)
-		productGroup.POST("", cfg.ProductController.AddProduct)
-		productGroup.GET("/:id", cfg.ProductController.GetProductById)
-		productGroup.PATCH("/:id/decrease", cfg.ProductController.DecreaseParameter)
-		productGroup.DELETE("/:id", cfg.ProductController.DeleteProductById)
+		productGroup.GET("", cfg.ProductController.GetAll)
+		productGroup.POST("", cfg.ProductController.Create)
+		productGroup.GET("/:id", cfg.ProductController.GetById)
+		productGroup.PATCH("/:id/decrease", cfg.ProductController.DecreaseStock)
+		productGroup.DELETE("/:id", cfg.ProductController.Delete)
+	}
+
+	supplierGroup := r.router.Group("/api/v1/suppliers")
+	{
+		supplierGroup.GET("", cfg.SupplierController.GetAll)
+		supplierGroup.POST("", cfg.SupplierController.Create)
+		supplierGroup.GET("/:id", cfg.SupplierController.GetById)
+		supplierGroup.PATCH("/:id", cfg.SupplierController.UpdateAddress)
+		supplierGroup.DELETE("/:id", cfg.SupplierController.Delete)
 	}
 
 	return r

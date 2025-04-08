@@ -34,9 +34,14 @@ func main() {
 	productService := services.NewProductService(productRepo, log)
 	productController := controllers.NewProductController(productService, log)
 
+	supplierRepo := repositories.NewMongoSupplierRepository(storage.Database, database.SUPPLIERS, log)
+	supplierService := services.NewSupplierService(supplierRepo, log)
+	supplierController := controllers.NewSupplierContoller(supplierService, log)
+
 	routerConfig := routes.RouterConfig{
-		ClientController:  clientController,
-		ProductController: productController,
+		ClientController:   clientController,
+		ProductController:  productController,
+		SupplierController: supplierController,
 	}
 
 	router := routes.NewRouter(routerConfig)
