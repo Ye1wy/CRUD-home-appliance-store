@@ -1,4 +1,4 @@
-package repositories
+package mongoRep
 
 import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/logger"
