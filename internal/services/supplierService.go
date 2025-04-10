@@ -1,59 +1,27 @@
 package services
 
 import (
-	"CRUD-HOME-APPLIANCE-STORE/internal/dto"
 	"CRUD-HOME-APPLIANCE-STORE/internal/logger"
-	"CRUD-HOME-APPLIANCE-STORE/internal/mapper"
-	"CRUD-HOME-APPLIANCE-STORE/internal/model"
-	"CRUD-HOME-APPLIANCE-STORE/internal/repositories"
+	"CRUD-HOME-APPLIANCE-STORE/internal/model/domain"
 	"context"
-	"fmt"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/google/uuid"
 )
 
-type SupplierServiceInterface interface {
-	CrudServiceInterface[model.Supplier, dto.SupplierDTO]
-	UpdateAddress(ctx context.Context, id, newAddressId string) error
+type SupplierRepository interface {
+	Create(ctx context.Context, supplier *domain.Supplier) error
+	GetAll(ctx context.Context, limit, offset int) ([]domain.Supplier, error)
+	GetById(ctx context.Context, id uuid.UUID) (domain.Supplier, error)
+	Update(ctx context.Context, supplier domain.Supplier) error
+	Delete(ctx context.Context, id uuid.UUID) error
 }
 
-type supplierServiceImpl struct {
-	*CrudService[model.Supplier, dto.SupplierDTO]
-	repo repositories.SupplierRepositoryInterface
+type supplierService struct {
+	Repo SupplierRepository
 }
 
-func NewSupplierService(repo repositories.SupplierRepositoryInterface, logger *logger.Logger) *supplierServiceImpl {
-	service := NewCrudService(repo, mapper.SupplierToDTO, mapper.SupplierToModel, logger)
+func NewSupplierService(repo SupplierRepository, logger *logger.Logger) *supplierService {
+	// service := NewCrudService(repo, mapper.SupplierToDTO, mapper.SupplierToModel, logger)
 	logger.Debug("Supplier serivce created")
-	return &supplierServiceImpl{service, repo}
-}
-
-func (s *supplierServiceImpl) UpdateAddress(ctx context.Context, id, newAddressId string) error {
-	op := "services.supplierService.UpdateAddress"
-
-	if newAddressId == "" {
-		s.Logger.Debug("New address is empty", "op", op)
-		return fmt.Errorf("Supplier Service: Invalid new address id")
-	}
-
-	objectID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		s.Logger.Debug("Error converting id to ObjectID", logger.Err(err), "op", op)
-		return fmt.Errorf("Supplier Service: Error change address parameter: %v", err)
-	}
-
-	objectAddressID, err := primitive.ObjectIDFromHex(newAddressId)
-	if err != nil {
-		s.Logger.Debug("Failed converting newAddressId to ObjectID", logger.Err(err), "op", op)
-		return fmt.Errorf("Supplier Service: Error change address parameter: %v", err)
-	}
-
-	err = s.repo.Update(ctx, objectID, objectAddressID)
-	if err != nil {
-		s.Logger.Debug("Error recieved from repository Update", logger.Err(err), "op", op)
-		return fmt.Errorf("Supplier Service: Error change address parameter: %v", err)
-	}
-
-	s.Logger.Debug("Supplier updated", "op", op)
 	return nil
 }

@@ -1,30 +1,28 @@
 package mapper
 
 import (
-	"CRUD-HOME-APPLIANCE-STORE/internal/dto"
-	"CRUD-HOME-APPLIANCE-STORE/internal/model"
+	"CRUD-HOME-APPLIANCE-STORE/internal/model/domain"
+	"CRUD-HOME-APPLIANCE-STORE/internal/model/dto"
 )
 
-func SupplierToDTO(supplier *model.Supplier) (*dto.SupplierDTO, error) {
+func SupplierToDTO(supplier *domain.Supplier) (dto.SupplierDTO, error) {
 	if supplier == nil {
-		return nil, nil
+		return dto.SupplierDTO{}, ErrNoContent
 	}
 
-	return &dto.SupplierDTO{
-		Id:          supplier.Id,
+	return dto.SupplierDTO{
 		Name:        supplier.Name,
 		AddressId:   supplier.AddressId,
 		PhoneNumber: supplier.PhoneNumber,
 	}, nil
 }
 
-func SupplierToModel(dto *dto.SupplierDTO) (*model.Supplier, error) {
+func SupplierToDomain(dto *dto.SupplierDTO) (domain.Supplier, error) {
 	if dto == nil {
-		return nil, nil
+		return domain.Supplier{}, ErrNoContent
 	}
 
-	return &model.Supplier{
-		Id:          dto.Id,
+	return domain.Supplier{
 		Name:        dto.Name,
 		AddressId:   dto.AddressId,
 		PhoneNumber: dto.PhoneNumber,

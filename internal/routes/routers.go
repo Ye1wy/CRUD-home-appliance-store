@@ -12,9 +12,9 @@ type routes struct {
 }
 
 type RouterConfig struct {
-	ClientController   *controllers.ClientController
-	ProductController  *controllers.ProductController
-	SupplierController *controllers.SupplierController
+	ClientController *controllers.ClientController
+	// ProductController  *controllers.ProductController
+	// SupplierController *controllers.SupplierController
 }
 
 func NewRouter(cfg RouterConfig) routes {
@@ -36,23 +36,23 @@ func NewRouter(cfg RouterConfig) routes {
 		clientGroup.DELETE("/:id", cfg.ClientController.Delete)
 	}
 
-	productGroup := r.router.Group("/api/v1/products")
-	{
-		productGroup.GET("", cfg.ProductController.GetAll)
-		productGroup.POST("", cfg.ProductController.Create)
-		productGroup.GET("/:id", cfg.ProductController.GetById)
-		productGroup.PATCH("/:id/decrease", cfg.ProductController.DecreaseStock)
-		productGroup.DELETE("/:id", cfg.ProductController.Delete)
-	}
+	// productGroup := r.router.Group("/api/v1/products")
+	// {
+	// 	productGroup.GET("", cfg.ProductController.GetAll)
+	// 	productGroup.POST("", cfg.ProductController.Create)
+	// 	productGroup.GET("/:id", cfg.ProductController.GetById)
+	// 	productGroup.PATCH("/:id/decrease", cfg.ProductController.DecreaseStock)
+	// 	productGroup.DELETE("/:id", cfg.ProductController.Delete)
+	// }
 
-	supplierGroup := r.router.Group("/api/v1/suppliers")
-	{
-		supplierGroup.GET("", cfg.SupplierController.GetAll)
-		supplierGroup.POST("", cfg.SupplierController.Create)
-		supplierGroup.GET("/:id", cfg.SupplierController.GetById)
-		supplierGroup.PATCH("/:id", cfg.SupplierController.UpdateAddress)
-		supplierGroup.DELETE("/:id", cfg.SupplierController.Delete)
-	}
+	// supplierGroup := r.router.Group("/api/v1/suppliers")
+	// {
+	// 	supplierGroup.GET("", cfg.SupplierController.GetAll)
+	// 	supplierGroup.POST("", cfg.SupplierController.Create)
+	// 	supplierGroup.GET("/:id", cfg.SupplierController.GetById)
+	// 	supplierGroup.PATCH("/:id", cfg.SupplierController.UpdateAddress)
+	// 	supplierGroup.DELETE("/:id", cfg.SupplierController.Delete)
+	// }
 
 	return r
 }

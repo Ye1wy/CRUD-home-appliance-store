@@ -1,6 +1,7 @@
 package config
 
 import (
+	"CRUD-HOME-APPLIANCE-STORE/internal/database/postgres"
 	"fmt"
 	"log"
 	"os"
@@ -9,9 +10,10 @@ import (
 )
 
 type Config struct {
-	Env        string `env:"env" env-default:"local"`
-	MongoURI   string `env:"MONGO_URI" env-required:"true"`
-	HTTPServer `env:"http_server"`
+	Env string `env:"env" env-default:"local"`
+	// mongodb.MongoConfig `env:"MONGODB"`
+	postgres.PostgresConfig `env:"POSTGRES"`
+	HTTPServer              `env:"http_server"`
 }
 
 type HTTPServer struct {
@@ -44,7 +46,6 @@ func (cfg *Config) PrintInfo() {
 	fmt.Println("env: " + cfg.Env)
 	fmt.Println("address: " + cfg.Address)
 	fmt.Println("port: " + cfg.Port)
-	fmt.Println("mongourl: " + cfg.MongoURI)
+	fmt.Println("DNS: " + cfg.PostgresHost)
 	fmt.Println("---------------------")
-
 }

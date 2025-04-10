@@ -1,17 +1,16 @@
 package mapper
 
 import (
-	"CRUD-HOME-APPLIANCE-STORE/internal/dto"
-	"CRUD-HOME-APPLIANCE-STORE/internal/model"
+	"CRUD-HOME-APPLIANCE-STORE/internal/model/domain"
+	"CRUD-HOME-APPLIANCE-STORE/internal/model/dto"
 )
 
-func ProductToDTO(product *model.Product) (*dto.ProductDTO, error) {
+func ProductToDTO(product *domain.Product) (dto.ProductDTO, error) {
 	if product == nil {
-		return nil, nil
+		return dto.ProductDTO{}, ErrNoContent
 	}
 
-	return &dto.ProductDTO{
-		Id:             product.Id,
+	return dto.ProductDTO{
 		Name:           product.Name,
 		Category:       product.Category,
 		Price:          product.Price,
@@ -21,13 +20,12 @@ func ProductToDTO(product *model.Product) (*dto.ProductDTO, error) {
 	}, nil
 }
 
-func ProductToModel(dto *dto.ProductDTO) (*model.Product, error) {
+func ProductToDomain(dto *dto.ProductDTO) (domain.Product, error) {
 	if dto == nil {
-		return nil, nil
+		return domain.Product{}, ErrNoContent
 	}
 
-	return &model.Product{
-		Id:             dto.Id,
+	return domain.Product{
 		Name:           dto.Name,
 		Category:       dto.Category,
 		Price:          dto.Price,

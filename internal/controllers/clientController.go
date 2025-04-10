@@ -1,21 +1,34 @@
 package controllers
 
 import (
-	"CRUD-HOME-APPLIANCE-STORE/internal/dto"
 	"CRUD-HOME-APPLIANCE-STORE/internal/logger"
-	"CRUD-HOME-APPLIANCE-STORE/internal/services"
+	"CRUD-HOME-APPLIANCE-STORE/internal/mapper"
+	"CRUD-HOME-APPLIANCE-STORE/internal/model/domain"
+	"CRUD-HOME-APPLIANCE-STORE/internal/model/dto"
+	psgrep "CRUD-HOME-APPLIANCE-STORE/internal/repositories/postgres"
+	"context"
+	"errors"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
+
+type ClientsServiceInterface interface {
+	Create(ctx context.Context, client *domain.Client) error
+	GetAll(ctx context.Context, limit, offset int) ([]domain.Client, error)
+	GetByNameAndSurname(ctx context.Context, name, surname string) ([]domain.Client, error)
+	UpdateAddress(ctx context.Context, object *domain.Client) error
+	Delete(ctx context.Context, id uuid.UUID) error
+}
 
 type ClientController struct {
 	*BaseController
-	service services.ClientsServiceInterface
+	service ClientsServiceInterface
 }
 
-func NewClientsController(service services.ClientsServiceInterface, logger *logger.Logger) *ClientController {
+func NewClientsController(service ClientsServiceInterface, logger *logger.Logger) *ClientController {
 	controller := NewBaseContorller(logger)
 	return &ClientController{
 		BaseController: controller,
@@ -50,8 +63,14 @@ func (ctrl *ClientController) Create(c *gin.Context) {
 		return
 	}
 
-	client, err := ctrl.service.Create(c.Request.Context(), &clientDTO)
+	client, err := mapper.ClientToDomain(&clientDTO)
 	if err != nil {
+		ctrl.logger.Error("Failed mapping dto to domain", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Error from server"})
+		return
+	}
+
+	if err := ctrl.service.Create(c.Request.Context(), &client); err != nil {
 		ctrl.logger.Error("Failed to add client: ", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Failed to add client"})
 		return
@@ -82,15 +101,27 @@ func (ctrl *ClientController) GetAll(c *gin.Context) {
 		return
 	}
 
-	client, err := ctrl.service.GetAll(c.Request.Context(), limit, offset)
+	clients, err := ctrl.service.GetAll(c.Request.Context(), limit, offset)
 	if err != nil {
 		ctrl.logger.Error("Failed to retrieve clients", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Failed to retrieve client"})
 		return
 	}
 
+	clientDTOs := make([]dto.ClientDTO, len(clients), cap(clients))
+
+	for i, client := range clients {
+		dto, err := mapper.ClientToDTO(&client)
+		if err != nil {
+			ctrl.logger.Error("Mapping error! Something is waste!", logger.Err(err), "op", op)
+			continue
+		}
+
+		clientDTOs[i] = dto
+	}
+
 	ctrl.logger.Debug("Retrieved all clients", "limit", limit, "offset", offset, "op", op)
-	ctrl.responce(c, http.StatusOK, client)
+	ctrl.responce(c, http.StatusOK, clientDTOs)
 }
 
 // Get /api/v1/clients?name=&surname=
@@ -103,8 +134,8 @@ func (ctrl *ClientController) GetByNameAndSurname(c *gin.Context) {
 	name := c.Query("name")
 	surname := c.Query("surname")
 
-	clientDTO, err := ctrl.service.GetByNameAndSurname(c.Request.Context(), name, surname)
-	if clientDTO == nil && err == nil {
+	clients, err := ctrl.service.GetByNameAndSurname(c.Request.Context(), name, surname)
+	if errors.Is(err, psgrep.ErrClientNotFound) {
 		ctrl.logger.Warn("Client not found", "op", op)
 		ctrl.responce(c, http.StatusNotFound, gin.H{"error": "Client not found"})
 		return
@@ -114,6 +145,18 @@ func (ctrl *ClientController) GetByNameAndSurname(c *gin.Context) {
 		ctrl.logger.Error("Error while searching client ", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Name and surname cannot be empty!"})
 		return
+	}
+
+	clientDTO := make([]dto.ClientDTO, len(clients), cap(clients))
+
+	for i, client := range clients {
+		dto, err := mapper.ClientToDTO(&client)
+		if err != nil {
+			ctrl.logger.Error("Mapping error! Somthing is waste!", logger.Err(err), "op", op)
+			continue
+		}
+
+		clientDTO[i] = dto
 	}
 
 	ctrl.logger.Debug("Client retrieved successfully", "name", name, "surname", surname, "op", op)
@@ -127,23 +170,27 @@ func (ctrl *ClientController) GetByNameAndSurname(c *gin.Context) {
 // 500
 func (ctrl *ClientController) UpdateAddress(c *gin.Context) {
 	op := "controllers.clientController.UpdateAddress"
-	id := c.Param("id")
-	var clientDTO dto.UpdateAddressDTO
+	var updateDTO dto.UpdateAddressDTO
 
-	if err := ctrl.mapping(c, &clientDTO); err != nil {
+	if err := ctrl.mapping(c, &updateDTO); err != nil {
 		ctrl.logger.Error("Failed to bind JSON for ChangeAddressIdParameter", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Invalid request payload"})
 		return
 	}
 
-	if err := ctrl.service.UpdateAddress(c.Request.Context(), id, clientDTO.AddressID); err != nil {
-		ctrl.logger.Error("Failed to update address ID", "clientID", id, logger.Err(err), "op", op)
+	client, err := mapper.UpdateAddressToClientDomain(&updateDTO)
+	if err != nil {
+		return
+	}
+
+	if err := ctrl.service.UpdateAddress(c.Request.Context(), &client); err != nil {
+		ctrl.logger.Error("Failed to update address ID", "clientID", client.Id, logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Failed to update address ID"})
 		return
 	}
 
-	ctrl.logger.Debug("Address ID updated successfully", "clientID", id, "newAddressID", clientDTO.AddressID, "op", op)
-	ctrl.responce(c, http.StatusOK, gin.H{"status": "Address ID updated"})
+	ctrl.logger.Debug("Address ID updated successfully", "Client ID", client.Id, "New Address ID", client.AddressId, "op", op)
+	ctrl.responce(c, http.StatusOK, client)
 }
 
 // Delete /api/v1/clients/:id
@@ -153,10 +200,16 @@ func (ctrl *ClientController) UpdateAddress(c *gin.Context) {
 // 500
 func (ctrl *ClientController) Delete(c *gin.Context) {
 	op := "controllers.clientController.Delete"
-
 	id := c.Param("id")
 
-	if err := ctrl.service.Delete(c.Request.Context(), id); err != nil {
+	uuid, err := uuid.Parse(id)
+	if err != nil {
+		ctrl.logger.Error("Invalid id", "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalid id"})
+		return
+	}
+
+	if err := ctrl.service.Delete(c.Request.Context(), uuid); err != nil {
 		ctrl.logger.Error("Failed to delete client", "clientID", id, logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Failed to delete client"})
 		return

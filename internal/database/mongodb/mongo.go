@@ -10,6 +10,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+type MongoConfig struct {
+	MongoURI string `env:"MONGO_URI"`
+}
+
 type MongoStorage struct {
 	Client   *mongo.Client
 	Database *mongo.Database
