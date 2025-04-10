@@ -48,14 +48,15 @@ func (s *clientsService) Create(ctx context.Context, client *domain.Client) erro
 	return nil
 }
 
-func (s *clientsService) GetAll(ctx context.Context, limit, offer int) ([]domain.Client, error) {
+func (s *clientsService) GetAll(ctx context.Context, limit, offset int) ([]domain.Client, error) {
 	op := "services.clientService.GetAll"
 
-	if limit <= 0 || offer <= 0 {
+	if limit <= 0 || offset < 0 {
+		s.logger.Debug("Invalid parameter limit and offset", "limit", limit, "offset", offset, "op", op)
 		return nil, ErrInvalidParam
 	}
 
-	clients, err := s.repo.GetAll(ctx, limit, offer)
+	clients, err := s.repo.GetAll(ctx, limit, offset)
 	if errors.Is(err, psgrep.ErrClientNotFound) {
 		s.logger.Debug("Clients not found", logger.Err(err), "op", op)
 		return nil, err

@@ -102,6 +102,12 @@ func (ctrl *ClientController) GetAll(c *gin.Context) {
 	}
 
 	clients, err := ctrl.service.GetAll(c.Request.Context(), limit, offset)
+	if errors.Is(err, psgrep.ErrClientNotFound) {
+		ctrl.logger.Warn("Client not found", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusNotFound, gin.H{"warning": "404: client not found"})
+		return
+	}
+
 	if err != nil {
 		ctrl.logger.Error("Failed to retrieve clients", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Failed to retrieve client"})
