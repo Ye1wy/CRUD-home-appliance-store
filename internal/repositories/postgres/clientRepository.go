@@ -28,15 +28,16 @@ func NewClientRepository(conn *pgx.Conn, log *logger.Logger) *clientRepo {
 
 func (r *clientRepo) Create(ctx context.Context, client *domain.Client) error {
 	op := "repositories.postgres.clientRepository.Create"
-	sqlStatement := "INSERT INTO client(name, surname, birthday, gender, registation_date, address_id) VALUES (@clientName, @clientSurname, @clientBithday, @clientGender, @clinetRD, @clientAddressId);"
+	sqlStatement := "INSERT INTO client(name, surname, birthday, gender, address_id) VALUES (@clientName, @clientSurname, @clientBirthday, @clientGender, @clientAddressId);"
 	args := pgx.NamedArgs{
 		"clientName":      client.Name,
 		"clientSurname":   client.Surname,
 		"clientBirthday":  client.Birthday,
 		"clientGender":    client.Gender,
-		"clientRD":        client.RegistrationDate,
 		"clientAddressId": client.AddressId,
 	}
+
+	r.logger.Debug("Birthday", "Time", client.Birthday)
 
 	_, err := r.db.Exec(ctx, sqlStatement, args)
 	if err != nil {
@@ -62,11 +63,6 @@ func (r *clientRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.Cl
 	}
 	defer rows.Close()
 
-	if !rows.Next() {
-		r.logger.Debug("Clients not found", "op", op)
-		return nil, ErrClientNotFound
-	}
-
 	var clients []domain.Client
 
 	for rows.Next() {
@@ -80,6 +76,13 @@ func (r *clientRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.Cl
 
 		clients = append(clients, client)
 	}
+
+	if len(clients) == 0 {
+		r.logger.Debug("Clients not found", "op", op)
+		return nil, ErrClientNotFound
+	}
+
+	r.logger.Debug("aboba repo", "ans", clients)
 
 	return clients, nil
 }
@@ -100,11 +103,6 @@ func (r *clientRepo) GetByNameAndSurname(ctx context.Context, client domain.Clie
 	}
 	defer rows.Close()
 
-	if !rows.Next() {
-		r.logger.Debug("Client not found", "op", op)
-		return nil, ErrClientNotFound
-	}
-
 	var clients []domain.Client
 
 	for rows.Next() {
@@ -120,16 +118,24 @@ func (r *clientRepo) GetByNameAndSurname(ctx context.Context, client domain.Clie
 		clients = append(clients, client)
 	}
 
+	if len(clients) == 0 {
+		r.logger.Debug("Clients not found", "op", op)
+		return nil, ErrClientNotFound
+	}
+
 	r.logger.Debug("All data retrieved", "op", op)
 	return clients, nil
 }
 
 func (r *clientRepo) UpdateAddress(ctx context.Context, client *domain.Client) error {
 	op := "repositories.postgres.clientRepository.Update"
-	sqlStatement := "UPDATE client SET address_id=@addressId"
+	sqlStatement := "UPDATE client SET address_id=@addressId WHERE id=@id"
 	arg := pgx.NamedArgs{
-		"adddressId": client.AddressId,
+		"id":        client.Id,
+		"addressId": client.AddressId,
 	}
+
+	r.logger.Debug("Parameter", "id", client.Id, "address id", client.AddressId)
 
 	_, err := r.db.Exec(ctx, sqlStatement, arg)
 	if errors.Is(err, pgx.ErrNoRows) {

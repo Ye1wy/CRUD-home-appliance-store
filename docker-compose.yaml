@@ -26,7 +26,7 @@ services:
       - ./.env
     volumes:
       - store_data:/var/lib/postgresql/data
-      - ./db/init_client_table.sql:/docker-entrypoint-initdb.d/init_table.sql
+      - ./db/init_tables.sql:/docker-entrypoint-initdb.d/init_table.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 1s

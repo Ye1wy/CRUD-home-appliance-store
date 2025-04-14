@@ -110,10 +110,11 @@ func (ctrl *ClientController) GetAll(c *gin.Context) {
 
 	if err != nil {
 		ctrl.logger.Error("Failed to retrieve clients", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Failed to retrieve client"})
+		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Failed to retrieve client"})
 		return
 	}
 
+	ctrl.logger.Debug("aboba", "clients", clients)
 	clientDTOs := make([]dto.ClientDTO, len(clients), cap(clients))
 
 	for i, client := range clients {
