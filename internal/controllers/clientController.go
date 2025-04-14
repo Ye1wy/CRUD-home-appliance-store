@@ -19,7 +19,7 @@ type ClientsServiceInterface interface {
 	Create(ctx context.Context, client *domain.Client) error
 	GetAll(ctx context.Context, limit, offset int) ([]domain.Client, error)
 	GetByNameAndSurname(ctx context.Context, name, surname string) ([]domain.Client, error)
-	UpdateAddress(ctx context.Context, object *domain.Client) error
+	UpdateAddress(ctx context.Context, object *domain.Client, id uuid.UUID) error
 	Delete(ctx context.Context, id uuid.UUID) error
 }
 
@@ -170,14 +170,21 @@ func (ctrl *ClientController) GetByNameAndSurname(c *gin.Context) {
 	ctrl.responce(c, http.StatusOK, clientDTO)
 }
 
-// Patch /api/v1/clients/:id/address
+// Patch /api/v1/clients/:id
 // Change a address id parameter by a given new id parameter
 // 200
 // 400
 // 500
 func (ctrl *ClientController) UpdateAddress(c *gin.Context) {
 	op := "controllers.clientController.UpdateAddress"
+	id := c.Param("id")
 	var updateDTO dto.UpdateAddressDTO
+	currentUUID, err := uuid.Parse(id)
+	if err != nil {
+		ctrl.logger.Error("Failed parse id to uuid", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalud request payload"})
+		return
+	}
 
 	if err := ctrl.mapping(c, &updateDTO); err != nil {
 		ctrl.logger.Error("Failed to bind JSON for ChangeAddressIdParameter", logger.Err(err), "op", op)
@@ -187,10 +194,12 @@ func (ctrl *ClientController) UpdateAddress(c *gin.Context) {
 
 	client, err := mapper.UpdateAddressToClientDomain(&updateDTO)
 	if err != nil {
+		ctrl.logger.Error("Mapping error", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "invalid payload"})
 		return
 	}
 
-	if err := ctrl.service.UpdateAddress(c.Request.Context(), &client); err != nil {
+	if err := ctrl.service.UpdateAddress(c.Request.Context(), &client, currentUUID); err != nil {
 		ctrl.logger.Error("Failed to update address ID", "clientID", client.Id, logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Failed to update address ID"})
 		return

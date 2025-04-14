@@ -98,8 +98,9 @@ func (s *clientsService) GetByNameAndSurname(ctx context.Context, name, surname 
 	return clients, nil
 }
 
-func (s *clientsService) UpdateAddress(ctx context.Context, object *domain.Client) error {
+func (s *clientsService) UpdateAddress(ctx context.Context, object *domain.Client, id uuid.UUID) error {
 	op := "services.clientsService.UpdateAddress"
+	object.Id = id
 
 	if err := s.repo.UpdateAddress(ctx, object); err != nil {
 		s.logger.Debug("Error recieved from Update", logger.Err(err), "op", op)

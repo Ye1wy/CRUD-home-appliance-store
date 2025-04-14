@@ -11,7 +11,6 @@ func UpdateAddressToClientDomain(dto *dto.UpdateAddressDTO) (domain.Client, erro
 	}
 
 	return domain.Client{
-		Id:        dto.Id,
 		AddressId: dto.AddressID,
 	}, nil
 }
@@ -22,7 +21,6 @@ func UpdateAddressToSupplierDomain(dto *dto.UpdateAddressDTO) (domain.Supplier, 
 	}
 
 	return domain.Supplier{
-		Id:        dto.Id,
 		AddressId: dto.AddressID,
 	}, nil
 }
