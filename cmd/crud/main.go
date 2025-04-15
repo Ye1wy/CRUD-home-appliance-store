@@ -29,17 +29,17 @@ func main() {
 	clientService := services.NewClientService(clientRepo, clientRepo, log)
 	clientController := controllers.NewClientsController(clientService, log)
 
-	// productRepo := repositories.NewMongoProductsRepository(storage.Database, database.PRODUCTS, log)
-	// productService := services.NewProductService(productRepo, log)
-	// productController := controllers.NewProductController(productService, log)
+	productRepo := psgrep.NewProductRepository(conn, log)
+	productService := services.NewProductService(productRepo, productRepo, log)
+	productController := controllers.NewProductController(productService, log)
 
 	// supplierRepo := repositories.NewMongoSupplierRepository(storage.Database, database.SUPPLIERS, log)
 	// supplierService := services.NewSupplierService(supplierRepo, log)
 	// supplierController := controllers.NewSupplierContoller(supplierService, log)
 
 	routerConfig := routes.RouterConfig{
-		ClientController: clientController,
-		// ProductController:  ,
+		ClientController:  clientController,
+		ProductController: productController,
 		// SupplierController: ,
 	}
 

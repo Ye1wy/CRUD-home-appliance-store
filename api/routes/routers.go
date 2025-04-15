@@ -12,8 +12,8 @@ type routes struct {
 }
 
 type RouterConfig struct {
-	ClientController *controllers.ClientController
-	// ProductController  *controllers.ProductController
+	ClientController  *controllers.ClientController
+	ProductController *controllers.ProductController
 	// SupplierController *controllers.SupplierController
 }
 
@@ -36,14 +36,14 @@ func NewRouter(cfg RouterConfig) routes {
 		clientGroup.DELETE("/:id", cfg.ClientController.Delete)
 	}
 
-	// productGroup := r.router.Group("/api/v1/products")
-	// {
-	// 	productGroup.GET("", cfg.ProductController.GetAll)
-	// 	productGroup.POST("", cfg.ProductController.Create)
-	// 	productGroup.GET("/:id", cfg.ProductController.GetById)
-	// 	productGroup.PATCH("/:id/decrease", cfg.ProductController.DecreaseStock)
-	// 	productGroup.DELETE("/:id", cfg.ProductController.Delete)
-	// }
+	productGroup := r.router.Group("/api/v1/products")
+	{
+		productGroup.GET("", cfg.ProductController.GetAll)
+		productGroup.POST("", cfg.ProductController.Create)
+		productGroup.GET("/:id", cfg.ProductController.GetById)
+		productGroup.PATCH("/:id/decrease", cfg.ProductController.DecreaseStock)
+		productGroup.DELETE("/:id", cfg.ProductController.Delete)
+	}
 
 	// supplierGroup := r.router.Group("/api/v1/suppliers")
 	// {
