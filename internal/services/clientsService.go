@@ -15,31 +15,36 @@ var (
 	ErrInvalidParam = errors.New("invalid parameter")
 )
 
-type ClientRepositoryInterface interface {
-	Create(ctx context.Context, client *domain.Client) error
-	GetAll(ctx context.Context, limit, offset int) ([]domain.Client, error)
-	GetByNameAndSurname(ctx context.Context, client domain.Client) ([]domain.Client, error)
-	UpdateAddress(ctx context.Context, client *domain.Client) error
+type clientWriter interface {
+	Create(ctx context.Context, client domain.Client) error
+	UpdateAddress(ctx context.Context, id, address uuid.UUID) error
 	Delete(ctx context.Context, id uuid.UUID) error
 }
 
+type clientReader interface {
+	GetAll(ctx context.Context, limit, offset int) ([]domain.Client, error)
+	GetByNameAndSurname(ctx context.Context, name, surname string) ([]domain.Client, error)
+}
+
 type clientsService struct {
-	repo   ClientRepositoryInterface
+	writer clientWriter
+	reader clientReader
 	logger *logger.Logger
 }
 
-func NewClientService(rep ClientRepositoryInterface, logger *logger.Logger) *clientsService {
+func NewClientService(writer clientWriter, reader clientReader, logger *logger.Logger) *clientsService {
 	logger.Debug("Client service is created")
 	return &clientsService{
-		repo:   rep,
+		writer: writer,
+		reader: reader,
 		logger: logger,
 	}
 }
 
-func (s *clientsService) Create(ctx context.Context, client *domain.Client) error {
+func (s *clientsService) Create(ctx context.Context, client domain.Client) error {
 	op := "services.clientService.Create"
 
-	if err := s.repo.Create(ctx, client); err != nil {
+	if err := s.writer.Create(ctx, client); err != nil {
 		s.logger.Debug("Failed create client", logger.Err(err), "op", op)
 		return fmt.Errorf("Client Service: failed creating client: %v", err)
 	}
@@ -56,7 +61,7 @@ func (s *clientsService) GetAll(ctx context.Context, limit, offset int) ([]domai
 		return nil, ErrInvalidParam
 	}
 
-	clients, err := s.repo.GetAll(ctx, limit, offset)
+	clients, err := s.reader.GetAll(ctx, limit, offset)
 	if errors.Is(err, psgrep.ErrClientNotFound) {
 		s.logger.Debug("Clients not found", logger.Err(err), "op", op)
 		return nil, err
@@ -78,12 +83,7 @@ func (s *clientsService) GetByNameAndSurname(ctx context.Context, name, surname 
 		return nil, ErrInvalidParam
 	}
 
-	model := domain.Client{
-		Name:    name,
-		Surname: surname,
-	}
-
-	clients, err := s.repo.GetByNameAndSurname(ctx, model)
+	clients, err := s.reader.GetByNameAndSurname(ctx, name, surname)
 	if errors.Is(err, psgrep.ErrClientNotFound) {
 		s.logger.Debug("Client not found", "op", op)
 		return nil, psgrep.ErrClientNotFound
@@ -98,11 +98,10 @@ func (s *clientsService) GetByNameAndSurname(ctx context.Context, name, surname 
 	return clients, nil
 }
 
-func (s *clientsService) UpdateAddress(ctx context.Context, object *domain.Client, id uuid.UUID) error {
+func (s *clientsService) UpdateAddress(ctx context.Context, id, address uuid.UUID) error {
 	op := "services.clientsService.UpdateAddress"
-	object.Id = id
 
-	if err := s.repo.UpdateAddress(ctx, object); err != nil {
+	if err := s.writer.UpdateAddress(ctx, id, address); err != nil {
 		s.logger.Debug("Error recieved from Update", logger.Err(err), "op", op)
 		return fmt.Errorf("Client Service: change address is uable: %v", err)
 	}
@@ -114,7 +113,7 @@ func (s *clientsService) UpdateAddress(ctx context.Context, object *domain.Clien
 func (s *clientsService) Delete(ctx context.Context, id uuid.UUID) error {
 	op := "services.clientService.Delete"
 
-	if err := s.repo.Delete(ctx, id); err != nil {
+	if err := s.writer.Delete(ctx, id); err != nil {
 		s.logger.Debug("delete is unable", logger.Err(err), "op", op)
 		return fmt.Errorf("Client Service: Delete error from repository: %v", err)
 	}
