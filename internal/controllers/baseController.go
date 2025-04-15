@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"CRUD-HOME-APPLIANCE-STORE/internal/logger"
+	"CRUD-HOME-APPLIANCE-STORE/pkg/logger"
 	"fmt"
 
 	"github.com/gin-gonic/gin"

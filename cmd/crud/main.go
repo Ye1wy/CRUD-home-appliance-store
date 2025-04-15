@@ -4,10 +4,10 @@ import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/config"
 	"CRUD-HOME-APPLIANCE-STORE/internal/controllers"
 	"CRUD-HOME-APPLIANCE-STORE/internal/database/postgres"
-	"CRUD-HOME-APPLIANCE-STORE/internal/logger"
 	psgrep "CRUD-HOME-APPLIANCE-STORE/internal/repositories/postgres"
 	"CRUD-HOME-APPLIANCE-STORE/internal/routes"
 	"CRUD-HOME-APPLIANCE-STORE/internal/services"
+	"CRUD-HOME-APPLIANCE-STORE/pkg/logger"
 	"os"
 )
 

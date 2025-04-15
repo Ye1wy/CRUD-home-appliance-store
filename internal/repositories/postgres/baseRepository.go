@@ -1,7 +1,7 @@
 package psgrep
 
 import (
-	"CRUD-HOME-APPLIANCE-STORE/internal/logger"
+	"CRUD-HOME-APPLIANCE-STORE/pkg/logger"
 
 	"github.com/jackc/pgx/v5"
 )

@@ -1,9 +1,9 @@
 package services
 
 import (
-	"CRUD-HOME-APPLIANCE-STORE/internal/logger"
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/domain"
 	psgrep "CRUD-HOME-APPLIANCE-STORE/internal/repositories/postgres"
+	"CRUD-HOME-APPLIANCE-STORE/pkg/logger"
 	"context"
 	"errors"
 	"fmt"

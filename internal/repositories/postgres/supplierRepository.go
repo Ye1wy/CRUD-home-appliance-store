@@ -1,8 +1,8 @@
 package psgrep
 
 import (
-	"CRUD-HOME-APPLIANCE-STORE/internal/logger"
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/domain"
+	"CRUD-HOME-APPLIANCE-STORE/pkg/logger"
 	"context"
 
 	"github.com/google/uuid"
