@@ -143,8 +143,8 @@ func (r *clientRepo) UpdateAddress(ctx context.Context, id, address uuid.UUID) e
 
 	r.logger.Debug("Parameter", "id", id, "address id", address)
 
-	_, err := r.db.Exec(ctx, sqlStatement, arg)
-	if errors.Is(err, pgx.ErrNoRows) {
+	tag, err := r.db.Exec(ctx, sqlStatement, arg)
+	if tag.RowsAffected() == 0 {
 		r.logger.Debug("Client not found", "op", op)
 		return ErrClientNotFound
 	}
