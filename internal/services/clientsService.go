@@ -19,7 +19,7 @@ type clientWriter interface {
 	Create(ctx context.Context, client domain.Client) error
 	UpdateAddress(ctx context.Context, id, address uuid.UUID) error
 	Delete(ctx context.Context, id uuid.UUID) error
-	UnitOfWork(ctx context.Context, fn func(psgrep.Write) error) error
+	UnitOfWork(ctx context.Context, fn func(psgrep.WriteClientRepo) error) error
 }
 
 type clientReader interface {
@@ -45,7 +45,7 @@ func NewClientService(writer clientWriter, reader clientReader, logger *logger.L
 func (s *clientsService) Create(ctx context.Context, client domain.Client) error {
 	op := "services.clientService.Create"
 
-	if err := s.writer.UnitOfWork(ctx, func(tx psgrep.Write) error {
+	if err := s.writer.UnitOfWork(ctx, func(tx psgrep.WriteClientRepo) error {
 		if err := s.writer.Create(ctx, client); err != nil {
 			s.logger.Debug("Failed create client", logger.Err(err), "op", op)
 			return fmt.Errorf("Client Service: failed creating client: %v", err)
@@ -109,7 +109,7 @@ func (s *clientsService) GetByNameAndSurname(ctx context.Context, name, surname 
 func (s *clientsService) UpdateAddress(ctx context.Context, id, address uuid.UUID) error {
 	op := "services.clientsService.UpdateAddress"
 
-	if err := s.writer.UnitOfWork(ctx, func(psgrep.Write) error {
+	if err := s.writer.UnitOfWork(ctx, func(psgrep.WriteClientRepo) error {
 		if err := s.writer.UpdateAddress(ctx, id, address); err != nil {
 			s.logger.Debug("Error recieved from Update", logger.Err(err), "op", op)
 			return fmt.Errorf("Client Service: change address is uable: %v", err)
@@ -128,7 +128,7 @@ func (s *clientsService) UpdateAddress(ctx context.Context, id, address uuid.UUI
 func (s *clientsService) Delete(ctx context.Context, id uuid.UUID) error {
 	op := "services.clientService.Delete"
 
-	if err := s.writer.UnitOfWork(ctx, func(w psgrep.Write) error {
+	if err := s.writer.UnitOfWork(ctx, func(w psgrep.WriteClientRepo) error {
 		if err := s.writer.Delete(ctx, id); err != nil {
 			s.logger.Debug("delete is unable", logger.Err(err), "op", op)
 			return fmt.Errorf("Client Service: Delete error from repository: %v", err)

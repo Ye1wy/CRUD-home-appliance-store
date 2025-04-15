@@ -17,7 +17,7 @@ var (
 	ErrQueryExection  = errors.New("query execution error")
 )
 
-type Write interface {
+type WriteClientRepo interface {
 	Create(ctx context.Context, client domain.Client) error
 	UpdateAddress(ctx context.Context, id, address uuid.UUID) error
 	Delete(ctx context.Context, id uuid.UUID) error
@@ -175,7 +175,7 @@ func (r *clientRepo) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (r *clientRepo) UnitOfWork(ctx context.Context, fn func(Write) error) error {
+func (r *clientRepo) UnitOfWork(ctx context.Context, fn func(WriteClientRepo) error) error {
 	op := "repositories.postgres.clientRepository.UnitOfWork"
 	trx, err := r.db.Begin(ctx)
 	if err != nil {
