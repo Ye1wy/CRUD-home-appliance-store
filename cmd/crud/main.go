@@ -26,7 +26,7 @@ func main() {
 	log.Info("Connection is established")
 
 	clientRepo := psgrep.NewClientRepository(conn, log)
-	clientService := services.NewClientService(clientRepo, log)
+	clientService := services.NewClientService(clientRepo, clientRepo, log)
 	clientController := controllers.NewClientsController(clientService, log)
 
 	// productRepo := repositories.NewMongoProductsRepository(storage.Database, database.PRODUCTS, log)

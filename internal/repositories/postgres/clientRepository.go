@@ -26,7 +26,7 @@ func NewClientRepository(conn *pgx.Conn, log *logger.Logger) *clientRepo {
 	return &clientRepo{baseRepo}
 }
 
-func (r *clientRepo) Create(ctx context.Context, client *domain.Client) error {
+func (r *clientRepo) Create(ctx context.Context, client domain.Client) error {
 	op := "repositories.postgres.clientRepository.Create"
 	sqlStatement := "INSERT INTO client(name, surname, birthday, gender, address_id) VALUES (@clientName, @clientSurname, @clientBirthday, @clientGender, @clientAddressId);"
 	args := pgx.NamedArgs{
@@ -82,17 +82,16 @@ func (r *clientRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.Cl
 		return nil, ErrClientNotFound
 	}
 
-	r.logger.Debug("aboba repo", "ans", clients)
-
+	r.logger.Debug("Client taked", "Clients:", clients, "op", op)
 	return clients, nil
 }
 
-func (r *clientRepo) GetByNameAndSurname(ctx context.Context, client domain.Client) ([]domain.Client, error) {
+func (r *clientRepo) GetByNameAndSurname(ctx context.Context, name, surname string) ([]domain.Client, error) {
 	op := "repositories.postgres.clientRepository.GetByNameAndSurname"
 	sqlStatement := "SELECT * FROM client WHERE name = @clientName AND surname = @clientSurname"
 	args := pgx.NamedArgs{
-		"clientName":    client.Name,
-		"clientSurname": client.Surname,
+		"clientName":    name,
+		"clientSurname": surname,
 	}
 
 	rows, err := r.db.Query(ctx, sqlStatement, args)
@@ -127,15 +126,15 @@ func (r *clientRepo) GetByNameAndSurname(ctx context.Context, client domain.Clie
 	return clients, nil
 }
 
-func (r *clientRepo) UpdateAddress(ctx context.Context, client *domain.Client) error {
+func (r *clientRepo) UpdateAddress(ctx context.Context, id, address uuid.UUID) error {
 	op := "repositories.postgres.clientRepository.Update"
 	sqlStatement := "UPDATE client SET address_id=@addressId WHERE id=@id"
 	arg := pgx.NamedArgs{
-		"id":        client.Id,
-		"addressId": client.AddressId,
+		"id":        id,
+		"addressId": address,
 	}
 
-	r.logger.Debug("Parameter", "id", client.Id, "address id", client.AddressId)
+	r.logger.Debug("Parameter", "id", id, "address id", address)
 
 	_, err := r.db.Exec(ctx, sqlStatement, arg)
 	if errors.Is(err, pgx.ErrNoRows) {

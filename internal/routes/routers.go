@@ -31,7 +31,7 @@ func NewRouter(cfg RouterConfig) routes {
 	{
 		clientGroup.GET("", cfg.ClientController.GetAll)
 		clientGroup.POST("", cfg.ClientController.Create)
-		clientGroup.GET("", cfg.ClientController.GetByNameAndSurname)
+		clientGroup.GET("$", cfg.ClientController.GetByNameAndSurname)
 		clientGroup.PATCH("/:id", cfg.ClientController.UpdateAddress)
 		clientGroup.DELETE("/:id", cfg.ClientController.Delete)
 	}

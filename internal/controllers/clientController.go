@@ -15,20 +15,20 @@ import (
 	"github.com/google/uuid"
 )
 
-type ClientsServiceInterface interface {
-	Create(ctx context.Context, client *domain.Client) error
+type clientService interface {
+	Create(ctx context.Context, client domain.Client) error
 	GetAll(ctx context.Context, limit, offset int) ([]domain.Client, error)
 	GetByNameAndSurname(ctx context.Context, name, surname string) ([]domain.Client, error)
-	UpdateAddress(ctx context.Context, object *domain.Client, id uuid.UUID) error
+	UpdateAddress(ctx context.Context, id, address uuid.UUID) error
 	Delete(ctx context.Context, id uuid.UUID) error
 }
 
 type ClientController struct {
 	*BaseController
-	service ClientsServiceInterface
+	service clientService
 }
 
-func NewClientsController(service ClientsServiceInterface, logger *logger.Logger) *ClientController {
+func NewClientsController(service clientService, logger *logger.Logger) *ClientController {
 	controller := NewBaseContorller(logger)
 	return &ClientController{
 		BaseController: controller,
@@ -70,7 +70,7 @@ func (ctrl *ClientController) Create(c *gin.Context) {
 		return
 	}
 
-	if err := ctrl.service.Create(c.Request.Context(), &client); err != nil {
+	if err := ctrl.service.Create(c.Request.Context(), client); err != nil {
 		ctrl.logger.Error("Failed to add client: ", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Failed to add client"})
 		return
@@ -192,21 +192,14 @@ func (ctrl *ClientController) UpdateAddress(c *gin.Context) {
 		return
 	}
 
-	client, err := mapper.UpdateAddressToClientDomain(&updateDTO)
-	if err != nil {
-		ctrl.logger.Error("Mapping error", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "invalid payload"})
-		return
-	}
-
-	if err := ctrl.service.UpdateAddress(c.Request.Context(), &client, currentUUID); err != nil {
-		ctrl.logger.Error("Failed to update address ID", "clientID", client.Id, logger.Err(err), "op", op)
+	if err := ctrl.service.UpdateAddress(c.Request.Context(), currentUUID, updateDTO.AddressID); err != nil {
+		ctrl.logger.Error("Failed to update address ID", "clientID", currentUUID, logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Failed to update address ID"})
 		return
 	}
 
-	ctrl.logger.Debug("Address ID updated successfully", "Client ID", client.Id, "New Address ID", client.AddressId, "op", op)
-	ctrl.responce(c, http.StatusOK, client)
+	ctrl.logger.Debug("Address ID updated successfully", "Client ID", currentUUID, "New Address ID", updateDTO.AddressID, "op", op)
+	ctrl.responce(c, http.StatusOK, gin.H{"massage": "address updated"})
 }
 
 // Delete /api/v1/clients/:id
