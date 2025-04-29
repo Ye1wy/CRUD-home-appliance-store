@@ -1,32 +1,12 @@
 services:
-  # mongodb:
-  #   image: mongo:6-jammy
-  #   container_name: mongodb
-  #   env_file:
-  #   - ./.env
-    
-  #   volumes:
-  #     - dbdata6:/data/db
-  #     - dbconfig:/data/configdb
-    
-  #   healthcheck:
-  #     test:  ["CMD-SHELL", "echo 'db.runCommand(\"ping\").ok' | mongosh localhost:27017/test --quiet"]
-  #     interval: 5s
-  #     timeout: 30s
-  #     retries: 30
-  #   ports:
-  #     - '27017:27017'
-  #   restart: always
-  #   networks:
-  #     - crud-service-networks
   postgres-db:
     image: postgres:latest
     container_name: postgres-store-db
     env_file:
-      - ./.env
+      - ../.env
     volumes:
       - store_data:/var/lib/postgresql/data
-      - ./db/init_tables.sql:/docker-entrypoint-initdb.d/init_table.sql
+      - ../db/init_tables.sql:/docker-entrypoint-initdb.d/init_table.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 1s
@@ -46,7 +26,7 @@ services:
     environment:
       - CONFIG_PATH=/service/.env
     env_file:
-      - ./.env
+      - ../.env
     depends_on:
       postgres-db:
         condition: service_healthy
