@@ -1,4 +1,4 @@
-package psgrep
+package postgres
 
 import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/domain"
@@ -6,13 +6,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"runtime"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
-
-var ErrProductNotFound = errors.New("Product not found in database")
 
 type WriteProductRepo interface {
 	Create(ctx context.Context, product domain.Product) error
@@ -24,7 +21,7 @@ type productRepo struct {
 	*basePostgresRepository
 }
 
-func NewProductRepository(conn *pgx.Conn, logger *logger.Logger) *productRepo {
+func NewProductRepository(conn pgx.Tx, logger *logger.Logger) *productRepo {
 	repo := newBasePostgresRepository(conn, logger)
 	logger.Debug("Postgres Product repository is created")
 	return &productRepo{
@@ -152,45 +149,4 @@ func (r *productRepo) Delete(ctx context.Context, id uuid.UUID) error {
 
 	r.logger.Debug("Product deleted", "op", op)
 	return nil
-}
-
-func (r *productRepo) UnitOfWork(ctx context.Context, fn func(WriteProductRepo) error) error {
-	op := "repository.postgres.productRepository.UnitOfWork"
-	trx, err := r.db.Begin(ctx)
-	if err != nil {
-		r.logger.Debug("Transaction begin error", logger.Err(err), "op", op)
-		return fmt.Errorf("Client unit of work %v", err)
-	}
-
-	defer func(ctx context.Context) {
-		if p := recover(); p != nil {
-			if p := recover(); p != nil {
-				r.logger.Error("Panic catch in unit of work, rolling back", "op", op)
-				_ = trx.Rollback(ctx)
-
-				switch e := p.(type) {
-				case runtime.Error:
-					r.logger.Error("Runtime panic", "error", e, "op", op)
-					panic(e)
-				case error:
-					err = fmt.Errorf("panic err: %v", err)
-					return
-				default:
-					r.logger.Error("Not handle error", "error", e, "op", op)
-					panic(e)
-				}
-			}
-
-			if err != nil {
-				r.logger.Error("Transaction error!", logger.Err(err), "op", op)
-				_ = trx.Rollback(ctx)
-			} else {
-				r.logger.Debug("Transaction commited", "op", op)
-				_ = trx.Commit(ctx)
-			}
-		}
-	}(ctx)
-
-	newStore := NewProductRepository(r.db, r.logger)
-	return fn(newStore)
 }

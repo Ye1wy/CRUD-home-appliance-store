@@ -1,4 +1,4 @@
-package psgrep
+package postgres
 
 import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/domain"
@@ -13,8 +13,8 @@ type supplierRepo struct {
 	*basePostgresRepository
 }
 
-func NewSupplierRepository(conn *pgx.Conn, logger *logger.Logger) *supplierRepo {
-	repo := newBasePostgresRepository(conn, logger)
+func NewSupplierRepository(tx pgx.Tx, logger *logger.Logger) *supplierRepo {
+	repo := newBasePostgresRepository(tx, logger)
 	logger.Debug("Postgres Supplier Repository is created")
 	return &supplierRepo{
 		repo,

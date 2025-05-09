@@ -1,4 +1,4 @@
-package psgrep
+package postgres
 
 import (
 	"CRUD-HOME-APPLIANCE-STORE/pkg/logger"
@@ -9,11 +9,11 @@ import (
 type BaseRepository interface{}
 
 type basePostgresRepository struct {
-	db     *pgx.Conn
+	db     pgx.Tx
 	logger *logger.Logger
 }
 
-func newBasePostgresRepository(db *pgx.Conn, logger *logger.Logger) *basePostgresRepository {
+func newBasePostgresRepository(db pgx.Tx, logger *logger.Logger) *basePostgresRepository {
 	logger.Debug("Postgres base repo is created")
 	return &basePostgresRepository{
 		db:     db,

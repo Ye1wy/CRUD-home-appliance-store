@@ -15,3 +15,8 @@ type Client struct {
 	RegistrationDate time.Time `json:"registration_date" bson:"registration_date"`
 	AddressId        uuid.UUID `json:"address_id" bson:"address_id"`
 }
+
+type UpdateClient struct {
+	Id           uuid.UUID `json:"id"`
+	NewAddressId uuid.UUID `json:"address_id"`
+}

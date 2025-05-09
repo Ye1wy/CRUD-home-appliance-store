@@ -1,7 +1,7 @@
 package config
 
 import (
-	"CRUD-HOME-APPLIANCE-STORE/internal/database/postgres"
+	"CRUD-HOME-APPLIANCE-STORE/internal/database/connection"
 	"fmt"
 	"log"
 	"os"
@@ -12,8 +12,8 @@ import (
 type Config struct {
 	Env string `env:"env" env-default:"local"`
 	// mongodb.MongoConfig `env:"MONGODB"`
-	postgres.PostgresConfig `env:"POSTGRES"`
-	HTTPServer              `env:"http_server"`
+	connection.PostgresConfig `env:"POSTGRES"`
+	HTTPServer                `env:"http_server"`
 }
 
 type HTTPServer struct {

@@ -1,34 +1,21 @@
-package psgrep
+package postgres
 
 import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/domain"
 	"CRUD-HOME-APPLIANCE-STORE/pkg/logger"
 	"context"
-	"errors"
 	"fmt"
-	"runtime"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
 
-var (
-	ErrClientNotFound = errors.New("client not found")
-	ErrQueryExection  = errors.New("query execution error")
-)
-
-type WriteClientRepo interface {
-	Create(ctx context.Context, client domain.Client) error
-	UpdateAddress(ctx context.Context, id, address uuid.UUID) error
-	Delete(ctx context.Context, id uuid.UUID) error
-}
-
 type clientRepo struct {
 	*basePostgresRepository
 }
 
-func NewClientRepository(conn *pgx.Conn, log *logger.Logger) *clientRepo {
-	baseRepo := newBasePostgresRepository(conn, log)
+func NewClientRepository(tx pgx.Tx, log *logger.Logger) *clientRepo {
+	baseRepo := newBasePostgresRepository(tx, log)
 	log.Debug("Client repo is created")
 	return &clientRepo{baseRepo}
 }
@@ -173,43 +160,4 @@ func (r *clientRepo) Delete(ctx context.Context, id uuid.UUID) error {
 
 	r.logger.Debug("Client is deleted", "op", op)
 	return nil
-}
-
-func (r *clientRepo) UnitOfWork(ctx context.Context, fn func(WriteClientRepo) error) error {
-	op := "repositories.postgres.clientRepository.UnitOfWork"
-	trx, err := r.db.Begin(ctx)
-	if err != nil {
-		r.logger.Debug("Transaction begin error", logger.Err(err), "op", op)
-		return fmt.Errorf("Client unit of work %v", err)
-	}
-
-	defer func(ctx context.Context) {
-		if p := recover(); p != nil {
-			r.logger.Error("Panic catch in unit of work, rolling back", "op", op)
-			_ = trx.Rollback(ctx)
-
-			switch e := p.(type) {
-			case runtime.Error:
-				r.logger.Error("Runtime panic", "error", e, "op", op)
-				panic(e)
-			case error:
-				err = fmt.Errorf("panic err: %v", err)
-				return
-			default:
-				r.logger.Error("Not handle error", "error", e, "op", op)
-				panic(e)
-			}
-		}
-
-		if err != nil {
-			r.logger.Error("Transaction error!", logger.Err(err), "op", op)
-			_ = trx.Rollback(ctx)
-		} else {
-			r.logger.Debug("Transaction commited", "op", op)
-			_ = trx.Commit(ctx)
-		}
-	}(ctx)
-
-	newStore := NewClientRepository(r.db, r.logger)
-	return fn(newStore)
 }
