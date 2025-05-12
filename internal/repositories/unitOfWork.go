@@ -1,53 +1,94 @@
 package repository
 
 import (
-	"CRUD-HOME-APPLIANCE-STORE/internal/model/domain"
-	"CRUD-HOME-APPLIANCE-STORE/internal/repositories/postgres"
 	"CRUD-HOME-APPLIANCE-STORE/pkg/logger"
 	"context"
+	"errors"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
 
-type ClientWriter interface {
-	Create(ctx context.Context, client domain.Client) error
-	UpdateAddress(ctx context.Context, id, address uuid.UUID) error
-	Delete(ctx context.Context, id uuid.UUID) error
+var (
+	ErrRepoIsExist     = errors.New("repository is exist")
+	ErrRepoIsNotExitst = errors.New("repository is not exitst")
+)
+
+type RepositoryName string
+type Repository any
+type RepositoryGenerator func(tx *pgx.Tx, log *logger.Logger) Repository
+
+type Transaction interface {
+	Get(name RepositoryName) (Repository, error)
 }
 
-type Repo interface {
-	ClientRepo() postgres.ClientWriter
+type transaction struct {
+	tx    pgx.Tx
+	repos map[RepositoryName]RepositoryGenerator
 }
 
-type unitOfWork struct {
-	db     pgx.Tx
-	logger *logger.Logger
-	client ClientWriter
-	// product productRepo
-	// supplie supplierRepo
-	// image imageRepo
-}
-
-func NewUnitOfWork(tx pgx.Tx, logger *logger.Logger) *unitOfWork {
-	client := postgres.NewClientRepository(tx, logger)
-	return &unitOfWork{
-		db:     tx,
-		logger: logger,
-		client: client,
+func NewTransaction(tx pgx.Tx, repos map[RepositoryName]RepositoryGenerator) *transaction {
+	return &transaction{
+		tx:    tx,
+		repos: repos,
 	}
 }
 
-func (uow *unitOfWork) Transaction(ctx context.Context, fn func(repo Repo) error) error {
+func (tx *transaction) Get(name RepositoryName) (Repository, error) {
+	if repo, ok := tx.repos[name]; ok {
+		return repo, nil
+	}
+
+	return nil, ErrRepoIsNotExitst
+}
+
+type unitOfWork struct {
+	db           pgx.Tx
+	logger       *logger.Logger
+	repositories map[RepositoryName]RepositoryGenerator
+}
+
+func NewUnitOfWork(tx pgx.Tx, logger *logger.Logger) *unitOfWork {
+	return &unitOfWork{
+		db:           tx,
+		logger:       logger,
+		repositories: make(map[RepositoryName]RepositoryGenerator),
+	}
+}
+
+func (uow *unitOfWork) Register(name RepositoryName, gen RepositoryGenerator) error {
+	if _, ok := uow.repositories[name]; ok {
+		return ErrRepoIsExist
+	}
+
+	uow.repositories[name] = gen
+
+	return nil
+}
+
+func (uow *unitOfWork) Remove(name RepositoryName) error {
+	if _, ok := uow.repositories[name]; !ok {
+		return ErrRepoIsNotExitst
+	}
+
+	delete(uow.repositories, name)
+	return nil
+}
+
+func (uow *unitOfWork) Clear() {
+	uow.repositories = make(map[RepositoryName]RepositoryGenerator)
+}
+
+func (uow *unitOfWork) Do(ctx context.Context, fn func(ctx context.Context, tx Transaction) error) error {
 	tx, err := uow.db.Begin(ctx)
 	if err != nil {
 		return err
 	}
 
-	repos := postgres.NewRepository(tx, uow.logger)
+	if err := fn(ctx, NewTransaction(tx, uow.repositories)); err != nil {
+		if err := tx.Rollback(ctx); err != nil {
+			return err
+		}
 
-	if err := fn(repos); err != nil {
-		_ = tx.Rollback(ctx)
 		return err
 	}
 
