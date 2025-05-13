@@ -2,7 +2,7 @@ package services
 
 import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/domain"
-	psgrep "CRUD-HOME-APPLIANCE-STORE/internal/repositories/postgres"
+	"CRUD-HOME-APPLIANCE-STORE/internal/repositories/postgres"
 	"CRUD-HOME-APPLIANCE-STORE/pkg/logger"
 	"context"
 	"errors"
@@ -11,12 +11,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type productWriter interface {
-	Create(ctx context.Context, product domain.Product) error
-	Update(ctx context.Context, id uuid.UUID, decrease int) error
-	Delete(ctx context.Context, id uuid.UUID) error
-	UnitOfWork(ctx context.Context, fn func(psgrep.WriteProductRepo) error) error
-}
+var productRepoName = "product"
 
 type productReader interface {
 	GetAll(ctx context.Context, limit, offset int) ([]domain.Product, error)
@@ -24,33 +19,36 @@ type productReader interface {
 }
 
 type productService struct {
-	logger *logger.Logger
+	uow    UOW
 	reader productReader
-	writer productWriter
+	logger *logger.Logger
 }
 
-func NewProductService(reader productReader, writer productWriter, logger *logger.Logger) *productService {
+func NewProductService(reader productReader, logger *logger.Logger) *productService {
 	logger.Debug("Product service is created")
 	return &productService{
-		logger: logger,
 		reader: reader,
-		writer: writer,
+		logger: logger,
 	}
 }
 
 func (s *productService) Create(ctx context.Context, product domain.Product) error {
 	op := "services.productService.Create"
-
-	if err := s.writer.UnitOfWork(ctx, func(psgrep.WriteProductRepo) error {
-		if err := s.writer.Create(ctx, product); err != nil {
-			s.logger.Debug("Repo Error", logger.Err(err), "op", op)
-			return fmt.Errorf("Why are you gay: %v", err)
+	err := s.uow.Do(ctx, func(ctx context.Context, tx Transaction) error {
+		repo, err := tx.Get(RepositoryName(productRepoName))
+		if err != nil {
+			s.logger.Debug("Create product transaction problem on creating", logger.Err(err), "op", op)
+			return err
 		}
 
-		return nil
-	}); err != nil {
-		s.logger.Debug("Unit Of Work problem", logger.Err(err), "op", op)
-		return fmt.Errorf("Product Service: Unit of work uvailable %v", err)
+		productRepo := repo.(postgres.ProductRepo)
+
+		return productRepo.Create(ctx, product)
+	})
+
+	if err != nil {
+		s.logger.Debug("Something wrong with UOW creating", logger.Err(err), "op", op)
+		return fmt.Errorf("Product service: unit of work creating problem: %v", err)
 	}
 
 	s.logger.Debug("Product created", "op", op)
@@ -66,7 +64,7 @@ func (s *productService) GetAll(ctx context.Context, limit, offset int) ([]domai
 	}
 
 	products, err := s.reader.GetAll(ctx, limit, offset)
-	if errors.Is(err, psgrep.ErrProductNotFound) {
+	if errors.Is(err, postgres.ErrProductNotFound) {
 		s.logger.Debug("Product's not found", "op", op)
 		return nil, err
 	}
@@ -82,9 +80,9 @@ func (s *productService) GetAll(ctx context.Context, limit, offset int) ([]domai
 func (s *productService) GetById(ctx context.Context, id uuid.UUID) (*domain.Product, error) {
 	op := "services.productService.GetById"
 	product, err := s.reader.GetById(ctx, id)
-	if errors.Is(err, psgrep.ErrProductNotFound) {
+	if errors.Is(err, postgres.ErrProductNotFound) {
 		s.logger.Debug("Product not found", "op", op)
-		return nil, psgrep.ErrProductNotFound
+		return nil, postgres.ErrProductNotFound
 	}
 
 	if err != nil {
@@ -103,15 +101,21 @@ func (s *productService) Update(ctx context.Context, id uuid.UUID, decrease int)
 		return fmt.Errorf("Product Service: Decrease value must be greater that 0")
 	}
 
-	if err := s.writer.UnitOfWork(ctx, func(psgrep.WriteProductRepo) error {
-		if err := s.writer.Update(ctx, id, decrease); err != nil {
+	err := s.uow.Do(ctx, func(ctx context.Context, tx Transaction) error {
+		repo, err := tx.Get(RepositoryName(productRepoName))
+		if err != nil {
+			s.logger.Debug("Product transaction problem on updating", logger.Err(err), "op", op)
 			return err
 		}
 
-		return nil
-	}); err != nil {
-		s.logger.Debug("Error unit of work", logger.Err(err), "op", op)
-		return fmt.Errorf("Product service: error from unit of work: %v", err)
+		productRepo := repo.(postgres.ProductRepo)
+
+		return productRepo.Update(ctx, id, decrease)
+	})
+
+	if err != nil {
+		s.logger.Debug("Somthing wrong with UOW updating", logger.Err(err), "op", op)
+		return fmt.Errorf("Product service: unit of work update problem: %v", err)
 	}
 
 	s.logger.Debug("Data is updated", "op", op)
@@ -121,15 +125,20 @@ func (s *productService) Update(ctx context.Context, id uuid.UUID, decrease int)
 func (s *productService) Delete(ctx context.Context, id uuid.UUID) error {
 	op := "serice.productService.Delete"
 
-	if err := s.writer.UnitOfWork(ctx, func(psgrep.WriteProductRepo) error {
-		if err := s.writer.Delete(ctx, id); err != nil {
+	err := s.uow.Do(ctx, func(ctx context.Context, tx Transaction) error {
+		repo, err := tx.Get(RepositoryName(productRepoName))
+		if err != nil {
+			s.logger.Debug("Get transaction problem", logger.Err(err), "op", op)
 			return err
 		}
 
-		return nil
-	}); err != nil {
-		s.logger.Debug("Error unit of work", logger.Err(err), "op", op)
-		return fmt.Errorf("Product service: Error from unit of work: %v", err)
+		userRepo := repo.(postgres.ClientRepo)
+		return userRepo.Delete(ctx, id)
+	})
+
+	if err != nil {
+		s.logger.Debug("Somthin wrong with UOW deleting", logger.Err(err), "op", op)
+		return fmt.Errorf("Product service: unit of work delete problem: %v", err)
 	}
 
 	s.logger.Debug("Product successfully deleted", "op", op)

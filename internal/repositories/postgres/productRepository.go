@@ -11,25 +11,19 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-type WriteProductRepo interface {
-	Create(ctx context.Context, product domain.Product) error
-	Update(ctx context.Context, id uuid.UUID, decrease int) error
-	Delete(ctx context.Context, id uuid.UUID) error
-}
-
-type productRepo struct {
+type ProductRepo struct {
 	*basePostgresRepository
 }
 
-func NewProductRepository(conn pgx.Tx, logger *logger.Logger) *productRepo {
+func NewProductRepository(conn pgx.Tx, logger *logger.Logger) *ProductRepo {
 	repo := newBasePostgresRepository(conn, logger)
 	logger.Debug("Postgres Product repository is created")
-	return &productRepo{
+	return &ProductRepo{
 		repo,
 	}
 }
 
-func (r *productRepo) Create(ctx context.Context, product domain.Product) error {
+func (r *ProductRepo) Create(ctx context.Context, product domain.Product) error {
 	op := "repositories.postgres.productRepository.Create"
 	sqlStatement := "INSERT INTO product(name, category, price, available_stock, supplier_id, image_id) VALUE (@name, @category, @price, @available_stock, @supplier_id, @image_id)"
 	args := pgx.NamedArgs{
@@ -50,7 +44,7 @@ func (r *productRepo) Create(ctx context.Context, product domain.Product) error 
 	return nil
 }
 
-func (r *productRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.Product, error) {
+func (r *ProductRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.Product, error) {
 	op := "repositories.postgres.productRepository.GetAll"
 	sqlStatement := "SELECT * FROM product LIMIT @limit OFFSET @offset"
 	args := pgx.NamedArgs{
@@ -88,7 +82,7 @@ func (r *productRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.P
 	return products, nil
 }
 
-func (r *productRepo) GetById(ctx context.Context, id uuid.UUID) (*domain.Product, error) {
+func (r *ProductRepo) GetById(ctx context.Context, id uuid.UUID) (*domain.Product, error) {
 	op := "repository.postgres.productRepository.GetById"
 	sqlStatement := "SELECT * FROM product WHERE id=@id"
 	arg := pgx.NamedArgs{
@@ -113,7 +107,7 @@ func (r *productRepo) GetById(ctx context.Context, id uuid.UUID) (*domain.Produc
 	return &product, nil
 }
 
-func (r *productRepo) Update(ctx context.Context, id uuid.UUID, decrease int) error {
+func (r *ProductRepo) Update(ctx context.Context, id uuid.UUID, decrease int) error {
 	op := "repository.postgres.productRepository.Update"
 	sqlStatement := "UPDATE product SET available_stock = available_stock - @decrease WHERE id = @id"
 	args := pgx.NamedArgs{
@@ -134,7 +128,7 @@ func (r *productRepo) Update(ctx context.Context, id uuid.UUID, decrease int) er
 	return nil
 }
 
-func (r *productRepo) Delete(ctx context.Context, id uuid.UUID) error {
+func (r *ProductRepo) Delete(ctx context.Context, id uuid.UUID) error {
 	op := "repository.postgres.productRepository.Delete"
 	sqlStatement := "DELETE FROM product WHERE id=@id"
 	arg := pgx.NamedArgs{

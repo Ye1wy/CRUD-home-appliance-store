@@ -9,60 +9,23 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
 )
-
-type RepositoryName string
-type Repository any
-type RepositoryGenerator func(tx *pgx.Tx, log *logger.Logger) Repository
-
-// type ClientWriter interface {
-// 	Create(ctx context.Context, client domain.Client) error
-// 	UpdateAddress(ctx context.Context, id, address uuid.UUID) error
-// 	Delete(ctx context.Context, id uuid.UUID) error
-// }
 
 type ClientReader interface {
 	GetAll(ctx context.Context, limit, offset int) ([]domain.Client, error)
 	GetByNameAndSurname(ctx context.Context, name, surname string) ([]domain.Client, error)
 }
 
-// type clientsService struct {
-// 	// writer ClientWriter
-// 	// reader ClientReader
-// 	logger *logger.Logger
-// }
-
-// func NewClientService(writer ClientWriter, reader ClientReader, logger *logger.Logger) *clientsService {
-// 	logger.Debug("Client service is created")
-// 	return &clientsService{
-// 		writer: writer,
-// 		reader: reader,
-// 		logger: logger,
-// 	}
-// }
-
-type Transaction interface {
-	Get(name RepositoryName) (Repository, error)
-}
-
-type UOW interface {
-	Register(name RepositoryName, gen RepositoryGenerator) error
-	Remove(name RepositoryName) error
-	Clear()
-	Do(ctx context.Context, fn func(ctx context.Context, tx Transaction) error) error
-}
-
 type clientsService struct {
 	uow    UOW
-	repo   ClientReader
+	reader ClientReader
 	logger *logger.Logger
 }
 
 func NewClientService(reader ClientReader, unit UOW, logger *logger.Logger) *clientsService {
 	return &clientsService{
 		uow:    unit,
-		repo:   reader,
+		reader: reader,
 		logger: logger,
 	}
 }
@@ -73,7 +36,7 @@ func (s *clientsService) Create(ctx context.Context, client domain.Client) error
 	err := s.uow.Do(ctx, func(ctx context.Context, tx Transaction) error {
 		repo, err := tx.Get("client")
 		if err != nil {
-			s.logger.Debug("Get transaction problem on creating", logger.Err(err), "op", op)
+			s.logger.Debug("Client transaction problem on creating", logger.Err(err), "op", op)
 			return err
 		}
 
@@ -98,7 +61,7 @@ func (s *clientsService) GetAll(ctx context.Context, limit, offset int) ([]domai
 		return nil, ErrInvalidParam
 	}
 
-	clients, err := s.repo.GetAll(ctx, limit, offset)
+	clients, err := s.reader.GetAll(ctx, limit, offset)
 	if errors.Is(err, postgres.ErrClientNotFound) {
 		s.logger.Debug("Clients not found", logger.Err(err), "op", op)
 		return nil, err
@@ -120,7 +83,7 @@ func (s *clientsService) GetByNameAndSurname(ctx context.Context, name, surname 
 		return nil, ErrInvalidParam
 	}
 
-	clients, err := s.repo.GetByNameAndSurname(ctx, name, surname)
+	clients, err := s.reader.GetByNameAndSurname(ctx, name, surname)
 	if errors.Is(err, postgres.ErrClientNotFound) {
 		s.logger.Debug("Client not found", "op", op)
 		return nil, postgres.ErrClientNotFound

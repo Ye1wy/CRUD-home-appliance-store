@@ -10,17 +10,17 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-type clientRepo struct {
+type ClientRepo struct {
 	*basePostgresRepository
 }
 
-func NewClientRepository(tx pgx.Tx, log *logger.Logger) *clientRepo {
+func NewClientRepository(tx pgx.Tx, log *logger.Logger) *ClientRepo {
 	baseRepo := newBasePostgresRepository(tx, log)
 	log.Debug("Client repo is created")
-	return &clientRepo{baseRepo}
+	return &ClientRepo{baseRepo}
 }
 
-func (r *clientRepo) Create(ctx context.Context, client domain.Client) error {
+func (r *ClientRepo) Create(ctx context.Context, client domain.Client) error {
 	op := "repositories.postgres.clientRepository.Create"
 	sqlStatement := "INSERT INTO client(name, surname, birthday, gender, address_id) VALUES (@clientName, @clientSurname, @clientBirthday, @clientGender, @clientAddressId);"
 	args := pgx.NamedArgs{
@@ -42,7 +42,7 @@ func (r *clientRepo) Create(ctx context.Context, client domain.Client) error {
 	return nil
 }
 
-func (r *clientRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.Client, error) {
+func (r *ClientRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.Client, error) {
 	op := "repositories.postgres.clientRepository.GetAll"
 	sqlStatement := "SELECT * FROM client LIMIT @limit OFFSET @offset"
 	args := pgx.NamedArgs{
@@ -80,7 +80,7 @@ func (r *clientRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.Cl
 	return clients, nil
 }
 
-func (r *clientRepo) GetByNameAndSurname(ctx context.Context, name, surname string) ([]domain.Client, error) {
+func (r *ClientRepo) GetByNameAndSurname(ctx context.Context, name, surname string) ([]domain.Client, error) {
 	op := "repositories.postgres.clientRepository.GetByNameAndSurname"
 	sqlStatement := "SELECT * FROM client WHERE name = @clientName AND surname = @clientSurname"
 	args := pgx.NamedArgs{
@@ -120,7 +120,7 @@ func (r *clientRepo) GetByNameAndSurname(ctx context.Context, name, surname stri
 	return clients, nil
 }
 
-func (r *clientRepo) UpdateAddress(ctx context.Context, id, address uuid.UUID) error {
+func (r *ClientRepo) UpdateAddress(ctx context.Context, id, address uuid.UUID) error {
 	op := "repositories.postgres.clientRepository.Update"
 	sqlStatement := "UPDATE client SET address_id=@addressId WHERE id=@id"
 	arg := pgx.NamedArgs{
@@ -145,7 +145,7 @@ func (r *clientRepo) UpdateAddress(ctx context.Context, id, address uuid.UUID) e
 	return nil
 }
 
-func (r *clientRepo) Delete(ctx context.Context, id uuid.UUID) error {
+func (r *ClientRepo) Delete(ctx context.Context, id uuid.UUID) error {
 	op := "repositories.postgres.clientRepository.Delete"
 	sqlStatement := "DELETE FROM client WHERE id=@id"
 	arg := pgx.NamedArgs{
