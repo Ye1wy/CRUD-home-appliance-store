@@ -3,6 +3,7 @@ package services
 import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/domain"
 	"CRUD-HOME-APPLIANCE-STORE/internal/repositories/postgres"
+	"CRUD-HOME-APPLIANCE-STORE/internal/uow"
 	"CRUD-HOME-APPLIANCE-STORE/pkg/logger"
 	"context"
 	"errors"
@@ -19,7 +20,7 @@ type productReader interface {
 }
 
 type productService struct {
-	uow    UOW
+	uow    uow.UOW
 	reader productReader
 	logger *logger.Logger
 }
@@ -34,8 +35,8 @@ func NewProductService(reader productReader, logger *logger.Logger) *productServ
 
 func (s *productService) Create(ctx context.Context, product domain.Product) error {
 	op := "services.productService.Create"
-	err := s.uow.Do(ctx, func(ctx context.Context, tx Transaction) error {
-		repo, err := tx.Get(RepositoryName(productRepoName))
+	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
+		repo, err := tx.Get(uow.RepositoryName(productRepoName))
 		if err != nil {
 			s.logger.Debug("Create product transaction problem on creating", logger.Err(err), "op", op)
 			return err
@@ -101,8 +102,8 @@ func (s *productService) Update(ctx context.Context, id uuid.UUID, decrease int)
 		return fmt.Errorf("Product Service: Decrease value must be greater that 0")
 	}
 
-	err := s.uow.Do(ctx, func(ctx context.Context, tx Transaction) error {
-		repo, err := tx.Get(RepositoryName(productRepoName))
+	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
+		repo, err := tx.Get(uow.RepositoryName(productRepoName))
 		if err != nil {
 			s.logger.Debug("Product transaction problem on updating", logger.Err(err), "op", op)
 			return err
@@ -125,8 +126,8 @@ func (s *productService) Update(ctx context.Context, id uuid.UUID, decrease int)
 func (s *productService) Delete(ctx context.Context, id uuid.UUID) error {
 	op := "serice.productService.Delete"
 
-	err := s.uow.Do(ctx, func(ctx context.Context, tx Transaction) error {
-		repo, err := tx.Get(RepositoryName(productRepoName))
+	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
+		repo, err := tx.Get(uow.RepositoryName(productRepoName))
 		if err != nil {
 			s.logger.Debug("Get transaction problem", logger.Err(err), "op", op)
 			return err

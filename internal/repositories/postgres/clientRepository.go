@@ -14,8 +14,8 @@ type ClientRepo struct {
 	*basePostgresRepository
 }
 
-func NewClientRepository(tx pgx.Tx, log *logger.Logger) *ClientRepo {
-	baseRepo := newBasePostgresRepository(tx, log)
+func NewClientRepository(db DB, log *logger.Logger) *ClientRepo {
+	baseRepo := newBasePostgresRepository(db, log)
 	log.Debug("Client repo is created")
 	return &ClientRepo{baseRepo}
 }

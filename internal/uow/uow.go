@@ -1,4 +1,4 @@
-package services
+package uow
 
 import (
 	"CRUD-HOME-APPLIANCE-STORE/pkg/logger"
@@ -9,7 +9,7 @@ import (
 
 type RepositoryName string
 type Repository any
-type RepositoryGenerator func(tx *pgx.Tx, log *logger.Logger) Repository
+type RepositoryGenerator func(tx pgx.Tx, log *logger.Logger) Repository
 
 type Transaction interface {
 	Get(name RepositoryName) (Repository, error)

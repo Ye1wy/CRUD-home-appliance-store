@@ -3,6 +3,7 @@ package services
 import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/domain"
 	"CRUD-HOME-APPLIANCE-STORE/internal/repositories/postgres"
+	"CRUD-HOME-APPLIANCE-STORE/internal/uow"
 	"CRUD-HOME-APPLIANCE-STORE/pkg/logger"
 	"context"
 	"errors"
@@ -17,12 +18,12 @@ type ClientReader interface {
 }
 
 type clientsService struct {
-	uow    UOW
+	uow    uow.UOW
 	reader ClientReader
 	logger *logger.Logger
 }
 
-func NewClientService(reader ClientReader, unit UOW, logger *logger.Logger) *clientsService {
+func NewClientService(reader ClientReader, unit uow.UOW, logger *logger.Logger) *clientsService {
 	return &clientsService{
 		uow:    unit,
 		reader: reader,
@@ -33,7 +34,7 @@ func NewClientService(reader ClientReader, unit UOW, logger *logger.Logger) *cli
 func (s *clientsService) Create(ctx context.Context, client domain.Client) error {
 	op := "services.clientService.Create"
 
-	err := s.uow.Do(ctx, func(ctx context.Context, tx Transaction) error {
+	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
 		repo, err := tx.Get("client")
 		if err != nil {
 			s.logger.Debug("Client transaction problem on creating", logger.Err(err), "op", op)
@@ -100,7 +101,7 @@ func (s *clientsService) GetByNameAndSurname(ctx context.Context, name, surname 
 
 func (s *clientsService) UpdateAddress(ctx context.Context, id, address uuid.UUID) error {
 	op := "services.clientsService.UpdateAddress"
-	err := s.uow.Do(ctx, func(ctx context.Context, tx Transaction) error {
+	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
 		repo, err := tx.Get("client")
 		if err != nil {
 			s.logger.Debug("Get transaction problem on updating", logger.Err(err), "op", op)
@@ -123,7 +124,7 @@ func (s *clientsService) UpdateAddress(ctx context.Context, id, address uuid.UUI
 func (s *clientsService) Delete(ctx context.Context, id uuid.UUID) error {
 	op := "services.clientService.Delete"
 
-	err := s.uow.Do(ctx, func(ctx context.Context, tx Transaction) error {
+	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
 		repo, err := tx.Get("client")
 		if err != nil {
 			s.logger.Debug("Get transaction problem", logger.Err(err), "op", op)
