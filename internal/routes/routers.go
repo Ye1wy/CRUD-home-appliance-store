@@ -62,5 +62,5 @@ func (r routes) Run(addr ...string) error {
 }
 
 func swaggerGive(ctx *gin.Context) {
-	ctx.JSON(http.StatusOK, gin.H{"massage": "Hello durik!"})
+	ctx.JSON(http.StatusTeapot, gin.H{"massage": "Hello durik!"})
 }

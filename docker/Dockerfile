@@ -1,10 +1,10 @@
-FROM golang:1.24.4-alpine AS build
+FROM golang:1.24-alpine AS build
 
 RUN apk add --no-cache git
 
 WORKDIR /app
 
-COPY go.mod go.sum ./
+COPY  go.mod go.sum ./
 
 COPY . .
 

@@ -20,7 +20,7 @@ services:
   
   crud-service:
     build:
-      context: ./
+      context: ../
       dockerfile: ./docker/Dockerfile
     container_name: crud-service
     environment:

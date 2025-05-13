@@ -1,8 +1,8 @@
 package connection
 
 import (
+	"CRUD-HOME-APPLIANCE-STORE/internal/database"
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -19,12 +19,8 @@ type PostgresConfig struct {
 	ConnectTimeout   time.Duration `env:"timeout" env-default:"2s"`
 }
 
-var (
-	ErrConnectTimeout = errors.New("connect timeout")
-)
-
 func NewPostgresStorage(cfg *PostgresConfig) (*pgx.Conn, error) {
-	connCtx, cancel := context.WithTimeoutCause(context.Background(), cfg.ConnectTimeout, ErrConnectTimeout)
+	connCtx, cancel := context.WithTimeoutCause(context.Background(), cfg.ConnectTimeout, database.ErrConnectTimeout)
 	defer cancel()
 
 	// connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?pool_max_conns=%s", cfg.PostgresUser, cfg.PostgresPassword, cfg.PostgresHost, cfg.PostgresPort, cfg.PostgresDatabase, cfg.MaxConn)

@@ -14,6 +14,7 @@ const (
 )
 
 var (
-	ErrURLNotFound = errors.New("[ERROR] Url not found")
-	ErrURLExist    = errors.New("[ERROR] Url is exist")
+	ErrURLNotFound    = errors.New("[ERROR] Url not found")
+	ErrURLExist       = errors.New("[ERROR] Url is exist")
+	ErrConnectTimeout = errors.New("connect timeout")
 )
