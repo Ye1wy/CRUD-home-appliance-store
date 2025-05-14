@@ -46,7 +46,7 @@ func (ctrl *ProductController) Create(c *gin.Context) {
 	op := "controllers.productController.Create"
 	var productDTO dto.ProductDTO
 
-	if err := ctrl.mapping(c, &productDTO); err != nil {
+	if err := c.ShouldBind(&productDTO); err != nil {
 		ctrl.logger.Error("Failed to bind JSON/XML for AddProduct", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
 		return

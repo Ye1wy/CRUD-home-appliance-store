@@ -49,15 +49,15 @@ func NewClientsController(service clientService, logger *logger.Logger) *ClientC
 //	 @Param			gender path		string true "Client gender"
 //	 @Param			address_id path string true uuid.UUID "Client living address"
 //		@Success		200	{object}	dto.ClientDTO
-//		@Failure		400	{object}	dto.ErrorDTO
-//		@Failure		404	{object}	dto.ErrorDTO
-//		@Failure		500	{object}	dto.ErrorDTO
+//		@Failure		400	{object}	domain.Error
+//		@Failure		404	{object}	domain.Error
+//		@Failure		500	{object}	domain.Error
 //		@Router			/api/v1/clients [post]
 func (ctrl *ClientController) Create(c *gin.Context) {
 	op := "controllers.clientController.Create"
 	var clientDTO dto.ClientDTO
 
-	if err := ctrl.mapping(c, &clientDTO); err != nil {
+	if err := c.ShouldBind(&clientDTO); err != nil {
 		ctrl.logger.Error("Failed to bind JSON for Create", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
 		return
@@ -80,11 +80,18 @@ func (ctrl *ClientController) Create(c *gin.Context) {
 	ctrl.responce(c, http.StatusCreated, client)
 }
 
-// Get /api/v1/clients
-// Retrieve all clients
-// 200:
-// 400:
-// 500:
+// Get All Client godoc
+//
+//	@Summary		Get all client
+//	@Description	That methods retrive all registered client in system
+//	@Tags			clients
+//	@Accept			json/xml
+//	@Produce		json/xml
+//	@Success		200	{object}	dto.ClientDTO
+//	@Failure		400	{object}	domain.Error
+//	@Failure		404	{object}	domain.Error
+//	@Failure		500	{object}	domain.Error
+//	@Router			/api/v1/clients [get]
 func (ctrl *ClientController) GetAll(c *gin.Context) {
 	op := "controllers.clientController.getAll"
 	limit, err := strconv.Atoi(c.DefaultQuery("limit", defaultLimit))
@@ -131,11 +138,18 @@ func (ctrl *ClientController) GetAll(c *gin.Context) {
 	ctrl.responce(c, http.StatusOK, clientDTOs)
 }
 
-// Get /api/v1/clients?name=&surname=
-// Search client by name and surname
-// 200
-// 400
-// 404
+// Get Client godoc
+//
+//	@Summary		Get client filtered by name and surname
+//	@Description	That methods retrive all required registered client in system
+//	@Tags			clients
+//	@Accept			json/xml
+//	@Produce		json/xml
+//	@Success		200	{object}	[]dto.ClientDTO
+//	@Failure		400	{object}	domain.Error
+//	@Failure		404	{object}	domain.Error
+//	@Failure		500	{object}	domain.Error
+//	@Router			/api/v1/clients/search [get]
 func (ctrl *ClientController) GetByNameAndSurname(c *gin.Context) {
 	op := "controllers.clientController.getByNameAndSurname"
 	name := c.Query("name")
@@ -170,11 +184,19 @@ func (ctrl *ClientController) GetByNameAndSurname(c *gin.Context) {
 	ctrl.responce(c, http.StatusOK, clientDTO)
 }
 
-// Patch /api/v1/clients/:id
-// Change a address id parameter by a given new id parameter
-// 200
-// 400
-// 500
+// Update Client field godoc
+//
+//	@Summary		Update address on client
+//	@Description	That methods change address on client
+//	@Tags			clients
+//	@Accept			json/xml
+//	@Produce		json/xml
+//	@Param	address_id path string true "New address"
+//	@Success		200	{object}
+//	@Failure		400	{object}	domain.Error
+//	@Failure		404	{object}	domain.Error
+//	@Failure		500	{object}	domain.Error
+//	@Router			/api/v1/clients/:id/decrease [patch]
 func (ctrl *ClientController) UpdateAddress(c *gin.Context) {
 	op := "controllers.clientController.UpdateAddress"
 	id := c.Param("id")
@@ -186,7 +208,7 @@ func (ctrl *ClientController) UpdateAddress(c *gin.Context) {
 		return
 	}
 
-	if err := ctrl.mapping(c, &updateDTO); err != nil {
+	if err := c.ShouldBind(&updateDTO); err != nil {
 		ctrl.logger.Error("Failed to bind JSON for ChangeAddressIdParameter", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Invalid request payload"})
 		return
@@ -202,11 +224,17 @@ func (ctrl *ClientController) UpdateAddress(c *gin.Context) {
 	ctrl.responce(c, http.StatusOK, gin.H{"massage": "address updated"})
 }
 
-// Delete /api/v1/clients/:id
-// Delete client by identificator
-// 204
-// 400
-// 500
+// Delete Client godoc
+//
+//	@Summary		Delete client from system
+//	@Description	That methods deleting registered client in system by id
+//	@Tags			clients
+//	@Accept			json/xml
+//	@Produce		json/xml
+//	@Success		204	{object}
+//	@Failure		400	{object}	domain.Error
+//	@Failure		500	{object}	domain.Error
+//	@Router			/api/v1/clients/:id [delete]
 func (ctrl *ClientController) Delete(c *gin.Context) {
 	op := "controllers.clientController.Delete"
 	id := c.Param("id")

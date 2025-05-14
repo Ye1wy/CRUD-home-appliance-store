@@ -13,6 +13,7 @@ type RepositoryGenerator func(tx pgx.Tx, log *logger.Logger) Repository
 
 type Transaction interface {
 	Get(name RepositoryName) (Repository, error)
+	GetTX() pgx.Tx
 }
 
 type UOW interface {

@@ -42,8 +42,8 @@ func (s *productService) Create(ctx context.Context, product domain.Product) err
 			return err
 		}
 
-		productRepo := repo.(postgres.ProductRepo)
-
+		anyRepo := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
+		productRepo := anyRepo.(postgres.ProductRepo)
 		return productRepo.Create(ctx, product)
 	})
 
@@ -109,8 +109,8 @@ func (s *productService) Update(ctx context.Context, id uuid.UUID, decrease int)
 			return err
 		}
 
-		productRepo := repo.(postgres.ProductRepo)
-
+		anyRepo := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
+		productRepo := anyRepo.(postgres.ProductRepo)
 		return productRepo.Update(ctx, id, decrease)
 	})
 
@@ -133,8 +133,9 @@ func (s *productService) Delete(ctx context.Context, id uuid.UUID) error {
 			return err
 		}
 
-		userRepo := repo.(postgres.ClientRepo)
-		return userRepo.Delete(ctx, id)
+		anyRepo := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
+		productRepo := anyRepo.(postgres.ProductRepo)
+		return productRepo.Delete(ctx, id)
 	})
 
 	if err != nil {

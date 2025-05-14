@@ -41,7 +41,8 @@ func (s *clientsService) Create(ctx context.Context, client domain.Client) error
 			return err
 		}
 
-		userRepo := repo.(postgres.ClientRepo)
+		anyRepo := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
+		userRepo := anyRepo.(*postgres.ClientRepo)
 		return userRepo.Create(ctx, client)
 	})
 
@@ -108,7 +109,8 @@ func (s *clientsService) UpdateAddress(ctx context.Context, id, address uuid.UUI
 			return err
 		}
 
-		userRepo := repo.(postgres.ClientRepo)
+		anyRepo := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
+		userRepo := anyRepo.(*postgres.ClientRepo)
 		return userRepo.UpdateAddress(ctx, id, address)
 	})
 
@@ -131,7 +133,8 @@ func (s *clientsService) Delete(ctx context.Context, id uuid.UUID) error {
 			return err
 		}
 
-		userRepo := repo.(postgres.ClientRepo)
+		anyRepo := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
+		userRepo := anyRepo.(*postgres.ClientRepo)
 		return userRepo.Delete(ctx, id)
 	})
 

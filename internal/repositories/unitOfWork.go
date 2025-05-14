@@ -34,6 +34,10 @@ func (tx *transaction) Get(name uow.RepositoryName) (uow.Repository, error) {
 	return nil, ErrRepoIsNotExitst
 }
 
+func (tx *transaction) GetTX() pgx.Tx {
+	return tx.tx
+}
+
 type unitOfWork struct {
 	db           *pgx.Conn
 	logger       *logger.Logger
