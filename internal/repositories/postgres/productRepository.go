@@ -75,7 +75,7 @@ func (r *ProductRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.P
 
 	if len(products) == 0 {
 		r.logger.Debug("Product not found", "op", op)
-		return nil, ErrProductNotFound
+		return nil, ErrNotFound
 	}
 
 	r.logger.Debug("All product is retrieved", "op", op)
@@ -96,7 +96,7 @@ func (r *ProductRepo) GetById(ctx context.Context, id uuid.UUID) (*domain.Produc
 		&product.SupplierId, &product.ImageId)
 	if errors.Is(err, pgx.ErrNoRows) {
 		r.logger.Debug("Product not found", "op", op)
-		return nil, ErrProductNotFound
+		return nil, ErrNotFound
 	}
 
 	if err != nil {
@@ -117,7 +117,7 @@ func (r *ProductRepo) Update(ctx context.Context, id uuid.UUID, decrease int) er
 	tag, err := r.db.Exec(ctx, sqlStatement, args)
 	if tag.RowsAffected() == 0 {
 		r.logger.Debug("Product not found", "op", op)
-		return ErrProductNotFound
+		return ErrNotFound
 	}
 
 	if err != nil {

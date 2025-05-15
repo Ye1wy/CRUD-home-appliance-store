@@ -73,7 +73,7 @@ func (r *ClientRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.Cl
 
 	if len(clients) == 0 {
 		r.logger.Debug("Clients not found", "op", op)
-		return nil, ErrClientNotFound
+		return nil, ErrNotFound
 	}
 
 	r.logger.Debug("Client taked", "Clients:", clients, "op", op)
@@ -113,7 +113,7 @@ func (r *ClientRepo) GetByNameAndSurname(ctx context.Context, name, surname stri
 
 	if len(clients) == 0 {
 		r.logger.Debug("Clients not found", "op", op)
-		return nil, ErrClientNotFound
+		return nil, ErrNotFound
 	}
 
 	r.logger.Debug("All data retrieved", "op", op)
@@ -133,7 +133,7 @@ func (r *ClientRepo) UpdateAddress(ctx context.Context, id, address uuid.UUID) e
 	tag, err := r.db.Exec(ctx, sqlStatement, arg)
 	if tag.RowsAffected() == 0 {
 		r.logger.Debug("Client not found", "op", op)
-		return ErrClientNotFound
+		return ErrNotFound
 	}
 
 	if err != nil {

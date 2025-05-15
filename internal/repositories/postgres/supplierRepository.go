@@ -9,34 +9,34 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-type supplierRepo struct {
+type SupplierRepo struct {
 	*basePostgresRepository
 }
 
-func NewSupplierRepository(tx pgx.Tx, logger *logger.Logger) *supplierRepo {
+func NewSupplierRepository(tx pgx.Tx, logger *logger.Logger) *SupplierRepo {
 	repo := newBasePostgresRepository(tx, logger)
 	logger.Debug("Postgres Supplier Repository is created")
-	return &supplierRepo{
+	return &SupplierRepo{
 		repo,
 	}
 }
 
-func (r *supplierRepo) Create(ctx context.Context, supplier domain.Supplier) error {
+func (r *SupplierRepo) Create(ctx context.Context, supplier domain.Supplier) error {
 	return nil
 }
 
-func (r *supplierRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.Supplier, error) {
+func (r *SupplierRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.Supplier, error) {
 	return nil, nil
 }
 
-func (r *supplierRepo) GetById(ctx context.Context, id uuid.UUID) (*domain.Supplier, error) {
+func (r *SupplierRepo) GetById(ctx context.Context, id uuid.UUID) (*domain.Supplier, error) {
 	return nil, nil
 }
 
-func (r *supplierRepo) Update(ctx context.Context, supplier domain.Supplier) error {
+func (r *SupplierRepo) Update(ctx context.Context, id, address uuid.UUID) error {
 	return nil
 }
 
-func (r *supplierRepo) Delete(ctx context.Context, id uuid.UUID) error {
+func (r *SupplierRepo) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
