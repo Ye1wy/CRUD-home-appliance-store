@@ -1,136 +1,165 @@
 package controllers
 
-// import (
-// 	"CRUD-HOME-APPLIANCE-STORE/internal/dto"
-// 	"CRUD-HOME-APPLIANCE-STORE/internal/logger"
-// 	"CRUD-HOME-APPLIANCE-STORE/internal/model"
-// 	"CRUD-HOME-APPLIANCE-STORE/internal/services"
-// 	"context"
-// 	"net/http"
-// 	"strconv"
+import (
+	"CRUD-HOME-APPLIANCE-STORE/internal/mapper"
+	"CRUD-HOME-APPLIANCE-STORE/internal/model/domain"
+	"CRUD-HOME-APPLIANCE-STORE/internal/model/dto"
+	"CRUD-HOME-APPLIANCE-STORE/internal/repositories/postgres"
+	"CRUD-HOME-APPLIANCE-STORE/pkg/logger"
+	"context"
+	"errors"
+	"net/http"
+	"strconv"
 
-// 	"github.com/gin-gonic/gin"
-// )
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+)
 
-// type SupplierServiceInterface interface {
-// 	services.CrudServiceInterface[model.Supplier, dto.SupplierDTO]
-// 	UpdateAddress(ctx context.Context, id, newAddressId string) error
-// }
+type supplierService interface {
+	Create(ctx context.Context, supplier domain.Supplier) error
+	GetAll(ctx context.Context, limit, offset int) ([]domain.Supplier, error)
+	GetById(ctx context.Context, id uuid.UUID) (domain.Supplier, error)
+	UpdateAddress(ctx context.Context, id, address uuid.UUID) error
+	Delete(ctx context.Context, id uuid.UUID) error
+}
 
-// type SupplierController struct {
-// 	*BaseController
-// 	service SupplierServiceInterface
-// }
+type SupplierController struct {
+	*BaseController
+	service supplierService
+}
 
-// func NewSupplierContoller(service SupplierServiceInterface, logger *logger.Logger) *SupplierController {
-// 	controller := NewBaseContorller(logger)
-// 	logger.Debug("Supplier controller is created")
-// 	return &SupplierController{
-// 		BaseController: controller,
-// 		service:        service,
-// 	}
-// }
+func NewSupplierContoller(service supplierService, logger *logger.Logger) *SupplierController {
+	controller := NewBaseContorller(logger)
+	logger.Debug("Supplier controller is created")
+	return &SupplierController{
+		BaseController: controller,
+		service:        service,
+	}
+}
 
-// func (ctrl *SupplierController) Create(c *gin.Context) {
-// 	op := "controllers.supplierController.Create"
-// 	var dto dto.SupplierDTO
+func (ctrl *SupplierController) Create(c *gin.Context) {
+	op := "controllers.supplierController.Create"
+	var dto dto.SupplierDTO
 
-// 	if err := ctrl.mapping(c, dto); err != nil {
-// 		ctrl.logger.Error("Failed to bind JSON for Create", logger.Err(err), "op", op)
-// 		ctrl.responce(c, http.StatusBadRequest, err)
-// 		return
-// 	}
+	if err := c.ShouldBind(&dto); err != nil {
+		ctrl.logger.Error("Failed to bind JSON for Create", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusBadRequest, err)
+		return
+	}
 
-// 	supplier, err := ctrl.service.Create(c, &dto)
-// 	if err != nil {
-// 		ctrl.logger.Error("Failed create supplier", logger.Err(err), "op", op)
-// 		ctrl.responce(c, http.StatusInternalServerError, err)
-// 		return
-// 	}
+	supplier, _ := mapper.SupplierToDomain(&dto)
 
-// 	ctrl.logger.Debug("New supplier created", "op", op)
-// 	ctrl.responce(c, http.StatusCreated, supplier)
-// }
+	err := ctrl.service.Create(c, supplier)
+	if err != nil {
+		ctrl.logger.Error("Failed create supplier", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusInternalServerError, err)
+		return
+	}
 
-// func (ctrl *SupplierController) GetAll(c *gin.Context) {
-// 	op := "controllers.supplierController.GetAll"
-// 	offset, err := strconv.Atoi(c.DefaultQuery("offset", defaultOffset))
-// 	if err != nil {
-// 		ctrl.logger.Error("Failed convert offset value", logger.Err(err), "op", op)
-// 		ctrl.responce(c, http.StatusBadRequest, err)
-// 		return
-// 	}
+	ctrl.logger.Debug("New supplier created", "op", op)
+	ctrl.responce(c, http.StatusCreated, dto)
+}
 
-// 	limit, err := strconv.Atoi(c.DefaultQuery("limit", defaultLimit))
-// 	if err != nil {
-// 		ctrl.logger.Error("Failed convert limit value", logger.Err(err), "op", op)
-// 		ctrl.responce(c, http.StatusBadRequest, err)
-// 		return
-// 	}
+func (ctrl *SupplierController) GetAll(c *gin.Context) {
+	op := "controllers.supplierController.GetAll"
+	offset, err := strconv.Atoi(c.DefaultQuery("offset", defaultOffset))
+	if err != nil {
+		ctrl.logger.Error("Failed convert offset value", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusBadRequest, err)
+		return
+	}
 
-// 	data, err := ctrl.service.GetAll(c, limit, offset)
-// 	if err != nil {
-// 		ctrl.logger.Error("Failed retrieved data", logger.Err(err), "op", op)
-// 		ctrl.responce(c, http.StatusInternalServerError, err)
-// 		return
-// 	}
+	limit, err := strconv.Atoi(c.DefaultQuery("limit", defaultLimit))
+	if err != nil {
+		ctrl.logger.Error("Failed convert limit value", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusBadRequest, err)
+		return
+	}
 
-// 	ctrl.logger.Debug("All data is retrieved", "op", op)
-// 	ctrl.responce(c, http.StatusOK, data)
-// }
+	data, err := ctrl.service.GetAll(c, limit, offset)
+	if err != nil {
+		ctrl.logger.Error("Failed retrieved data", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusInternalServerError, err)
+		return
+	}
 
-// func (ctrl *SupplierController) GetById(c *gin.Context) {
-// 	op := "controllers.SupplierController.GetById"
-// 	id := c.Param("id")
+	ctrl.logger.Debug("All data is retrieved", "op", op)
+	ctrl.responce(c, http.StatusOK, data)
+}
 
-// 	supplierDTO, err := ctrl.service.GetById(c, id)
-// 	if supplierDTO == nil && err == nil {
-// 		ctrl.logger.Warn("Supplier not found", "op", op)
-// 		ctrl.responce(c, http.StatusNotFound, gin.H{"msg": "supplier not found"})
-// 		return
-// 	}
+func (ctrl *SupplierController) GetById(c *gin.Context) {
+	op := "controllers.SupplierController.GetById"
+	rawId := c.Param("id")
+	id, err := uuid.Parse(rawId)
+	if err != nil {
+		ctrl.logger.Warn("invalid id payload", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{})
+		return
+	}
 
-// 	if err != nil {
-// 		ctrl.logger.Error("Failed to get supplier with id", logger.Err(err), "op", op)
-// 		ctrl.responce(c, http.StatusInternalServerError, err)
-// 		return
-// 	}
+	supplier, err := ctrl.service.GetById(c, id)
+	if errors.Is(err, postgres.ErrNotFound) {
+		ctrl.logger.Warn("Supplier not found", "op", op)
+		ctrl.responce(c, http.StatusNotFound, gin.H{"msg": "supplier not found"})
+		return
+	}
 
-// 	ctrl.logger.Debug("Data retrieved", "op", op)
-// 	ctrl.responce(c, http.StatusOK, supplierDTO)
-// }
+	if err != nil {
+		ctrl.logger.Error("Failed to get supplier with id", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusInternalServerError, err)
+		return
+	}
 
-// func (ctrl *SupplierController) UpdateAddress(c *gin.Context) {
-// 	op := "controllers.supplierController.UpdateAddress"
-// 	id := c.Param("id")
-// 	var address dto.UpdateAddressDTO
+	dto, _ := mapper.SupplierToDTO(&supplier)
 
-// 	if err := ctrl.mapping(c, address); err != nil {
-// 		ctrl.logger.Error("Failed to bind JSON for ChangeAddressIdParameter", logger.Err(err), "op", op)
-// 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Invalid request payload"})
-// 		return
-// 	}
+	ctrl.logger.Debug("Data retrieved", "op", op)
+	ctrl.responce(c, http.StatusOK, dto)
+}
 
-// 	if err := ctrl.service.UpdateAddress(c, id, address.AddressID); err != nil {
-// 		ctrl.logger.Error("Failed to update address ID", "SupplierId", id, logger.Err(err), "op", op)
-// 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Failed to update address ID"})
-// 		return
-// 	}
+func (ctrl *SupplierController) UpdateAddress(c *gin.Context) {
+	op := "controllers.supplierController.UpdateAddress"
+	rawId := c.Param("id")
+	id, err := uuid.Parse(rawId)
+	if err != nil {
+		ctrl.logger.Warn("invalid id payload", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{})
+		return
+	}
 
-// 	ctrl.logger.Info("Address ID updated successfully", "op", op)
-// 	ctrl.responce(c, http.StatusOK, gin.H{"Msg": "Object updated"})
-// }
+	var address dto.UpdateAddressDTO
 
-// func (ctrl *SupplierController) Delete(c *gin.Context) {
-// 	op := "controllers.supplierController.Delete"
-// 	id := c.Param("id")
+	if err := c.ShouldBind(address); err != nil {
+		ctrl.logger.Error("Failed to bind JSON for ChangeAddressIdParameter", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Invalid request payload"})
+		return
+	}
 
-// 	if err := ctrl.service.Delete(c.Request.Context(), id); err != nil {
-// 		ctrl.logger.Error("Failed delete supplier by id", logger.Err(err), "op", op)
-// 		ctrl.responce(c, http.StatusInternalServerError, err)
-// 		return
-// 	}
+	if err := ctrl.service.UpdateAddress(c, id, address.AddressID); err != nil {
+		ctrl.logger.Error("Failed to update address ID", "SupplierId", id, logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Failed to update address ID"})
+		return
+	}
 
-// 	ctrl.logger.Debug("Successfuly deleted", "SupplierID", id, "op", op)
-// 	c.Status(http.StatusNoContent)
-// }
+	ctrl.logger.Info("Address ID updated successfully", "op", op)
+	ctrl.responce(c, http.StatusOK, gin.H{"Msg": "Object updated"})
+}
+
+func (ctrl *SupplierController) Delete(c *gin.Context) {
+	op := "controllers.supplierController.Delete"
+	rawId := c.Param("id")
+	id, err := uuid.Parse(rawId)
+	if err != nil {
+		ctrl.logger.Warn("invalid id payload", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{})
+		return
+	}
+
+	if err := ctrl.service.Delete(c.Request.Context(), id); err != nil {
+		ctrl.logger.Error("Failed delete supplier by id", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	ctrl.logger.Debug("Successfuly deleted", "SupplierID", id, "op", op)
+	c.Status(http.StatusNoContent)
+}
