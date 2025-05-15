@@ -4,7 +4,7 @@ import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/mapper"
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/domain"
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/dto"
-	psgrep "CRUD-HOME-APPLIANCE-STORE/internal/repositories/postgres"
+	"CRUD-HOME-APPLIANCE-STORE/internal/repositories/postgres"
 	"CRUD-HOME-APPLIANCE-STORE/pkg/logger"
 	"context"
 	"errors"
@@ -109,7 +109,7 @@ func (ctrl *ClientController) GetAll(c *gin.Context) {
 	}
 
 	clients, err := ctrl.service.GetAll(c.Request.Context(), limit, offset)
-	if errors.Is(err, psgrep.ErrClientNotFound) {
+	if errors.Is(err, postgres.ErrNotFound) {
 		ctrl.logger.Warn("Client not found", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusNotFound, gin.H{"warning": "404: client not found"})
 		return
@@ -156,7 +156,7 @@ func (ctrl *ClientController) GetByNameAndSurname(c *gin.Context) {
 	surname := c.Query("surname")
 
 	clients, err := ctrl.service.GetByNameAndSurname(c.Request.Context(), name, surname)
-	if errors.Is(err, psgrep.ErrClientNotFound) {
+	if errors.Is(err, postgres.ErrNotFound) {
 		ctrl.logger.Warn("Client not found", "op", op)
 		ctrl.responce(c, http.StatusNotFound, gin.H{"error": "Client not found"})
 		return

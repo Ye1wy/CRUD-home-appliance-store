@@ -12,6 +12,8 @@ import (
 	"github.com/google/uuid"
 )
 
+var clientRepoName = uow.RepositoryName("client")
+
 type ClientReader interface {
 	GetAll(ctx context.Context, limit, offset int) ([]domain.Client, error)
 	GetByNameAndSurname(ctx context.Context, name, surname string) ([]domain.Client, error)
@@ -35,15 +37,15 @@ func (s *clientsService) Create(ctx context.Context, client domain.Client) error
 	op := "services.clientService.Create"
 
 	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
-		repo, err := tx.Get("client")
+		repo, err := tx.Get(clientRepoName)
 		if err != nil {
 			s.logger.Debug("Client transaction problem on creating", logger.Err(err), "op", op)
 			return err
 		}
 
-		anyRepo := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
-		userRepo := anyRepo.(*postgres.ClientRepo)
-		return userRepo.Create(ctx, client)
+		repoGen := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
+		clientRepo := repoGen.(*postgres.ClientRepo)
+		return clientRepo.Create(ctx, client)
 	})
 
 	if err != nil {
@@ -64,7 +66,7 @@ func (s *clientsService) GetAll(ctx context.Context, limit, offset int) ([]domai
 	}
 
 	clients, err := s.reader.GetAll(ctx, limit, offset)
-	if errors.Is(err, postgres.ErrClientNotFound) {
+	if errors.Is(err, postgres.ErrNotFound) {
 		s.logger.Debug("Clients not found", logger.Err(err), "op", op)
 		return nil, err
 	}
@@ -86,9 +88,9 @@ func (s *clientsService) GetByNameAndSurname(ctx context.Context, name, surname 
 	}
 
 	clients, err := s.reader.GetByNameAndSurname(ctx, name, surname)
-	if errors.Is(err, postgres.ErrClientNotFound) {
+	if errors.Is(err, postgres.ErrNotFound) {
 		s.logger.Debug("Client not found", "op", op)
-		return nil, postgres.ErrClientNotFound
+		return nil, postgres.ErrNotFound
 	}
 
 	if err != nil {
@@ -103,15 +105,15 @@ func (s *clientsService) GetByNameAndSurname(ctx context.Context, name, surname 
 func (s *clientsService) UpdateAddress(ctx context.Context, id, address uuid.UUID) error {
 	op := "services.clientsService.UpdateAddress"
 	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
-		repo, err := tx.Get("client")
+		repo, err := tx.Get(clientRepoName)
 		if err != nil {
 			s.logger.Debug("Get transaction problem on updating", logger.Err(err), "op", op)
 			return err
 		}
 
-		anyRepo := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
-		userRepo := anyRepo.(*postgres.ClientRepo)
-		return userRepo.UpdateAddress(ctx, id, address)
+		repoGen := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
+		clientRepo := repoGen.(*postgres.ClientRepo)
+		return clientRepo.UpdateAddress(ctx, id, address)
 	})
 
 	if err != nil {
@@ -127,15 +129,15 @@ func (s *clientsService) Delete(ctx context.Context, id uuid.UUID) error {
 	op := "services.clientService.Delete"
 
 	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
-		repo, err := tx.Get("client")
+		repo, err := tx.Get(clientRepoName)
 		if err != nil {
 			s.logger.Debug("Get transaction problem", logger.Err(err), "op", op)
 			return err
 		}
 
-		anyRepo := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
-		userRepo := anyRepo.(*postgres.ClientRepo)
-		return userRepo.Delete(ctx, id)
+		repoGen := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
+		clientRepo := repoGen.(*postgres.ClientRepo)
+		return clientRepo.Delete(ctx, id)
 	})
 
 	if err != nil {

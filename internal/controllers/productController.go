@@ -88,7 +88,7 @@ func (ctrl *ProductController) GetAll(c *gin.Context) {
 	}
 
 	productDTOs, err := ctrl.service.GetAll(c.Request.Context(), limit, offset)
-	if errors.Is(err, psgrep.ErrProductNotFound) {
+	if errors.Is(err, psgrep.ErrNotFound) {
 		ctrl.logger.Warn("Product not found", "op", op)
 		ctrl.responce(c, http.StatusNotFound, gin.H{"warning": "Product not found"})
 		return

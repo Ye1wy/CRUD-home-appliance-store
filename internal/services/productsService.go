@@ -12,7 +12,7 @@ import (
 	"github.com/google/uuid"
 )
 
-var productRepoName = "product"
+var productRepoName = uow.RepositoryName("product")
 
 type productReader interface {
 	GetAll(ctx context.Context, limit, offset int) ([]domain.Product, error)
@@ -25,9 +25,10 @@ type productService struct {
 	logger *logger.Logger
 }
 
-func NewProductService(reader productReader, logger *logger.Logger) *productService {
+func NewProductService(reader productReader, uow uow.UOW, logger *logger.Logger) *productService {
 	logger.Debug("Product service is created")
 	return &productService{
+		uow:    uow,
 		reader: reader,
 		logger: logger,
 	}
@@ -36,14 +37,14 @@ func NewProductService(reader productReader, logger *logger.Logger) *productServ
 func (s *productService) Create(ctx context.Context, product domain.Product) error {
 	op := "services.productService.Create"
 	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
-		repo, err := tx.Get(uow.RepositoryName(productRepoName))
+		repo, err := tx.Get(productRepoName)
 		if err != nil {
 			s.logger.Debug("Create product transaction problem on creating", logger.Err(err), "op", op)
 			return err
 		}
 
-		anyRepo := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
-		productRepo := anyRepo.(postgres.ProductRepo)
+		repoGen := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
+		productRepo := repoGen.(postgres.ProductRepo)
 		return productRepo.Create(ctx, product)
 	})
 
@@ -65,7 +66,7 @@ func (s *productService) GetAll(ctx context.Context, limit, offset int) ([]domai
 	}
 
 	products, err := s.reader.GetAll(ctx, limit, offset)
-	if errors.Is(err, postgres.ErrProductNotFound) {
+	if errors.Is(err, postgres.ErrNotFound) {
 		s.logger.Debug("Product's not found", "op", op)
 		return nil, err
 	}
@@ -81,9 +82,9 @@ func (s *productService) GetAll(ctx context.Context, limit, offset int) ([]domai
 func (s *productService) GetById(ctx context.Context, id uuid.UUID) (*domain.Product, error) {
 	op := "services.productService.GetById"
 	product, err := s.reader.GetById(ctx, id)
-	if errors.Is(err, postgres.ErrProductNotFound) {
+	if errors.Is(err, postgres.ErrNotFound) {
 		s.logger.Debug("Product not found", "op", op)
-		return nil, postgres.ErrProductNotFound
+		return nil, postgres.ErrNotFound
 	}
 
 	if err != nil {
@@ -103,14 +104,14 @@ func (s *productService) Update(ctx context.Context, id uuid.UUID, decrease int)
 	}
 
 	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
-		repo, err := tx.Get(uow.RepositoryName(productRepoName))
+		repo, err := tx.Get(productRepoName)
 		if err != nil {
 			s.logger.Debug("Product transaction problem on updating", logger.Err(err), "op", op)
 			return err
 		}
 
-		anyRepo := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
-		productRepo := anyRepo.(postgres.ProductRepo)
+		repoGen := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
+		productRepo := repoGen.(postgres.ProductRepo)
 		return productRepo.Update(ctx, id, decrease)
 	})
 
@@ -127,14 +128,14 @@ func (s *productService) Delete(ctx context.Context, id uuid.UUID) error {
 	op := "serice.productService.Delete"
 
 	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
-		repo, err := tx.Get(uow.RepositoryName(productRepoName))
+		repo, err := tx.Get(productRepoName)
 		if err != nil {
 			s.logger.Debug("Get transaction problem", logger.Err(err), "op", op)
 			return err
 		}
 
-		anyRepo := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
-		productRepo := anyRepo.(postgres.ProductRepo)
+		repoGen := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
+		productRepo := repoGen.(postgres.ProductRepo)
 		return productRepo.Delete(ctx, id)
 	})
 
