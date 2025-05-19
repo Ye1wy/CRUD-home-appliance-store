@@ -1,5 +1,12 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
+CREATE TABLE IF NOT EXISTS address (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    country TEXT NOT NULL,
+    city TEXT NOT NULL,
+    street TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS client (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
@@ -7,7 +14,8 @@ CREATE TABLE IF NOT EXISTS client (
     birthday TIMESTAMP,
     gender TEXT CHECK (gender IN ('male', 'female')) NOT NULL,
     registation_date TIMESTAMP DEFAULT now(),
-    address_id UUID NOT NULL
+    address_id UUID NOT NULL,
+    FOREIGN KEY (address_id) REFERENCES address (id)
 );
 
 CREATE TABLE IF NOT EXISTS image (
@@ -15,11 +23,13 @@ CREATE TABLE IF NOT EXISTS image (
     image BYTEA NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS addresses (
+
+CREATE TABLE IF NOT EXISTS supplier (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    country TEXT NOT NULL,
-    city TEXT NOT NULL,
-    street TEXT NOT NULL
+    name TEXT NOT NULL,
+    address_id UUID NOT NULL,
+    phone_number TEXT NOT NULLs
+    FOREIGN KEY (address_id) REFERENCES address (id)
 );
 
 CREATE TABLE IF NOT EXISTS product (
@@ -30,12 +40,7 @@ CREATE TABLE IF NOT EXISTS product (
     available_stock INT NOT NULL,
     last_update_date TIMESTAMP DEFAULT now(),
     supplier_id UUID NOT NULL,
-    image_id UUID NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS supplier (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name TEXT NOT NULL,
-    address_id UUID NOT NULL,
-    phone_number TEXT NOT NULLs
+    image_id UUID NOT NULL,
+    FOREIGN KEY (supplier_id) REFERENCES supplier (id)
+    FOREIGN KEY (image_id) REFERENCES image (id)
 );

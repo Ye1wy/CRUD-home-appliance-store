@@ -5,19 +5,19 @@ import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/dto"
 )
 
-func SupplierToDTO(supplier *domain.Supplier) (dto.SupplierDTO, error) {
+func SupplierToDTO(supplier *domain.Supplier) (dto.Supplier, error) {
 	if supplier == nil {
-		return dto.SupplierDTO{}, ErrNoContent
+		return dto.Supplier{}, ErrNoContent
 	}
 
-	return dto.SupplierDTO{
+	return dto.Supplier{
 		Name:        supplier.Name,
 		AddressId:   supplier.AddressId,
 		PhoneNumber: supplier.PhoneNumber,
 	}, nil
 }
 
-func SupplierToDomain(dto *dto.SupplierDTO) (domain.Supplier, error) {
+func SupplierToDomain(dto *dto.Supplier) (domain.Supplier, error) {
 	if dto == nil {
 		return domain.Supplier{}, ErrNoContent
 	}

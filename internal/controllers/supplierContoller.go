@@ -39,7 +39,7 @@ func NewSupplierContoller(service supplierService, logger *logger.Logger) *Suppl
 
 func (ctrl *SupplierController) Create(c *gin.Context) {
 	op := "controllers.supplierController.Create"
-	var dto dto.SupplierDTO
+	var dto dto.Supplier
 
 	if err := c.ShouldBind(&dto); err != nil {
 		ctrl.logger.Error("Failed to bind JSON for Create", logger.Err(err), "op", op)
@@ -126,7 +126,7 @@ func (ctrl *SupplierController) UpdateAddress(c *gin.Context) {
 		return
 	}
 
-	var address dto.UpdateAddressDTO
+	var address dto.UpdateAddress
 
 	if err := c.ShouldBind(address); err != nil {
 		ctrl.logger.Error("Failed to bind JSON for ChangeAddressIdParameter", logger.Err(err), "op", op)

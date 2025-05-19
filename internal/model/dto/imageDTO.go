@@ -1,5 +1,5 @@
 package dto
 
-type ImageDTO struct {
+type Image struct {
 	Image []byte `json:"image" bson:"image"`
 }

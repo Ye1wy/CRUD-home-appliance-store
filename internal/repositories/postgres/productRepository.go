@@ -15,8 +15,8 @@ type ProductRepo struct {
 	*basePostgresRepository
 }
 
-func NewProductRepository(conn pgx.Tx, logger *logger.Logger) *ProductRepo {
-	repo := newBasePostgresRepository(conn, logger)
+func NewProductRepository(db DB, logger *logger.Logger) *ProductRepo {
+	repo := newBasePostgresRepository(db, logger)
 	logger.Debug("Postgres Product repository is created")
 	return &ProductRepo{
 		repo,

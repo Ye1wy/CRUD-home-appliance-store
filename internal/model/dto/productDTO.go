@@ -2,7 +2,7 @@ package dto
 
 import "github.com/google/uuid"
 
-type ProductDTO struct {
+type Product struct {
 	Name           string    `json:"name" binding:"required"`
 	Category       string    `json:"category" binding:"required"`
 	Price          float32   `json:"price" binding:"required"`

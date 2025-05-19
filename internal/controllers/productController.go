@@ -44,7 +44,7 @@ func NewProductController(service ProductServiceInterface, logger *logger.Logger
 // 500
 func (ctrl *ProductController) Create(c *gin.Context) {
 	op := "controllers.productController.Create"
-	var productDTO dto.ProductDTO
+	var productDTO dto.Product
 
 	if err := c.ShouldBind(&productDTO); err != nil {
 		ctrl.logger.Error("Failed to bind JSON/XML for AddProduct", logger.Err(err), "op", op)

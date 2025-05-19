@@ -5,12 +5,12 @@ import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/dto"
 )
 
-func ProductToDTO(product *domain.Product) (dto.ProductDTO, error) {
+func ProductToDTO(product *domain.Product) (dto.Product, error) {
 	if product == nil {
-		return dto.ProductDTO{}, ErrNoContent
+		return dto.Product{}, ErrNoContent
 	}
 
-	return dto.ProductDTO{
+	return dto.Product{
 		Name:           product.Name,
 		Category:       product.Category,
 		Price:          product.Price,
@@ -20,7 +20,7 @@ func ProductToDTO(product *domain.Product) (dto.ProductDTO, error) {
 	}, nil
 }
 
-func ProductToDomain(dto *dto.ProductDTO) (domain.Product, error) {
+func ProductToDomain(dto *dto.Product) (domain.Product, error) {
 	if dto == nil {
 		return domain.Product{}, ErrNoContent
 	}

@@ -55,7 +55,7 @@ func NewClientsController(service clientService, logger *logger.Logger) *ClientC
 //		@Router			/api/v1/clients [post]
 func (ctrl *ClientController) Create(c *gin.Context) {
 	op := "controllers.clientController.Create"
-	var clientDTO dto.ClientDTO
+	var clientDTO dto.Client
 
 	if err := c.ShouldBind(&clientDTO); err != nil {
 		ctrl.logger.Error("Failed to bind JSON for Create", logger.Err(err), "op", op)
@@ -122,7 +122,7 @@ func (ctrl *ClientController) GetAll(c *gin.Context) {
 	}
 
 	ctrl.logger.Debug("aboba", "clients", clients)
-	clientDTOs := make([]dto.ClientDTO, len(clients), cap(clients))
+	clientDTOs := make([]dto.Client, len(clients), cap(clients))
 
 	for i, client := range clients {
 		dto, err := mapper.ClientToDTO(&client)
@@ -168,7 +168,7 @@ func (ctrl *ClientController) GetByNameAndSurname(c *gin.Context) {
 		return
 	}
 
-	clientDTO := make([]dto.ClientDTO, len(clients), cap(clients))
+	clientDTO := make([]dto.Client, len(clients), cap(clients))
 
 	for i, client := range clients {
 		dto, err := mapper.ClientToDTO(&client)
@@ -200,7 +200,7 @@ func (ctrl *ClientController) GetByNameAndSurname(c *gin.Context) {
 func (ctrl *ClientController) UpdateAddress(c *gin.Context) {
 	op := "controllers.clientController.UpdateAddress"
 	id := c.Param("id")
-	var updateDTO dto.UpdateAddressDTO
+	var updateDTO dto.UpdateAddress
 	currentUUID, err := uuid.Parse(id)
 	if err != nil {
 		ctrl.logger.Error("Failed parse id to uuid", logger.Err(err), "op", op)

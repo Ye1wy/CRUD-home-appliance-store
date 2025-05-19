@@ -5,7 +5,7 @@ import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/dto"
 )
 
-func UpdateAddressToClientDomain(dto *dto.UpdateAddressDTO) (domain.Client, error) {
+func UpdateAddressToClientDomain(dto *dto.UpdateAddress) (domain.Client, error) {
 	if dto == nil {
 		return domain.Client{}, ErrNoContent
 	}
@@ -15,7 +15,7 @@ func UpdateAddressToClientDomain(dto *dto.UpdateAddressDTO) (domain.Client, erro
 	}, nil
 }
 
-func UpdateAddressToSupplierDomain(dto *dto.UpdateAddressDTO) (domain.Supplier, error) {
+func UpdateAddressToSupplierDomain(dto *dto.UpdateAddress) (domain.Supplier, error) {
 	if dto == nil {
 		return domain.Supplier{}, ErrNoContent
 	}

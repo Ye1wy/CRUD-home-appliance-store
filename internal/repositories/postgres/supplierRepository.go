@@ -15,8 +15,8 @@ type SupplierRepo struct {
 	*basePostgresRepository
 }
 
-func NewSupplierRepository(tx pgx.Tx, logger *logger.Logger) *SupplierRepo {
-	repo := newBasePostgresRepository(tx, logger)
+func NewSupplierRepository(db DB, logger *logger.Logger) *SupplierRepo {
+	repo := newBasePostgresRepository(db, logger)
 	logger.Debug("postgres supplier repository is created")
 	return &SupplierRepo{
 		repo,

@@ -27,18 +27,3 @@ func (ctrl *BaseController) responce(c *gin.Context, statusCode int, obj any) {
 		c.JSON(statusCode, obj)
 	}
 }
-
-// func (ctrl *BaseController) mapping(c *gin.Context, obj any) error {
-// 	switch c.GetHeader("content-type") {
-// 	case "application/xml":
-// 		if err := c.BindXML(&obj); err != nil {
-// 			return fmt.Errorf("Failed to bind xml: %v", err)
-// 		}
-// 	default:
-// 		if err := c.BindJSON(&obj); err != nil {
-// 			return fmt.Errorf("Failed to bind json: %v", err)
-// 		}
-// 	}
-
-// 	return nil
-// }

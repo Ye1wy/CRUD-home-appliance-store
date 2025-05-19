@@ -8,12 +8,12 @@ import (
 
 const dateFormat = "2006-01-02"
 
-func ClientToDTO(client *domain.Client) (dto.ClientDTO, error) {
+func ClientToDTO(client *domain.Client) (dto.Client, error) {
 	if client == nil {
-		return dto.ClientDTO{}, ErrNoContent
+		return dto.Client{}, ErrNoContent
 	}
 
-	return dto.ClientDTO{
+	return dto.Client{
 		Name:      client.Name,
 		Surname:   client.Surname,
 		Birthday:  client.Birthday.Format(dateFormat),
@@ -22,7 +22,7 @@ func ClientToDTO(client *domain.Client) (dto.ClientDTO, error) {
 	}, nil
 }
 
-func ClientToDomain(dto *dto.ClientDTO) (domain.Client, error) {
+func ClientToDomain(dto *dto.Client) (domain.Client, error) {
 	if dto == nil {
 		return domain.Client{}, ErrNoContent
 	}
