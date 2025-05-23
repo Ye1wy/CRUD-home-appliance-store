@@ -1,10 +1,10 @@
 package controllers
 
 import (
+	crud_errors "CRUD-HOME-APPLIANCE-STORE/internal/errors"
 	"CRUD-HOME-APPLIANCE-STORE/internal/mapper"
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/domain"
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/dto"
-	"CRUD-HOME-APPLIANCE-STORE/internal/repositories/postgres"
 	"CRUD-HOME-APPLIANCE-STORE/pkg/logger"
 	"context"
 	"errors"
@@ -98,7 +98,7 @@ func (ctrl *SupplierController) GetById(c *gin.Context) {
 	}
 
 	supplier, err := ctrl.service.GetById(c, id)
-	if errors.Is(err, postgres.ErrNotFound) {
+	if errors.Is(err, crud_errors.ErrNotFound) {
 		ctrl.logger.Warn("Supplier not found", "op", op)
 		ctrl.responce(c, http.StatusNotFound, gin.H{"msg": "supplier not found"})
 		return

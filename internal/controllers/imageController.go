@@ -1,10 +1,10 @@
 package controllers
 
 import (
+	crud_errors "CRUD-HOME-APPLIANCE-STORE/internal/errors"
 	"CRUD-HOME-APPLIANCE-STORE/internal/mapper"
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/domain"
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/dto"
-	"CRUD-HOME-APPLIANCE-STORE/internal/repositories/postgres"
 	"CRUD-HOME-APPLIANCE-STORE/pkg/logger"
 	"context"
 	"errors"
@@ -75,7 +75,7 @@ func (ctrl *ImageController) GetAll(c *gin.Context) {
 	}
 
 	images, err := ctrl.service.GetAll(c.Request.Context(), limit, offset)
-	if errors.Is(err, postgres.ErrNotFound) {
+	if errors.Is(err, crud_errors.ErrNotFound) {
 		ctrl.logger.Warn("Images not found", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusNoContent, gin.H{"massage": "no have images"})
 		return

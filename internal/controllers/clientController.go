@@ -1,10 +1,10 @@
 package controllers
 
 import (
+	crud_errors "CRUD-HOME-APPLIANCE-STORE/internal/errors"
 	"CRUD-HOME-APPLIANCE-STORE/internal/mapper"
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/domain"
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/dto"
-	"CRUD-HOME-APPLIANCE-STORE/internal/repositories/postgres"
 	"CRUD-HOME-APPLIANCE-STORE/pkg/logger"
 	"context"
 	"errors"
@@ -109,7 +109,7 @@ func (ctrl *ClientController) GetAll(c *gin.Context) {
 	}
 
 	clients, err := ctrl.service.GetAll(c.Request.Context(), limit, offset)
-	if errors.Is(err, postgres.ErrNotFound) {
+	if errors.Is(err, crud_errors.ErrNotFound) {
 		ctrl.logger.Warn("Client not found", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusNotFound, gin.H{"warning": "404: client not found"})
 		return
@@ -156,7 +156,7 @@ func (ctrl *ClientController) GetByNameAndSurname(c *gin.Context) {
 	surname := c.Query("surname")
 
 	clients, err := ctrl.service.GetByNameAndSurname(c.Request.Context(), name, surname)
-	if errors.Is(err, postgres.ErrNotFound) {
+	if errors.Is(err, crud_errors.ErrNotFound) {
 		ctrl.logger.Warn("Client not found", "op", op)
 		ctrl.responce(c, http.StatusNotFound, gin.H{"error": "Client not found"})
 		return
@@ -199,9 +199,9 @@ func (ctrl *ClientController) GetByNameAndSurname(c *gin.Context) {
 //	@Router			/api/v1/clients/:id/decrease [patch]
 func (ctrl *ClientController) UpdateAddress(c *gin.Context) {
 	op := "controllers.clientController.UpdateAddress"
-	id := c.Param("id")
+	rawId := c.Param("id")
 	var updateDTO dto.UpdateAddress
-	currentUUID, err := uuid.Parse(id)
+	id, err := uuid.Parse(rawId)
 	if err != nil {
 		ctrl.logger.Error("Failed parse id to uuid", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalud request payload"})
@@ -214,13 +214,13 @@ func (ctrl *ClientController) UpdateAddress(c *gin.Context) {
 		return
 	}
 
-	if err := ctrl.service.UpdateAddress(c.Request.Context(), currentUUID, updateDTO.AddressID); err != nil {
-		ctrl.logger.Error("Failed to update address ID", "clientID", currentUUID, logger.Err(err), "op", op)
+	if err := ctrl.service.UpdateAddress(c.Request.Context(), id, updateDTO.AddressID); err != nil {
+		ctrl.logger.Error("Failed to update address ID", "clientID", id, logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Failed to update address ID"})
 		return
 	}
 
-	ctrl.logger.Debug("Address ID updated successfully", "Client ID", currentUUID, "New Address ID", updateDTO.AddressID, "op", op)
+	ctrl.logger.Debug("Address ID updated successfully", "Client ID", id, "New Address ID", updateDTO.AddressID, "op", op)
 	ctrl.responce(c, http.StatusOK, gin.H{"massage": "address updated"})
 }
 
@@ -237,21 +237,21 @@ func (ctrl *ClientController) UpdateAddress(c *gin.Context) {
 //	@Router			/api/v1/clients/:id [delete]
 func (ctrl *ClientController) Delete(c *gin.Context) {
 	op := "controllers.clientController.Delete"
-	id := c.Param("id")
+	rawId := c.Param("id")
 
-	uuid, err := uuid.Parse(id)
+	id, err := uuid.Parse(rawId)
 	if err != nil {
 		ctrl.logger.Error("Invalid id", "op", op)
 		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalid id"})
 		return
 	}
 
-	if err := ctrl.service.Delete(c.Request.Context(), uuid); err != nil {
-		ctrl.logger.Error("Failed to delete client", "clientID", id, logger.Err(err), "op", op)
+	if err := ctrl.service.Delete(c.Request.Context(), id); err != nil {
+		ctrl.logger.Error("Failed to delete client", "clientID", rawId, logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Failed to delete client"})
 		return
 	}
 
-	ctrl.logger.Debug("Client deleted successfully", "clientID", id, "op", op)
+	ctrl.logger.Debug("Client deleted successfully", "clientID", rawId, "op", op)
 	c.Status(http.StatusNoContent)
 }

@@ -1,10 +1,10 @@
 package controllers
 
 import (
+	crud_errors "CRUD-HOME-APPLIANCE-STORE/internal/errors"
 	"CRUD-HOME-APPLIANCE-STORE/internal/mapper"
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/domain"
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/dto"
-	psgrep "CRUD-HOME-APPLIANCE-STORE/internal/repositories/postgres"
 	"CRUD-HOME-APPLIANCE-STORE/pkg/logger"
 	"context"
 	"errors"
@@ -15,7 +15,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type ProductServiceInterface interface {
+type productService interface {
 	Create(ctx context.Context, product domain.Product) error
 	GetAll(ctx context.Context, limit, offset int) ([]domain.Product, error)
 	GetById(ctx context.Context, id uuid.UUID) (*domain.Product, error)
@@ -25,10 +25,10 @@ type ProductServiceInterface interface {
 
 type ProductController struct {
 	*BaseController
-	service ProductServiceInterface
+	service productService
 }
 
-func NewProductController(service ProductServiceInterface, logger *logger.Logger) *ProductController {
+func NewProductController(service productService, logger *logger.Logger) *ProductController {
 	controller := NewBaseContorller(logger)
 	logger.Debug("Product controller is created")
 	return &ProductController{
@@ -88,7 +88,7 @@ func (ctrl *ProductController) GetAll(c *gin.Context) {
 	}
 
 	productDTOs, err := ctrl.service.GetAll(c.Request.Context(), limit, offset)
-	if errors.Is(err, psgrep.ErrNotFound) {
+	if errors.Is(err, crud_errors.ErrNotFound) {
 		ctrl.logger.Warn("Product not found", "op", op)
 		ctrl.responce(c, http.StatusNotFound, gin.H{"warning": "Product not found"})
 		return
@@ -108,15 +108,15 @@ func (ctrl *ProductController) GetAll(c *gin.Context) {
 // Get product by id
 func (ctrl *ProductController) GetById(c *gin.Context) {
 	op := "controllers.productController.GetById"
-	id := c.Param("id")
-	currentUUID, err := uuid.Parse(id)
+	rawId := c.Param("id")
+	id, err := uuid.Parse(rawId)
 	if err != nil {
 		ctrl.logger.Error("Invalid id", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Invalid payload"})
 		return
 	}
 
-	productDTO, err := ctrl.service.GetById(c.Request.Context(), currentUUID)
+	productDTO, err := ctrl.service.GetById(c.Request.Context(), id)
 	if productDTO == nil && err == nil {
 		ctrl.logger.Warn("Product not found", "op", op)
 		ctrl.responce(c, http.StatusNotFound, gin.H{"warning": "product not found"})
@@ -129,7 +129,7 @@ func (ctrl *ProductController) GetById(c *gin.Context) {
 		return
 	}
 
-	ctrl.logger.Debug("Product retrieved successfully", "id", id)
+	ctrl.logger.Debug("Product retrieved successfully", "id", rawId)
 	ctrl.responce(c, http.StatusOK, productDTO)
 }
 
@@ -137,8 +137,8 @@ func (ctrl *ProductController) GetById(c *gin.Context) {
 // Decrease a parameter by a given value
 func (ctrl *ProductController) DecreaseStock(c *gin.Context) {
 	op := "controllers.productController.DecreaseStock"
-	id := c.Param("id")
-	currentUUID, err := uuid.Parse(id)
+	rawId := c.Param("id")
+	id, err := uuid.Parse(rawId)
 	if err != nil {
 		ctrl.logger.Error("Invalid id", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Invalid payload"})
@@ -152,7 +152,7 @@ func (ctrl *ProductController) DecreaseStock(c *gin.Context) {
 		return
 	}
 
-	if err := ctrl.service.Update(c.Request.Context(), currentUUID, decreaseValue); err != nil {
+	if err := ctrl.service.Update(c.Request.Context(), id, decreaseValue); err != nil {
 		ctrl.logger.Error("Error in decrease stock", "op", op)
 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": err})
 		return
@@ -166,20 +166,20 @@ func (ctrl *ProductController) DecreaseStock(c *gin.Context) {
 // Delete product by identificator
 func (ctrl *ProductController) Delete(c *gin.Context) {
 	op := "controllers.productController.Delete"
-	id := c.Param("id")
-	currentUUID, err := uuid.Parse(id)
+	rawId := c.Param("id")
+	id, err := uuid.Parse(rawId)
 	if err != nil {
 		ctrl.logger.Error("Invalid id", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Invalid payload"})
 		return
 	}
 
-	if err := ctrl.service.Delete(c.Request.Context(), currentUUID); err != nil {
+	if err := ctrl.service.Delete(c.Request.Context(), id); err != nil {
 		ctrl.logger.Error("Failed to delete product", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Failed to delete product"})
 		return
 	}
 
-	ctrl.logger.Debug("Product deleted successfully", "productID", id, "op", op)
+	ctrl.logger.Debug("Product deleted successfully", "productID", rawId, "op", op)
 	c.Status(http.StatusNoContent)
 }
