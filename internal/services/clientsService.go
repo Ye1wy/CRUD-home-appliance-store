@@ -1,12 +1,12 @@
 package services
 
 import (
+	crud_errors "CRUD-HOME-APPLIANCE-STORE/internal/errors"
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/domain"
 	"CRUD-HOME-APPLIANCE-STORE/internal/repositories/postgres"
 	"CRUD-HOME-APPLIANCE-STORE/internal/uow"
 	"CRUD-HOME-APPLIANCE-STORE/pkg/logger"
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -50,10 +50,9 @@ func (s *clientsService) Create(ctx context.Context, client domain.Client) error
 
 	if err != nil {
 		s.logger.Debug("Somthing wrong with UOW creating", logger.Err(err), "op", op)
-		return fmt.Errorf("Client service: unit of work creating problem: %v", err)
+		return fmt.Errorf("%s: unit of work creating problem: %v", op, err)
 	}
 
-	s.logger.Debug("Client is created", "op", op)
 	return nil
 }
 
@@ -62,18 +61,13 @@ func (s *clientsService) GetAll(ctx context.Context, limit, offset int) ([]domai
 
 	if limit <= 0 || offset < 0 {
 		s.logger.Debug("Invalid parameter limit and offset", "limit", limit, "offset", offset, "op", op)
-		return nil, ErrInvalidParam
+		return nil, fmt.Errorf("%s: %w", op, crud_errors.ErrInvalidParam)
 	}
 
 	clients, err := s.reader.GetAll(ctx, limit, offset)
-	if errors.Is(err, postgres.ErrNotFound) {
-		s.logger.Debug("Clients not found", logger.Err(err), "op", op)
-		return nil, err
-	}
-
 	if err != nil {
 		s.logger.Debug("Get all unable", logger.Err(err), "op", op)
-		return nil, err
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return clients, nil
@@ -84,21 +78,15 @@ func (s *clientsService) GetByNameAndSurname(ctx context.Context, name, surname 
 
 	if name == "" || surname == "" {
 		s.logger.Debug("Name or Surname is empty", "op", op)
-		return nil, ErrInvalidParam
+		return nil, fmt.Errorf("%s: %w", op, crud_errors.ErrInvalidParam)
 	}
 
 	clients, err := s.reader.GetByNameAndSurname(ctx, name, surname)
-	if errors.Is(err, postgres.ErrNotFound) {
-		s.logger.Debug("Client not found", "op", op)
-		return nil, postgres.ErrNotFound
-	}
-
 	if err != nil {
 		s.logger.Debug("Error recieved from repository", logger.Err(err), "op", op)
-		return nil, fmt.Errorf("Client Service: Error when taking a client by first and last name: %v", err)
+		return nil, fmt.Errorf("%s: Error when taking a client by first and last name: %w", op, err)
 	}
 
-	s.logger.Debug("All clients is retrieved", "op", op)
 	return clients, nil
 }
 
@@ -118,10 +106,9 @@ func (s *clientsService) UpdateAddress(ctx context.Context, id, address uuid.UUI
 
 	if err != nil {
 		s.logger.Debug("Somthin wrong with UOW updating", logger.Err(err), "op", op)
-		return fmt.Errorf("Client service: unit of work update problem: %v", err)
+		return fmt.Errorf("%s: unit of work update problem: %v", op, err)
 	}
 
-	s.logger.Debug("Data updated", "op", op)
 	return nil
 }
 
@@ -142,9 +129,8 @@ func (s *clientsService) Delete(ctx context.Context, id uuid.UUID) error {
 
 	if err != nil {
 		s.logger.Debug("Somthin wrong with UOW deleting", logger.Err(err), "op", op)
-		return fmt.Errorf("Client service: unit of work delete problem: %v", err)
+		return fmt.Errorf("%s: unit of work delete problem: %v", op, err)
 	}
 
-	s.logger.Debug("Client is deleted", "op", op)
 	return nil
 }

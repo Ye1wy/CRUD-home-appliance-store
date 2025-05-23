@@ -1,6 +1,7 @@
 package services
 
 import (
+	crud_errors "CRUD-HOME-APPLIANCE-STORE/internal/errors"
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/domain"
 	"CRUD-HOME-APPLIANCE-STORE/internal/repositories/postgres"
 	"CRUD-HOME-APPLIANCE-STORE/internal/uow"
@@ -10,6 +11,8 @@ import (
 
 	"github.com/google/uuid"
 )
+
+var imageRepoName = uow.RepositoryName("image")
 
 type ImageReader interface {
 	GetAll(ctx context.Context, limit, offset int) ([]domain.Image, error)
@@ -47,10 +50,9 @@ func (s *imageService) Create(ctx context.Context, image domain.Image) error {
 
 	if err != nil {
 		s.logger.Debug("Somthing wrong with UOW creating", logger.Err(err), "op", op)
-		return fmt.Errorf("Image service: unit of work problem %w", err)
+		return fmt.Errorf("%s: unit of work problem %v", op, err)
 	}
 
-	s.logger.Debug("Image is created", "op", op)
 	return nil
 }
 
@@ -59,13 +61,13 @@ func (s *imageService) GetAll(ctx context.Context, limit, offset int) ([]domain.
 
 	if limit <= 0 || offset <= 0 {
 		s.logger.Debug("Invalid parameter limit and offset", "op", op)
-		return nil, ErrInvalidParam
+		return nil, fmt.Errorf("%s: %w", op, crud_errors.ErrInvalidParam)
 	}
 
 	images, err := s.reader.GetAll(ctx, limit, offset)
 	if err != nil {
 		s.logger.Debug("Somthing wrong in repository", logger.Err(err), "op", op)
-		return nil, err
+		return nil, fmt.Errorf("%s: %v", op, err)
 	}
 
 	return images, nil
@@ -74,13 +76,57 @@ func (s *imageService) GetAll(ctx context.Context, limit, offset int) ([]domain.
 func (s *imageService) GetById(ctx context.Context, id uuid.UUID) (*domain.Image, error) {
 	op := "services.imageService.GetById"
 
-	return nil, nil
+	image, err := s.reader.GetById(ctx, id)
+	if err != nil {
+		s.logger.Debug("Extract data is failed", logger.Err(err), "op", op)
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return image, nil
 }
 
 func (s *imageService) Update(ctx context.Context, image *domain.Image) error {
+	op := "services.imageService.Update"
+
+	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
+		repo, err := tx.Get(imageRepoName)
+		if err != nil {
+			s.logger.Debug("Product transaction problem on updating", logger.Err(err), "op", op)
+			return err
+		}
+
+		repoGen := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
+		imageRepo := repoGen.(postgres.ImageRepository)
+		return imageRepo.Update(ctx, image)
+	})
+
+	if err != nil {
+		s.logger.Debug("Somthing wrong with UOW updating", logger.Err(err), "op", op)
+		return fmt.Errorf("%s: unit of work update problem: %v", op, err)
+	}
+
 	return nil
 }
 
 func (s *imageService) Delete(ctx context.Context, id uuid.UUID) error {
+	op := "services.imageService.Delete"
+
+	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
+		repo, err := tx.Get(imageRepoName)
+		if err != nil {
+			s.logger.Debug("Get transaction problem", logger.Err(err), "op", op)
+			return err
+		}
+
+		repoGen := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
+		imageRepo := repoGen.(postgres.ImageRepository)
+		return imageRepo.Delete(ctx, id)
+	})
+
+	if err != nil {
+		s.logger.Debug("Somthin wrong with UOW deleting", logger.Err(err), "op", op)
+		return fmt.Errorf("Image service: unit of work delete problem: %w", err)
+	}
+
 	return nil
 }

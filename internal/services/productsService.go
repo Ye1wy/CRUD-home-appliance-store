@@ -1,12 +1,12 @@
 package services
 
 import (
+	crud_errors "CRUD-HOME-APPLIANCE-STORE/internal/errors"
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/domain"
 	"CRUD-HOME-APPLIANCE-STORE/internal/repositories/postgres"
 	"CRUD-HOME-APPLIANCE-STORE/internal/uow"
 	"CRUD-HOME-APPLIANCE-STORE/pkg/logger"
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -50,10 +50,9 @@ func (s *productService) Create(ctx context.Context, product domain.Product) err
 
 	if err != nil {
 		s.logger.Debug("Something wrong with UOW creating", logger.Err(err), "op", op)
-		return fmt.Errorf("Product service: unit of work creating problem: %v", err)
+		return fmt.Errorf("%s: unit of work creating problem: %v", op, err)
 	}
 
-	s.logger.Debug("Product created", "op", op)
 	return nil
 }
 
@@ -62,18 +61,13 @@ func (s *productService) GetAll(ctx context.Context, limit, offset int) ([]domai
 
 	if limit <= 0 || offset < 0 {
 		s.logger.Debug("Error: limit <= 0 or offset < 0", "op", op)
-		return nil, fmt.Errorf("Product service: limit or offset invalid payload")
+		return nil, fmt.Errorf("%s: %w", op, crud_errors.ErrInvalidParam)
 	}
 
 	products, err := s.reader.GetAll(ctx, limit, offset)
-	if errors.Is(err, postgres.ErrNotFound) {
-		s.logger.Debug("Product's not found", "op", op)
-		return nil, err
-	}
-
 	if err != nil {
 		s.logger.Debug("Repo error", logger.Err(err), "op", op)
-		return nil, fmt.Errorf("Product Service: %v", err)
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return products, nil
@@ -82,17 +76,10 @@ func (s *productService) GetAll(ctx context.Context, limit, offset int) ([]domai
 func (s *productService) GetById(ctx context.Context, id uuid.UUID) (*domain.Product, error) {
 	op := "services.productService.GetById"
 	product, err := s.reader.GetById(ctx, id)
-	if errors.Is(err, postgres.ErrNotFound) {
-		s.logger.Debug("Product not found", "op", op)
-		return nil, postgres.ErrNotFound
-	}
-
 	if err != nil {
-		s.logger.Debug("Exctract data is failed", logger.Err(err), "op", op)
-		return nil, err
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	s.logger.Debug("Product retrived", "id", id, "op", op)
 	return product, nil
 }
 
@@ -100,7 +87,7 @@ func (s *productService) Update(ctx context.Context, id uuid.UUID, decrease int)
 	op := "services.productsService.Update"
 	if decrease <= 0 {
 		s.logger.Debug("Not valid input value", "value", decrease, "op", op)
-		return fmt.Errorf("Product Service: Decrease value must be greater that 0")
+		return fmt.Errorf("%s: %w", op, crud_errors.ErrInvalidParam)
 	}
 
 	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
@@ -117,15 +104,14 @@ func (s *productService) Update(ctx context.Context, id uuid.UUID, decrease int)
 
 	if err != nil {
 		s.logger.Debug("Somthing wrong with UOW updating", logger.Err(err), "op", op)
-		return fmt.Errorf("Product service: unit of work update problem: %v", err)
+		return fmt.Errorf("%s: unit of work update problem: %v", op, err)
 	}
 
-	s.logger.Debug("Data is updated", "op", op)
 	return nil
 }
 
 func (s *productService) Delete(ctx context.Context, id uuid.UUID) error {
-	op := "serice.productService.Delete"
+	op := "services.productService.Delete"
 
 	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
 		repo, err := tx.Get(productRepoName)
@@ -141,9 +127,8 @@ func (s *productService) Delete(ctx context.Context, id uuid.UUID) error {
 
 	if err != nil {
 		s.logger.Debug("Somthin wrong with UOW deleting", logger.Err(err), "op", op)
-		return fmt.Errorf("Product service: unit of work delete problem: %v", err)
+		return fmt.Errorf("%s: unit of work delete problem: %v", op, err)
 	}
 
-	s.logger.Debug("Product successfully deleted", "op", op)
 	return nil
 }
