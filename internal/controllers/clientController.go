@@ -63,7 +63,7 @@ func (ctrl *ClientController) Create(c *gin.Context) {
 		return
 	}
 
-	client, err := mapper.ClientToDomain(&clientDTO)
+	client, err := mapper.ClientToDomain(clientDTO)
 	if err != nil {
 		ctrl.logger.Error("Failed mapping dto to domain", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Error from server"})
@@ -125,12 +125,7 @@ func (ctrl *ClientController) GetAll(c *gin.Context) {
 	clientDTOs := make([]dto.Client, len(clients), cap(clients))
 
 	for i, client := range clients {
-		dto, err := mapper.ClientToDTO(&client)
-		if err != nil {
-			ctrl.logger.Error("Mapping error! Something is waste!", logger.Err(err), "op", op)
-			continue
-		}
-
+		dto := mapper.ClientToDTO(client)
 		clientDTOs[i] = dto
 	}
 
@@ -171,12 +166,7 @@ func (ctrl *ClientController) GetByNameAndSurname(c *gin.Context) {
 	clientDTO := make([]dto.Client, len(clients), cap(clients))
 
 	for i, client := range clients {
-		dto, err := mapper.ClientToDTO(&client)
-		if err != nil {
-			ctrl.logger.Error("Mapping error! Somthing is waste!", logger.Err(err), "op", op)
-			continue
-		}
-
+		dto := mapper.ClientToDTO(client)
 		clientDTO[i] = dto
 	}
 

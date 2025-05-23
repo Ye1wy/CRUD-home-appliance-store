@@ -52,12 +52,7 @@ func (ctrl *ProductController) Create(c *gin.Context) {
 		return
 	}
 
-	product, err := mapper.ProductToDomain(&productDTO)
-	if err != nil {
-		ctrl.logger.Error("Mapping error", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Failed to add product"})
-		return
-	}
+	product := mapper.ProductToDomain(productDTO)
 
 	if err := ctrl.service.Create(c.Request.Context(), product); err != nil {
 		ctrl.logger.Error("Failed to add client", logger.Err(err), "op", op)

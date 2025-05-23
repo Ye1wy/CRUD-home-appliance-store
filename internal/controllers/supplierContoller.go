@@ -47,8 +47,7 @@ func (ctrl *SupplierController) Create(c *gin.Context) {
 		return
 	}
 
-	supplier, _ := mapper.SupplierToDomain(&dto)
-
+	supplier := mapper.SupplierToDomain(dto)
 	err := ctrl.service.Create(c, supplier)
 	if err != nil {
 		ctrl.logger.Error("Failed create supplier", logger.Err(err), "op", op)
@@ -110,8 +109,7 @@ func (ctrl *SupplierController) GetById(c *gin.Context) {
 		return
 	}
 
-	dto, _ := mapper.SupplierToDTO(&supplier)
-
+	dto := mapper.SupplierToDTO(supplier)
 	ctrl.logger.Debug("Data retrieved", "op", op)
 	ctrl.responce(c, http.StatusOK, dto)
 }
