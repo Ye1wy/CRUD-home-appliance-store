@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	crud_errors "CRUD-HOME-APPLIANCE-STORE/internal/errors"
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/domain"
 	"CRUD-HOME-APPLIANCE-STORE/pkg/logger"
 	"context"
@@ -37,8 +38,8 @@ func (r *ProductRepo) Create(ctx context.Context, product domain.Product) error 
 
 	_, err := r.db.Exec(ctx, sqlStatement, args)
 	if err != nil {
-		r.logger.Debug("Failed to create Product", "op", op)
-		return fmt.Errorf("Product Repository: unable to insert row: %v", err)
+		r.logger.Debug("failed to create product", logger.Err(err), "op", op)
+		return fmt.Errorf("%s: unable to insert row: %v", op, err)
 	}
 
 	return nil
@@ -55,7 +56,7 @@ func (r *ProductRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.P
 	rows, err := r.db.Query(ctx, sqlStatement, args)
 	if err != nil {
 		r.logger.Debug("query unvalable", logger.Err(err), "op", op)
-		return nil, fmt.Errorf("Product Repo: query error %v", err)
+		return nil, fmt.Errorf("%s: query error: %v", op, err)
 	}
 
 	var products []domain.Product
@@ -66,19 +67,18 @@ func (r *ProductRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.P
 		if err := rows.Scan(&product.Id, &product.Name, &product.Category,
 			&product.Price, &product.AvailableStock, &product.LastUpdateDate,
 			&product.SupplierId, &product.ImageId); err != nil {
-			r.logger.Debug("Scan unable", logger.Err(err), "op", op)
-			return nil, fmt.Errorf("Product Repo: Scan failed %v", err)
+			r.logger.Debug("scan unable", logger.Err(err), "op", op)
+			return nil, fmt.Errorf("%s: scan failed: %v", op, err)
 		}
 
 		products = append(products, product)
 	}
 
 	if len(products) == 0 {
-		r.logger.Debug("Product not found", "op", op)
-		return nil, ErrNotFound
+		r.logger.Debug("product not found", "op", op)
+		return nil, fmt.Errorf("%s: %w", op, crud_errors.ErrNotFound)
 	}
 
-	r.logger.Debug("All product is retrieved", "op", op)
 	return products, nil
 }
 
@@ -95,13 +95,13 @@ func (r *ProductRepo) GetById(ctx context.Context, id uuid.UUID) (*domain.Produc
 		&product.Price, &product.AvailableStock, &product.LastUpdateDate,
 		&product.SupplierId, &product.ImageId)
 	if errors.Is(err, pgx.ErrNoRows) {
-		r.logger.Debug("Product not found", "op", op)
-		return nil, ErrNotFound
+		r.logger.Debug("product not found", "op", op)
+		return nil, fmt.Errorf("%s: %w", op, crud_errors.ErrNotFound)
 	}
 
 	if err != nil {
-		r.logger.Debug("Scan unable", logger.Err(err), "op", op)
-		return nil, fmt.Errorf("Product Repo: Scan failed %v", err)
+		r.logger.Debug("scan unable", logger.Err(err), "op", op)
+		return nil, fmt.Errorf("%s: scan failed: %v", op, err)
 	}
 
 	return &product, nil
@@ -116,13 +116,13 @@ func (r *ProductRepo) Update(ctx context.Context, id uuid.UUID, decrease int) er
 
 	tag, err := r.db.Exec(ctx, sqlStatement, args)
 	if tag.RowsAffected() == 0 {
-		r.logger.Debug("Product not found", "op", op)
-		return ErrNotFound
+		r.logger.Debug("product not found", "op", op)
+		return fmt.Errorf("%s: %w", op, crud_errors.ErrNotFound)
 	}
 
 	if err != nil {
-		r.logger.Debug("Execute sql statement for update stock is unable", logger.Err(err), "op", op)
-		return fmt.Errorf("Product Repo: %v", err)
+		r.logger.Debug("execute sql statement for update stock is unable", logger.Err(err), "op", op)
+		return fmt.Errorf("%s: failed exec query: %v", op, err)
 	}
 
 	return nil
@@ -137,10 +137,9 @@ func (r *ProductRepo) Delete(ctx context.Context, id uuid.UUID) error {
 
 	_, err := r.db.Exec(ctx, sqlStatement, arg)
 	if err != nil {
-		r.logger.Debug("Execute sql statement for delete product is unable", logger.Err(err), "op", op)
-		return fmt.Errorf("Product Repo: %v", err)
+		r.logger.Debug("execute sql statement for delete product is unable", logger.Err(err), "op", op)
+		return fmt.Errorf("%s: %v", op, err)
 	}
 
-	r.logger.Debug("Product deleted", "op", op)
 	return nil
 }

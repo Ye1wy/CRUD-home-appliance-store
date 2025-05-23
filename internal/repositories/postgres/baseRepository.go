@@ -22,7 +22,7 @@ type basePostgresRepository struct {
 }
 
 func newBasePostgresRepository(db DB, logger *logger.Logger) *basePostgresRepository {
-	logger.Debug("Postgres base repo is created")
+	logger.Debug("postgres base repo is created")
 	return &basePostgresRepository{
 		db:     db,
 		logger: logger,

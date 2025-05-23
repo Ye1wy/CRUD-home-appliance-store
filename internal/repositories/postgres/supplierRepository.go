@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	crud_errors "CRUD-HOME-APPLIANCE-STORE/internal/errors"
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/domain"
 	"CRUD-HOME-APPLIANCE-STORE/pkg/logger"
 	"context"
@@ -35,7 +36,7 @@ func (r *SupplierRepo) Create(ctx context.Context, supplier domain.Supplier) err
 	_, err := r.db.Exec(ctx, sqlStatement, args)
 	if err != nil {
 		r.logger.Debug("failed to create supplier", logger.Err(err), "op", op)
-		return fmt.Errorf("supplier repository: unable to insert row: %v", err)
+		return fmt.Errorf("%s: unable to insert row: %v", op, err)
 	}
 
 	return nil
@@ -43,7 +44,7 @@ func (r *SupplierRepo) Create(ctx context.Context, supplier domain.Supplier) err
 
 func (r *SupplierRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.Supplier, error) {
 	op := "repository.postgres.supplierRepository.GetAll"
-	sqlStatement := "SELECT * FROM client LIMIT @limit OFFSET @offset"
+	sqlStatement := "SELECT * FROM supplier LIMIT @limit OFFSET @offset"
 	args := pgx.NamedArgs{
 		"limit":  limit,
 		"offset": offset,
@@ -52,7 +53,7 @@ func (r *SupplierRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.
 	rows, err := r.db.Query(ctx, sqlStatement, args)
 	if err != nil {
 		r.logger.Debug("unable to query supplier: %v", logger.Err(err), "op", op)
-		return nil, fmt.Errorf("supplier repository: error to get all client: %v", err)
+		return nil, fmt.Errorf("%s: unable to insert row: %v", op, err)
 	}
 	defer rows.Close()
 
@@ -62,7 +63,7 @@ func (r *SupplierRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.
 		var supplier domain.Supplier
 
 		if err := rows.Scan(&supplier.Id, &supplier.Name, &supplier.AddressId, &supplier.PhoneNumber); err != nil {
-			return nil, fmt.Errorf("supplier repository: failed to bind data in GetAll: %v", err)
+			return nil, fmt.Errorf("%s: failed to bind data: %v", op, err)
 		}
 
 		suppliers = append(suppliers, supplier)
@@ -70,16 +71,15 @@ func (r *SupplierRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.
 
 	if len(suppliers) == 0 {
 		r.logger.Debug("supplier's not found", "op", op)
-		return nil, ErrNotFound
+		return nil, fmt.Errorf("%s: %w", op, crud_errors.ErrNotFound)
 	}
 
-	r.logger.Debug("all supplier retrived", "op", op)
 	return suppliers, nil
 }
 
 func (r *SupplierRepo) GetById(ctx context.Context, id uuid.UUID) (*domain.Supplier, error) {
 	op := "repository.postgres.supplierRepository.GetById"
-	sqlStatement := "SELECT * FROM product WHERE id=@id"
+	sqlStatement := "SELECT * FROM supplier WHERE id=@id"
 	arg := pgx.NamedArgs{
 		"id": id,
 	}
@@ -89,12 +89,12 @@ func (r *SupplierRepo) GetById(ctx context.Context, id uuid.UUID) (*domain.Suppl
 	err := row.Scan(&supplier.Id, &supplier.Name, &supplier.AddressId, &supplier.PhoneNumber)
 	if errors.Is(err, pgx.ErrNoRows) {
 		r.logger.Debug("supplier not found", "op", op)
-		return nil, ErrNotFound
+		return nil, fmt.Errorf("%s: %w", op, crud_errors.ErrNotFound)
 	}
 
 	if err != nil {
-		r.logger.Debug("Scan unable", logger.Err(err), "op", op)
-		return nil, fmt.Errorf("supplier repository: ccan failed %v", err)
+		r.logger.Debug("scan unable", logger.Err(err), "op", op)
+		return nil, fmt.Errorf("%s: scan failed: %v", op, err)
 	}
 
 	return &supplier, nil
@@ -113,15 +113,14 @@ func (r *SupplierRepo) Update(ctx context.Context, id, address uuid.UUID) error 
 	tag, err := r.db.Exec(ctx, sqlStatement, arg)
 	if tag.RowsAffected() == 0 {
 		r.logger.Debug("supplier not found", "op", op)
-		return ErrNotFound
+		return fmt.Errorf("%s: %w", op, crud_errors.ErrNotFound)
 	}
 
 	if err != nil {
 		r.logger.Debug("failed execution update query", logger.Err(err), "op", op)
-		return fmt.Errorf("supplier repository: failed exec update query %v", err)
+		return fmt.Errorf("%s: failed exec query: %v", op, err)
 	}
 
-	r.logger.Debug("data updated", "op", op)
 	return nil
 }
 
@@ -134,10 +133,9 @@ func (r *SupplierRepo) Delete(ctx context.Context, id uuid.UUID) error {
 
 	_, err := r.db.Exec(ctx, sqlStatement, arg)
 	if err != nil {
-		r.logger.Debug("execute sql statement for delete product is unable", logger.Err(err), "op", op)
-		return fmt.Errorf("supplier repo: %v", err)
+		r.logger.Debug("execute sql statement is unable", logger.Err(err), "op", op)
+		return fmt.Errorf("%s: %v", op, err)
 	}
 
-	r.logger.Debug("supplier deleted", "op", op)
 	return nil
 }

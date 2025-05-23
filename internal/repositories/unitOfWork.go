@@ -1,17 +1,12 @@
 package repository
 
 import (
+	crud_errors "CRUD-HOME-APPLIANCE-STORE/internal/errors"
 	"CRUD-HOME-APPLIANCE-STORE/internal/uow"
 	"CRUD-HOME-APPLIANCE-STORE/pkg/logger"
 	"context"
-	"errors"
 
 	"github.com/jackc/pgx/v5"
-)
-
-var (
-	ErrRepoIsExist     = errors.New("repository is exist")
-	ErrRepoIsNotExitst = errors.New("repository is not exitst")
 )
 
 type transaction struct {
@@ -31,7 +26,7 @@ func (tx *transaction) Get(name uow.RepositoryName) (uow.Repository, error) {
 		return repo, nil
 	}
 
-	return nil, ErrRepoIsNotExitst
+	return nil, crud_errors.ErrRepoIsNotExitst
 }
 
 func (tx *transaction) GetTX() pgx.Tx {
@@ -54,7 +49,7 @@ func NewUnitOfWork(conn *pgx.Conn, logger *logger.Logger) *unitOfWork {
 
 func (unit *unitOfWork) Register(name uow.RepositoryName, gen uow.RepositoryGenerator) error {
 	if _, ok := unit.repositories[name]; ok {
-		return ErrRepoIsExist
+		return crud_errors.ErrRepoIsExist
 	}
 
 	unit.repositories[name] = gen
@@ -64,7 +59,7 @@ func (unit *unitOfWork) Register(name uow.RepositoryName, gen uow.RepositoryGene
 
 func (unit *unitOfWork) Remove(name uow.RepositoryName) error {
 	if _, ok := unit.repositories[name]; !ok {
-		return ErrRepoIsNotExitst
+		return crud_errors.ErrRepoIsNotExitst
 	}
 
 	delete(unit.repositories, name)

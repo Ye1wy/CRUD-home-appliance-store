@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	crud_errors "CRUD-HOME-APPLIANCE-STORE/internal/errors"
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/domain"
 	"CRUD-HOME-APPLIANCE-STORE/pkg/logger"
 	"context"
@@ -16,7 +17,7 @@ type ClientRepo struct {
 
 func NewClientRepository(db DB, log *logger.Logger) *ClientRepo {
 	baseRepo := newBasePostgresRepository(db, log)
-	log.Debug("Client repo is created")
+	log.Debug("client repo is created")
 	return &ClientRepo{baseRepo}
 }
 
@@ -31,12 +32,10 @@ func (r *ClientRepo) Create(ctx context.Context, client domain.Client) error {
 		"clientAddressId": client.AddressId,
 	}
 
-	r.logger.Debug("Birthday", "Time", client.Birthday)
-
 	_, err := r.db.Exec(ctx, sqlStatement, args)
 	if err != nil {
-		r.logger.Debug("Failed to create Client", "op", op)
-		return fmt.Errorf("Client Repository: unable to insert row: %v", err)
+		r.logger.Debug("failed to create Client", logger.Err(err), "op", op)
+		return fmt.Errorf("%s: unable to insert row: %v", op, err)
 	}
 
 	return nil
@@ -52,8 +51,8 @@ func (r *ClientRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.Cl
 
 	rows, err := r.db.Query(ctx, sqlStatement, args)
 	if err != nil {
-		r.logger.Debug("Unable to query client: %v", logger.Err(err), "op", op)
-		return nil, fmt.Errorf("Client Repository: Error to get all client: %v", err)
+		r.logger.Debug("unable to query client: %v", logger.Err(err), "op", op)
+		return nil, fmt.Errorf("%s: query error: %v", op, err)
 	}
 	defer rows.Close()
 
@@ -65,18 +64,17 @@ func (r *ClientRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.Cl
 		if err := rows.Scan(&client.Id, &client.Name, &client.Surname,
 			&client.Birthday, &client.Gender, &client.RegistrationDate,
 			&client.AddressId); err != nil {
-			return nil, fmt.Errorf("Client Repository: Failed to bind data in GetAll: %v", err)
+			return nil, fmt.Errorf("%s: failed to bind data: %v", op, err)
 		}
 
 		clients = append(clients, client)
 	}
 
 	if len(clients) == 0 {
-		r.logger.Debug("Clients not found", "op", op)
-		return nil, ErrNotFound
+		r.logger.Debug("clients not found", "op", op)
+		return nil, fmt.Errorf("%s: %w", op, crud_errors.ErrNotFound)
 	}
 
-	r.logger.Debug("Client taked", "Clients:", clients, "op", op)
 	return clients, nil
 }
 
@@ -89,10 +87,9 @@ func (r *ClientRepo) GetByNameAndSurname(ctx context.Context, name, surname stri
 	}
 
 	rows, err := r.db.Query(ctx, sqlStatement, args)
-
 	if err != nil {
-		r.logger.Debug("Failed get clients by name and surname", logger.Err(err), "op", op)
-		return nil, fmt.Errorf("Client Repository: unable to query client by name and surname: %v", err)
+		r.logger.Debug("failed get clients by name and surname", logger.Err(err), "op", op)
+		return nil, fmt.Errorf("%s: query error: %v", op, err)
 	}
 	defer rows.Close()
 
@@ -104,19 +101,18 @@ func (r *ClientRepo) GetByNameAndSurname(ctx context.Context, name, surname stri
 		if err := rows.Scan(&client.Id, &client.Name, &client.Surname,
 			&client.Birthday, &client.Gender,
 			&client.RegistrationDate, &client.AddressId); err != nil {
-			r.logger.Debug("Failed binding data", logger.Err(err), "op", op)
-			return nil, fmt.Errorf("Client Repository: failed to bind data in GeyBy...: %v", err)
+			r.logger.Debug("failed binding data", logger.Err(err), "op", op)
+			return nil, fmt.Errorf("%s: failed to bind data: %v", op, err)
 		}
 
 		clients = append(clients, client)
 	}
 
 	if len(clients) == 0 {
-		r.logger.Debug("Clients not found", "op", op)
-		return nil, ErrNotFound
+		r.logger.Debug("clients not found", "op", op)
+		return nil, fmt.Errorf("%s: %w", op, crud_errors.ErrNotFound)
 	}
 
-	r.logger.Debug("All data retrieved", "op", op)
 	return clients, nil
 }
 
@@ -128,20 +124,17 @@ func (r *ClientRepo) UpdateAddress(ctx context.Context, id, address uuid.UUID) e
 		"addressId": address,
 	}
 
-	r.logger.Debug("Parameter", "id", id, "address id", address)
-
 	tag, err := r.db.Exec(ctx, sqlStatement, arg)
 	if tag.RowsAffected() == 0 {
-		r.logger.Debug("Client not found", "op", op)
-		return ErrNotFound
+		r.logger.Debug("client not found", "op", op)
+		return fmt.Errorf("%s: %w", op, crud_errors.ErrNotFound)
 	}
 
 	if err != nil {
-		r.logger.Debug("Failed execution update query", logger.Err(err), "op", op)
-		return fmt.Errorf("Client Repository: failed exec update query %v", err)
+		r.logger.Debug("failed execution update query", logger.Err(err), "op", op)
+		return fmt.Errorf("%s: failed exec query: %v", op, err)
 	}
 
-	r.logger.Debug("Data updated", "op", op)
 	return nil
 }
 
@@ -154,10 +147,9 @@ func (r *ClientRepo) Delete(ctx context.Context, id uuid.UUID) error {
 
 	_, err := r.db.Exec(ctx, sqlStatement, arg)
 	if err != nil {
-		r.logger.Debug("Error in exec delete request to data base", "op", op)
-		return fmt.Errorf("Client Repository: Failed delete client: %v", err)
+		r.logger.Debug("error in exec delete request to data base", "op", op)
+		return fmt.Errorf("%s: %v", op, err)
 	}
 
-	r.logger.Debug("Client is deleted", "op", op)
 	return nil
 }
