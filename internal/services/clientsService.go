@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 )
 
+var addressRepoName = uow.RepositoryName("address")
 var clientRepoName = uow.RepositoryName("client")
 
 type ClientReader interface {
@@ -33,17 +34,32 @@ func NewClientService(reader ClientReader, unit uow.UOW, logger *logger.Logger) 
 	}
 }
 
-func (s *clientsService) Create(ctx context.Context, client domain.Client) error {
+func (s *clientsService) Create(ctx context.Context, client domain.Client, address domain.Address) error {
 	op := "services.clientService.Create"
 
 	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
-		repo, err := tx.Get(clientRepoName)
+		repo, err := tx.Get(addressRepoName)
+		if err != nil {
+			s.logger.Debug("Address transaction problem on creating", logger.Err(err), "op", op)
+			return err
+		}
+
+		repoGen := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
+		addressRepo := repoGen.(*postgres.AddressRepo)
+		address_id, err := addressRepo.Create(ctx, address)
+		if err != nil {
+			s.logger.Debug("Address transaction problem on creating", logger.Err(err), "op", op)
+			return err
+		}
+
+		client.AddressId = address_id
+		repo, err = tx.Get(clientRepoName)
 		if err != nil {
 			s.logger.Debug("Client transaction problem on creating", logger.Err(err), "op", op)
 			return err
 		}
 
-		repoGen := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
+		repoGen = repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
 		clientRepo := repoGen.(*postgres.ClientRepo)
 		return clientRepo.Create(ctx, client)
 	})
@@ -90,18 +106,31 @@ func (s *clientsService) GetByNameAndSurname(ctx context.Context, name, surname 
 	return clients, nil
 }
 
-func (s *clientsService) UpdateAddress(ctx context.Context, id, address uuid.UUID) error {
+func (s *clientsService) UpdateAddress(ctx context.Context, id uuid.UUID, address domain.Address) error {
 	op := "services.clientsService.UpdateAddress"
 	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
-		repo, err := tx.Get(clientRepoName)
+		repo, err := tx.Get(addressRepoName)
+		if err != nil {
+			s.logger.Debug("Get address transaction problem on updating", logger.Err(err), "op", op)
+			return err
+		}
+
+		repoGen := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
+		addressRepo := repoGen.(*postgres.AddressRepo)
+		addressId, err := addressRepo.Create(ctx, address)
+		if err != nil {
+			return err
+		}
+
+		repo, err = tx.Get(clientRepoName)
 		if err != nil {
 			s.logger.Debug("Get transaction problem on updating", logger.Err(err), "op", op)
 			return err
 		}
 
-		repoGen := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
+		repoGen = repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
 		clientRepo := repoGen.(*postgres.ClientRepo)
-		return clientRepo.UpdateAddress(ctx, id, address)
+		return clientRepo.UpdateAddress(ctx, id, addressId)
 	})
 
 	if err != nil {
@@ -128,7 +157,7 @@ func (s *clientsService) Delete(ctx context.Context, id uuid.UUID) error {
 	})
 
 	if err != nil {
-		s.logger.Debug("Somthin wrong with UOW deleting", logger.Err(err), "op", op)
+		s.logger.Debug("Something wrong with UOW deleting", logger.Err(err), "op", op)
 		return fmt.Errorf("%s: unit of work delete problem: %v", op, err)
 	}
 
