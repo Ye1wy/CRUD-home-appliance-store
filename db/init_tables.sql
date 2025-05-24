@@ -4,7 +4,8 @@ CREATE TABLE IF NOT EXISTS address (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     country TEXT NOT NULL,
     city TEXT NOT NULL,
-    street TEXT NOT NULL
+    street TEXT NOT NULL,
+    UNIQUE(country, city, street)
 );
 
 CREATE TABLE IF NOT EXISTS client (
