@@ -34,7 +34,7 @@ func NewClientService(reader ClientReader, unit uow.UOW, logger *logger.Logger) 
 	}
 }
 
-func (s *clientsService) Create(ctx context.Context, client domain.Client, address domain.Address) error {
+func (s *clientsService) Create(ctx context.Context, client domain.Client) error {
 	op := "services.clientService.Create"
 
 	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
@@ -46,13 +46,13 @@ func (s *clientsService) Create(ctx context.Context, client domain.Client, addre
 
 		repoGen := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
 		addressRepo := repoGen.(*postgres.AddressRepo)
-		address_id, err := addressRepo.Create(ctx, address)
+		address_id, err := addressRepo.Create(ctx, client.Address)
 		if err != nil {
 			s.logger.Debug("Address transaction problem on creating", logger.Err(err), "op", op)
 			return err
 		}
 
-		client.AddressId = address_id
+		client.Address.Id = address_id
 		repo, err = tx.Get(clientRepoName)
 		if err != nil {
 			s.logger.Debug("Client transaction problem on creating", logger.Err(err), "op", op)

@@ -5,10 +5,6 @@ type Client struct {
 	Surname  string `json:"surname" xml:"surname" binding:"required"`
 	Birthday string `json:"birthday" xml:"birthday" binding:"required"`
 	Gender   string `json:"gender" xml:"gender" binding:"required"`
-	// AddressID uuid.UUID `json:"address_id" xml:"address_id" binding:"required"`
-}
-
-type FullClientData struct {
-	Client
 	Address
+	// AddressID uuid.UUID `json:"address_id" xml:"address_id" binding:"required"`
 }

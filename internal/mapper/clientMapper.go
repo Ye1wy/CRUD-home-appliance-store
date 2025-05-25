@@ -15,7 +15,11 @@ func ClientToDTO(client domain.Client) dto.Client {
 		Surname:  client.Surname,
 		Birthday: client.Birthday.Format(dateFormat),
 		Gender:   client.Gender,
-		// AddressID: client.AddressId,
+		Address: dto.Address{
+			Country: client.Address.Country,
+			City:    client.Address.City,
+			Street:  client.Address.Street,
+		},
 	}
 }
 
@@ -30,6 +34,10 @@ func ClientToDomain(dto dto.Client) (domain.Client, error) {
 		Surname:  dto.Surname,
 		Birthday: dtoBirthday,
 		Gender:   dto.Gender,
-		// AddressId: dto.AddressID,
+		Address: domain.Address{
+			Country: dto.Address.Country,
+			City:    dto.Address.City,
+			Street:  dto.Address.Street,
+		},
 	}, nil
 }

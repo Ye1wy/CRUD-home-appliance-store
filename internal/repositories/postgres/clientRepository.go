@@ -29,7 +29,7 @@ func (r *ClientRepo) Create(ctx context.Context, client domain.Client) error {
 		"clientSurname":   client.Surname,
 		"clientBirthday":  client.Birthday,
 		"clientGender":    client.Gender,
-		"clientAddressId": client.AddressId,
+		"clientAddressId": client.Address.Id,
 	}
 
 	_, err := r.db.Exec(ctx, sqlStatement, args)
@@ -43,7 +43,20 @@ func (r *ClientRepo) Create(ctx context.Context, client domain.Client) error {
 
 func (r *ClientRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.Client, error) {
 	op := "repositories.postgres.clientRepository.GetAll"
-	sqlStatement := "SELECT * FROM client LIMIT @limit OFFSET @offset"
+	sqlStatement := `SELECT 
+		c.id AS client_id,
+		c.name,
+		c.surname,
+		c.birthday,
+		c.gender,
+		c.registration_date,
+		a.id AS address_id,
+		a.country,
+		a.city,
+		a.street
+		FROM client c
+		LEFT JOIN address a ON c.address_id = a.id
+		LIMIT @limit OFFSET @offset;`
 	args := pgx.NamedArgs{
 		"limit":  limit,
 		"offset": offset,
@@ -61,9 +74,20 @@ func (r *ClientRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.Cl
 	for rows.Next() {
 		var client domain.Client
 
-		if err := rows.Scan(&client.Id, &client.Name, &client.Surname,
-			&client.Birthday, &client.Gender, &client.RegistrationDate,
-			&client.AddressId); err != nil {
+		err := rows.Scan(
+			&client.Id,
+			&client.Name,
+			&client.Surname,
+			&client.Birthday,
+			&client.Gender,
+			&client.RegistrationDate,
+			&client.Address.Id,
+			&client.Address.Country,
+			&client.Address.City,
+			&client.Address.Street,
+		)
+		if err != nil {
+			r.logger.Debug("failed binding data", logger.Err(err), "op", op)
 			return nil, fmt.Errorf("%s: failed to bind data: %v", op, err)
 		}
 
@@ -80,7 +104,20 @@ func (r *ClientRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.Cl
 
 func (r *ClientRepo) GetByNameAndSurname(ctx context.Context, name, surname string) ([]domain.Client, error) {
 	op := "repositories.postgres.clientRepository.GetByNameAndSurname"
-	sqlStatement := "SELECT * FROM client WHERE name = @clientName AND surname = @clientSurname"
+	sqlStatement := `SELECT 
+		c.id,
+		c.name,
+		c.surname,
+		c.birthday,
+		c.gender,
+		c.registration_date,
+		a.id,
+		a.country,
+		a.city,
+		a.street
+		FROM client c
+		LEFT JOIN address a ON c.address_id = a.id
+		WHERE c.name = @clientName AND c.surname = @clientSurname;`
 	args := pgx.NamedArgs{
 		"clientName":    name,
 		"clientSurname": surname,
@@ -98,9 +135,19 @@ func (r *ClientRepo) GetByNameAndSurname(ctx context.Context, name, surname stri
 	for rows.Next() {
 		var client domain.Client
 
-		if err := rows.Scan(&client.Id, &client.Name, &client.Surname,
-			&client.Birthday, &client.Gender,
-			&client.RegistrationDate, &client.AddressId); err != nil {
+		err := rows.Scan(
+			&client.Id,
+			&client.Name,
+			&client.Surname,
+			&client.Birthday,
+			&client.Gender,
+			&client.RegistrationDate,
+			&client.Address.Id,
+			&client.Address.Country,
+			&client.Address.City,
+			&client.Address.Street,
+		)
+		if err != nil {
 			r.logger.Debug("failed binding data", logger.Err(err), "op", op)
 			return nil, fmt.Errorf("%s: failed to bind data: %v", op, err)
 		}

@@ -16,7 +16,7 @@ import (
 )
 
 type clientService interface {
-	Create(ctx context.Context, client domain.Client, address domain.Address) error
+	Create(ctx context.Context, client domain.Client) error
 	GetAll(ctx context.Context, limit, offset int) ([]domain.Client, error)
 	GetByNameAndSurname(ctx context.Context, name, surname string) ([]domain.Client, error)
 	UpdateAddress(ctx context.Context, id uuid.UUID, address domain.Address) error
@@ -55,7 +55,7 @@ func NewClientsController(service clientService, logger *logger.Logger) *ClientC
 //		@Router			/api/v1/clients [post]
 func (ctrl *ClientController) Create(c *gin.Context) {
 	op := "controllers.clientController.Create"
-	var inputData dto.FullClientData
+	var inputData dto.Client
 
 	if err := c.ShouldBind(&inputData); err != nil {
 		ctrl.logger.Error("Failed to bind JSON for create", logger.Err(err), "op", op)
@@ -63,14 +63,12 @@ func (ctrl *ClientController) Create(c *gin.Context) {
 		return
 	}
 
-	client, err := mapper.ClientToDomain(inputData.Client)
+	client, err := mapper.ClientToDomain(inputData)
 	if err != nil {
 		ctrl.logger.Error("Failed mapping dto to domain", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalid birthady date in request payload"})
 		return
 	}
-
-	address := mapper.AddressToDomain(inputData.Address)
 
 	// var clientDTO dto.Client
 
@@ -87,14 +85,14 @@ func (ctrl *ClientController) Create(c *gin.Context) {
 	// 	return
 	// }
 
-	if err := ctrl.service.Create(c.Request.Context(), client, address); err != nil {
+	if err := ctrl.service.Create(c.Request.Context(), client); err != nil {
 		ctrl.logger.Error("Failed to add client: ", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Failed to add client"})
 		return
 	}
 
 	ctrl.logger.Info("Client added successfully", "op", op)
-	ctrl.responce(c, http.StatusCreated, client)
+	c.Status(http.StatusCreated)
 }
 
 // Get All Client godoc
@@ -231,7 +229,7 @@ func (ctrl *ClientController) UpdateAddress(c *gin.Context) {
 	}
 
 	ctrl.logger.Debug("Address ID updated successfully", "op", op)
-	ctrl.responce(c, http.StatusOK, gin.H{"massage": "address updated"})
+	c.Status(http.StatusOK)
 }
 
 // Delete Client godoc
