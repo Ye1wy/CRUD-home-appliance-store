@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS client (
     surname TEXT NOT NULL,
     birthday TIMESTAMP,
     gender TEXT CHECK (gender IN ('male', 'female')) NOT NULL,
-    registation_date TIMESTAMP DEFAULT now(),
+    registration_date TIMESTAMP DEFAULT now(),
     address_id UUID NOT NULL,
     FOREIGN KEY (address_id) REFERENCES address (id)
 );
@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS supplier (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
     address_id UUID NOT NULL,
-    phone_number TEXT NOT NULLs
+    phone_number TEXT NOT NULL,
     FOREIGN KEY (address_id) REFERENCES address (id)
 );
 
@@ -42,6 +42,6 @@ CREATE TABLE IF NOT EXISTS product (
     last_update_date TIMESTAMP DEFAULT now(),
     supplier_id UUID NOT NULL,
     image_id UUID NOT NULL,
-    FOREIGN KEY (supplier_id) REFERENCES supplier (id)
+    FOREIGN KEY (supplier_id) REFERENCES supplier (id),
     FOREIGN KEY (image_id) REFERENCES image (id)
 );
