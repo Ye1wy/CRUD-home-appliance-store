@@ -18,8 +18,8 @@ import (
 type supplierService interface {
 	Create(ctx context.Context, supplier domain.Supplier) error
 	GetAll(ctx context.Context, limit, offset int) ([]domain.Supplier, error)
-	GetById(ctx context.Context, id uuid.UUID) (domain.Supplier, error)
-	UpdateAddress(ctx context.Context, id, address uuid.UUID) error
+	GetById(ctx context.Context, id uuid.UUID) (*domain.Supplier, error)
+	UpdateAddress(ctx context.Context, id uuid.UUID, address domain.Address) error
 	Delete(ctx context.Context, id uuid.UUID) error
 }
 
@@ -47,7 +47,10 @@ func (ctrl *SupplierController) Create(c *gin.Context) {
 		return
 	}
 
+	ctrl.logger.Debug("Supplier dto data", dto)
 	supplier := mapper.SupplierToDomain(dto)
+	ctrl.logger.Debug("Supplier domain data", supplier)
+
 	err := ctrl.service.Create(c, supplier)
 	if err != nil {
 		ctrl.logger.Error("Failed create supplier", logger.Err(err), "op", op)
@@ -56,7 +59,7 @@ func (ctrl *SupplierController) Create(c *gin.Context) {
 	}
 
 	ctrl.logger.Debug("New supplier created", "op", op)
-	ctrl.responce(c, http.StatusCreated, dto)
+	c.Status(http.StatusCreated)
 }
 
 func (ctrl *SupplierController) GetAll(c *gin.Context) {
@@ -82,8 +85,14 @@ func (ctrl *SupplierController) GetAll(c *gin.Context) {
 		return
 	}
 
+	dto := make([]dto.Supplier, len(data), cap(data))
+
+	for i, supplier := range data {
+		dto[i] = mapper.SupplierToDTO(supplier)
+	}
+
 	ctrl.logger.Debug("All data is retrieved", "op", op)
-	ctrl.responce(c, http.StatusOK, data)
+	ctrl.responce(c, http.StatusOK, dto)
 }
 
 func (ctrl *SupplierController) GetById(c *gin.Context) {
@@ -109,7 +118,7 @@ func (ctrl *SupplierController) GetById(c *gin.Context) {
 		return
 	}
 
-	dto := mapper.SupplierToDTO(supplier)
+	dto := mapper.SupplierToDTO(*supplier)
 	ctrl.logger.Debug("Data retrieved", "op", op)
 	ctrl.responce(c, http.StatusOK, dto)
 }
@@ -124,22 +133,24 @@ func (ctrl *SupplierController) UpdateAddress(c *gin.Context) {
 		return
 	}
 
-	var address dto.UpdateAddress
+	var rawAddress dto.Address
 
-	if err := c.ShouldBind(address); err != nil {
+	if err := c.ShouldBind(&rawAddress); err != nil {
 		ctrl.logger.Error("Failed to bind JSON for ChangeAddressIdParameter", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Invalid request payload"})
 		return
 	}
 
-	if err := ctrl.service.UpdateAddress(c, id, address.AddressID); err != nil {
+	address := mapper.AddressToDomain(rawAddress)
+
+	if err := ctrl.service.UpdateAddress(c, id, address); err != nil {
 		ctrl.logger.Error("Failed to update address ID", "SupplierId", id, logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Failed to update address ID"})
 		return
 	}
 
 	ctrl.logger.Info("Address ID updated successfully", "op", op)
-	ctrl.responce(c, http.StatusOK, gin.H{"Msg": "Object updated"})
+	ctrl.responce(c, http.StatusOK, gin.H{"massage": "Object updated"})
 }
 
 func (ctrl *SupplierController) Delete(c *gin.Context) {
@@ -148,16 +159,16 @@ func (ctrl *SupplierController) Delete(c *gin.Context) {
 	id, err := uuid.Parse(rawId)
 	if err != nil {
 		ctrl.logger.Warn("invalid id payload", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusBadRequest, gin.H{})
+		c.Status(http.StatusBadRequest)
 		return
 	}
 
 	if err := ctrl.service.Delete(c.Request.Context(), id); err != nil {
 		ctrl.logger.Error("Failed delete supplier by id", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusInternalServerError, err)
+		ctrl.responce(c, http.StatusInternalServerError, gin.H{"massage": "server is busy"})
 		return
 	}
 
-	ctrl.logger.Debug("Successfuly deleted", "SupplierID", id, "op", op)
+	ctrl.logger.Debug("Successfuly deleted", "Supplier id:", id, "op", op)
 	c.Status(http.StatusNoContent)
 }

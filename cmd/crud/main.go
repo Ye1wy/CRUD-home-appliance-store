@@ -34,12 +34,25 @@ func main() {
 		return postgres.NewClientRepository(tx, log)
 	})
 
+	unit.Register("address", func(tx pgx.Tx, log *logger.Logger) uow.Repository {
+		return postgres.NewAddressRepository(tx, log)
+	})
+
+	unit.Register("supplier", func(tx pgx.Tx, log *logger.Logger) uow.Repository {
+		return postgres.NewSupplierRepository(tx, log)
+	})
+
 	clientRepo := postgres.NewClientRepository(conn, log)
 	clientService := services.NewClientService(clientRepo, unit, log)
 	clientController := controllers.NewClientsController(clientService, log)
 
+	supplierRepo := postgres.NewSupplierRepository(conn, log)
+	supplierService := services.NewSupplierService(supplierRepo, unit, log)
+	supplierController := controllers.NewSupplierContoller(supplierService, log)
+
 	routerConfig := routes.RouterConfig{
-		ClientController: clientController,
+		ClientController:   clientController,
+		SupplierController: supplierController,
 	}
 
 	router := routes.NewRouter(routerConfig)

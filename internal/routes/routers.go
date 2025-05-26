@@ -12,9 +12,9 @@ type routes struct {
 }
 
 type RouterConfig struct {
-	ClientController  *controllers.ClientController
-	ProductController *controllers.ProductController
-	// SupplierController *controllers.SupplierController
+	ClientController   *controllers.ClientController
+	ProductController  *controllers.ProductController
+	SupplierController *controllers.SupplierController
 }
 
 func NewRouter(cfg RouterConfig) routes {
@@ -45,14 +45,14 @@ func NewRouter(cfg RouterConfig) routes {
 		productGroup.DELETE("/:id", cfg.ProductController.Delete)
 	}
 
-	// supplierGroup := r.router.Group("/api/v1/suppliers")
-	// {
-	// 	supplierGroup.GET("", cfg.SupplierController.GetAll)
-	// 	supplierGroup.POST("", cfg.SupplierController.Create)
-	// 	supplierGroup.GET("/:id", cfg.SupplierController.GetById)
-	// 	supplierGroup.PATCH("/:id", cfg.SupplierController.UpdateAddress)
-	// 	supplierGroup.DELETE("/:id", cfg.SupplierController.Delete)
-	// }
+	supplierGroup := r.router.Group("/api/v1/suppliers")
+	{
+		supplierGroup.GET("", cfg.SupplierController.GetAll)
+		supplierGroup.POST("", cfg.SupplierController.Create)
+		supplierGroup.GET("/:id", cfg.SupplierController.GetById)
+		supplierGroup.PATCH("/:id", cfg.SupplierController.UpdateAddress)
+		supplierGroup.DELETE("/:id", cfg.SupplierController.Delete)
+	}
 
 	return r
 }
