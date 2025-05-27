@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	crud_errors "CRUD-HOME-APPLIANCE-STORE/internal/errors"
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/domain"
 	"CRUD-HOME-APPLIANCE-STORE/pkg/logger"
 	"context"
@@ -63,10 +64,10 @@ func (r *AddressRepo) Delete(ctx context.Context, id uuid.UUID) error {
 		"id": id,
 	}
 
-	_, err := r.db.Exec(ctx, sqlStatement, arg)
-	if err != nil {
-		r.logger.Error("execute sql statement for delete address is unable", logger.Err(err), "op", op)
-		return fmt.Errorf("%s: %v", op, err)
+	ct, _ := r.db.Exec(ctx, sqlStatement, arg)
+
+	if ct.RowsAffected() == 0 {
+		return fmt.Errorf("%s: no affected row. all errors from exec is skiped. %w", op, crud_errors.ErrForeignKeyViolation)
 	}
 
 	return nil

@@ -7,6 +7,7 @@ import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/uow"
 	"CRUD-HOME-APPLIANCE-STORE/pkg/logger"
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -153,7 +154,52 @@ func (s *clientsService) Delete(ctx context.Context, id uuid.UUID) error {
 
 		repoGen := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
 		clientRepo := repoGen.(*postgres.ClientRepo)
-		return clientRepo.Delete(ctx, id)
+		client, err := clientRepo.GetById(ctx, id)
+		if err != nil {
+			s.logger.Debug("Not found or something went wrong", logger.Err(err), "op", op+".uow")
+			return err
+		}
+
+		err = clientRepo.Delete(ctx, id)
+		if err != nil {
+			s.logger.Debug("something went wrong in delete", logger.Err(err), "op", op+".uow")
+			return err
+		}
+
+		repo, err = tx.Get(addressRepoName)
+		if err != nil {
+			s.logger.Debug("get address repositroy is unable", logger.Err(err), "op", op+".uow")
+			return err
+		}
+
+		repoGen = repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
+		addressRepo := repoGen.(*postgres.AddressRepo)
+		savepoint := `SAVEPOINT sq_delete_address;`
+		_, err = tx.GetTX().Exec(ctx, savepoint)
+		if err != nil {
+			s.logger.Debug("unable to set savepoint before delete address", logger.Err(err), "op", op+".uow")
+			return fmt.Errorf("%s.uow: unable to set savepoint: %v", op, err)
+		}
+
+		err = addressRepo.Delete(ctx, client.Address.Id)
+		if err != nil {
+
+			if errors.Is(err, crud_errors.ErrForeignKeyViolation) {
+				backToSave := `ROLLBACK TO SAVEPOINT sq_delete_address;`
+				_, err = tx.GetTX().Exec(ctx, backToSave)
+				if err != nil {
+					s.logger.Debug("unable back to savepoint after try delete address", logger.Err(err), "op", op+".uow")
+					return fmt.Errorf("%s.uow: unable back to savepoint: %v", op, err)
+				}
+
+				return nil
+			}
+
+			s.logger.Debug("deleting is unable: something went wrong. can't rollback", logger.Err(err), "op", op)
+			return nil
+		}
+
+		return nil
 	})
 
 	if err != nil {

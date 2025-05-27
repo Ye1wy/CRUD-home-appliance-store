@@ -5,6 +5,7 @@ import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/domain"
 	"CRUD-HOME-APPLIANCE-STORE/pkg/logger"
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -161,6 +162,50 @@ func (r *ClientRepo) GetByNameAndSurname(ctx context.Context, name, surname stri
 	}
 
 	return clients, nil
+}
+
+func (r *ClientRepo) GetById(ctx context.Context, id uuid.UUID) (*domain.Client, error) {
+	op := "repositories.postgres.clientRepository.GetById"
+	sqlStatement := `SELECT
+	c.id,
+	c.name,
+	c.surname,
+	c.birthday,
+	c.gender,
+	a.id,
+	a.country,
+	a.city,
+	a.street
+	FROM client c
+	LEFT JOIN address a ON c.address_id = a.id
+	WHERE c.id = @id;`
+	arg := pgx.NamedArgs{"id": id}
+
+	var client domain.Client
+	row := r.db.QueryRow(ctx, sqlStatement, arg)
+	err := row.Scan(
+		&client.Id,
+		&client.Name,
+		&client.Surname,
+		&client.Birthday,
+		&client.Gender,
+		&client.Address.Id,
+		&client.Address.Country,
+		&client.Address.City,
+		&client.Address.Street,
+	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		r.logger.Debug("client not found", "op", op)
+		return nil, fmt.Errorf("%s: %w", op, crud_errors.ErrNotFound)
+	}
+
+	if err != nil {
+		r.logger.Debug("scan unable", logger.Err(err), "op", op)
+		return nil, fmt.Errorf("%s: %v", op, err)
+	}
+
+	return &client, nil
 }
 
 func (r *ClientRepo) UpdateAddress(ctx context.Context, id, address uuid.UUID) error {
