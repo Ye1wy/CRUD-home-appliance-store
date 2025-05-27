@@ -26,10 +26,10 @@ type supplierService struct {
 	logger *logger.Logger
 }
 
-func NewSupplierService(reader supplierReader, uow uow.UOW, logger *logger.Logger) *supplierService {
+func NewSupplierService(reader supplierReader, unit uow.UOW, logger *logger.Logger) *supplierService {
 	logger.Debug("Supplier service is created")
 	return &supplierService{
-		uow:    uow,
+		uow:    unit,
 		reader: reader,
 		logger: logger,
 	}
@@ -42,7 +42,7 @@ func (s *supplierService) Create(ctx context.Context, supplier domain.Supplier) 
 		uowOp := op + ".uow"
 		repo, err := tx.Get(addressRepoName)
 		if err != nil {
-			s.logger.Debug("get address repository generator is unable", logger.Err(err), "op", op)
+			s.logger.Debug("get address repository generator is unable", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: get address repository generator is unable: %v", uowOp, err)
 		}
 
@@ -50,14 +50,14 @@ func (s *supplierService) Create(ctx context.Context, supplier domain.Supplier) 
 		addressRepo := repoGen.(*postgres.AddressRepo)
 		addressId, err := addressRepo.Create(ctx, supplier.Address)
 		if err != nil {
-			s.logger.Debug("Address creation problem in supplier uow", logger.Err(err), "op", op)
+			s.logger.Debug("address creation is unavailable", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: unable to create address: %v", uowOp, err)
 		}
 
 		supplier.Address.Id = addressId
 		repo, err = tx.Get(supplierRepoName)
 		if err != nil {
-			s.logger.Debug("get supplier repository generator is unable", logger.Err(err), "op", op)
+			s.logger.Debug("get supplier repository generator is unable", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: get supplier repository generator is unable: %v", uowOp, err)
 		}
 
@@ -125,7 +125,6 @@ func (s *supplierService) UpdateAddress(ctx context.Context, id uuid.UUID, addre
 			return fmt.Errorf("%s: unable to create address: %v", uowOp, err)
 		}
 
-		address.Id = addressId
 		repo, err = tx.Get(supplierRepoName)
 		if err != nil {
 			s.logger.Debug("get supplier repository generator is unable ", logger.Err(err), "op", uowOp)
@@ -134,7 +133,7 @@ func (s *supplierService) UpdateAddress(ctx context.Context, id uuid.UUID, addre
 
 		repoGen = repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
 		supplierRepo := repoGen.(*postgres.SupplierRepo)
-		if err := supplierRepo.Update(ctx, id, address.Id); err != nil {
+		if err := supplierRepo.Update(ctx, id, addressId); err != nil {
 			s.logger.Debug("failed to update address with supplier", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: failed to update address with supplier: %v", uowOp, err)
 		}
@@ -187,8 +186,8 @@ func (s *supplierService) Delete(ctx context.Context, id uuid.UUID) error {
 		repoGen = repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
 		addressRepo := repoGen.(*postgres.AddressRepo)
 
-		sqlStatement := `SAVEPOINT sq_delete_address;`
-		_, err = tx.GetTX().Exec(ctx, sqlStatement)
+		savepoint := `SAVEPOINT sq_delete_address;`
+		_, err = tx.GetTX().Exec(ctx, savepoint)
 		if err != nil {
 			s.logger.Debug("unable to set savepoint before delete address", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: unable to set savepoint: %v", uowOp, err)
