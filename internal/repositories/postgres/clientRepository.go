@@ -45,13 +45,13 @@ func (r *ClientRepo) Create(ctx context.Context, client domain.Client) error {
 func (r *ClientRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.Client, error) {
 	op := "repositories.postgres.clientRepository.GetAll"
 	sqlStatement := `SELECT 
-		c.id AS client_id,
+		c.id,
 		c.name,
 		c.surname,
 		c.birthday,
 		c.gender,
 		c.registration_date,
-		a.id AS address_id,
+		a.id,
 		a.country,
 		a.city,
 		a.street
