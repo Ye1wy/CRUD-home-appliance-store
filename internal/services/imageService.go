@@ -12,8 +12,6 @@ import (
 	"github.com/google/uuid"
 )
 
-var imageRepoName = uow.RepositoryName("image")
-
 type ImageReader interface {
 	GetAll(ctx context.Context, limit, offset int) ([]domain.Image, error)
 	GetById(ctx context.Context, id uuid.UUID) (*domain.Image, error)
@@ -37,15 +35,20 @@ func (s *imageService) Create(ctx context.Context, image domain.Image) error {
 	op := "services.imageService.Create"
 
 	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
-		repo, err := tx.Get(clientRepoName)
+		uowOp := op + ".uow"
+		imageRepoGen, err := getReposiotry(tx, uow.ImageRepoName, s.logger)
 		if err != nil {
-			s.logger.Debug("Image transaction problem on creating", logger.Err(err), "op", op)
-			return err
+			s.logger.Debug("get image repository generator is unable", logger.Err(err), "op", uowOp)
+			return fmt.Errorf("%s: get image repository generator is unable: %v", uowOp, err)
 		}
 
-		repoGen := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
-		imageRepo := repoGen.(*postgres.ImageRepository)
-		return imageRepo.Create(ctx, image)
+		imageRepo := imageRepoGen.(*postgres.ImageRepository)
+		if err := imageRepo.Create(ctx, image); err != nil {
+			s.logger.Debug("failed to create image", logger.Err(err), "op", uowOp)
+			return fmt.Errorf("%s: failed to create image: %v", uowOp, err)
+		}
+
+		return nil
 	})
 
 	if err != nil {
@@ -67,7 +70,7 @@ func (s *imageService) GetAll(ctx context.Context, limit, offset int) ([]domain.
 	images, err := s.reader.GetAll(ctx, limit, offset)
 	if err != nil {
 		s.logger.Debug("Somthing wrong in repository", logger.Err(err), "op", op)
-		return nil, fmt.Errorf("%s: %v", op, err)
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return images, nil
@@ -89,15 +92,20 @@ func (s *imageService) Update(ctx context.Context, image *domain.Image) error {
 	op := "services.imageService.Update"
 
 	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
-		repo, err := tx.Get(imageRepoName)
+		uowOp := op + ".uow"
+		imageRepoGen, err := getReposiotry(tx, uow.ImageRepoName, s.logger)
 		if err != nil {
-			s.logger.Debug("Product transaction problem on updating", logger.Err(err), "op", op)
-			return err
+			s.logger.Debug("get image repository generator is unable", logger.Err(err), "op", uowOp)
+			return fmt.Errorf("%s: get image repository generator is unable: %v", uowOp, err)
 		}
 
-		repoGen := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
-		imageRepo := repoGen.(postgres.ImageRepository)
-		return imageRepo.Update(ctx, image)
+		imageRepo := imageRepoGen.(*postgres.ImageRepository)
+		if err := imageRepo.Update(ctx, image); err != nil {
+			s.logger.Debug("failed to update image", logger.Err(err), "op", uowOp)
+			return fmt.Errorf("%s: failed to update image: %v", uowOp, err)
+		}
+
+		return nil
 	})
 
 	if err != nil {
@@ -112,15 +120,22 @@ func (s *imageService) Delete(ctx context.Context, id uuid.UUID) error {
 	op := "services.imageService.Delete"
 
 	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
-		repo, err := tx.Get(imageRepoName)
+		uowOp := op + ".uow"
+		imageRepoGen, err := getReposiotry(tx, uow.ImageRepoName, s.logger)
 		if err != nil {
-			s.logger.Debug("Get transaction problem", logger.Err(err), "op", op)
+			s.logger.Debug("Image transaction problem on creating", logger.Err(err), "op", uowOp)
 			return err
 		}
 
-		repoGen := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
-		imageRepo := repoGen.(postgres.ImageRepository)
-		return imageRepo.Delete(ctx, id)
+		imageRepo := imageRepoGen.(*postgres.ImageRepository)
+		savepoint := `sp_delete_address`
+		err = safeDeleteAddress(ctx, tx.GetTX(), id, imageRepo.Delete, s.logger, uowOp, savepoint)
+		if err != nil {
+			s.logger.Debug("unable to safe delete address", logger.Err(err), "op", uowOp)
+			return fmt.Errorf("%s: unable to safe delete address: %v", uowOp, err)
+		}
+
+		return nil
 	})
 
 	if err != nil {

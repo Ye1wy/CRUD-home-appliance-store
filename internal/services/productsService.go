@@ -12,8 +12,6 @@ import (
 	"github.com/google/uuid"
 )
 
-var productRepoName = uow.RepositoryName("product")
-
 type productReader interface {
 	GetAll(ctx context.Context, limit, offset int) ([]domain.Product, error)
 	GetById(ctx context.Context, id uuid.UUID) (*domain.Product, error)
@@ -37,15 +35,21 @@ func NewProductService(reader productReader, uow uow.UOW, logger *logger.Logger)
 func (s *productService) Create(ctx context.Context, product domain.Product) error {
 	op := "services.productService.Create"
 	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
-		repo, err := tx.Get(productRepoName)
+		uowOp := op + ".uow"
+		productRepoGen, err := getReposiotry(tx, uow.ProductRepoName, s.logger)
 		if err != nil {
-			s.logger.Debug("Create product transaction problem on creating", logger.Err(err), "op", op)
-			return err
+			s.logger.Debug("get product repository generator is unable", logger.Err(err), "op", uowOp)
+			return fmt.Errorf("%s: get product repository generator is unable: %v", uowOp, err)
 		}
 
-		repoGen := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
-		productRepo := repoGen.(postgres.ProductRepo)
-		return productRepo.Create(ctx, product)
+		productRepo := productRepoGen.(*postgres.ProductRepo)
+
+		if err := productRepo.Create(ctx, product); err != nil {
+			s.logger.Debug("failed to create product", logger.Err(err), "op", uowOp)
+			return fmt.Errorf("%s: failed to create product: %v", uowOp, err)
+		}
+
+		return nil
 	})
 
 	if err != nil {
@@ -91,15 +95,20 @@ func (s *productService) Update(ctx context.Context, id uuid.UUID, decrease int)
 	}
 
 	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
-		repo, err := tx.Get(productRepoName)
+		uowOp := op + ".uow"
+		productRepoGen, err := getReposiotry(tx, uow.ProductRepoName, s.logger)
 		if err != nil {
-			s.logger.Debug("Product transaction problem on updating", logger.Err(err), "op", op)
-			return err
+			s.logger.Debug("get product repository generator is unable", logger.Err(err), "op", uowOp)
+			return fmt.Errorf("%s: get product repository generator is unable: %v", uowOp, err)
 		}
 
-		repoGen := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
-		productRepo := repoGen.(postgres.ProductRepo)
-		return productRepo.Update(ctx, id, decrease)
+		productRepo := productRepoGen.(*postgres.ProductRepo)
+		if err := productRepo.Update(ctx, id, decrease); err != nil {
+			s.logger.Debug("failed to update stock with product", logger.Err(err), "op", uowOp)
+			return fmt.Errorf("%s: failed to update stock with product: %v", uowOp, err)
+		}
+
+		return nil
 	})
 
 	if err != nil {
@@ -114,15 +123,23 @@ func (s *productService) Delete(ctx context.Context, id uuid.UUID) error {
 	op := "services.productService.Delete"
 
 	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
-		repo, err := tx.Get(productRepoName)
+		uowOp := op + ".uow"
+		productRepoGen, err := getReposiotry(tx, uow.ProductRepoName, s.logger)
 		if err != nil {
-			s.logger.Debug("Get transaction problem", logger.Err(err), "op", op)
-			return err
+			s.logger.Debug("get product repository generator is unable", logger.Err(err), "op", uowOp)
+			return fmt.Errorf("%s: get product repository generator is unable: %v", uowOp, err)
 		}
 
-		repoGen := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
-		productRepo := repoGen.(postgres.ProductRepo)
-		return productRepo.Delete(ctx, id)
+		productRepo := productRepoGen.(*postgres.ProductRepo)
+
+		savepoint := `sp_delete_address`
+		err = safeDeleteAddress(ctx, tx.GetTX(), id, productRepo.Delete, s.logger, uowOp, savepoint)
+		if err != nil {
+			s.logger.Debug("unable to safe delete product", logger.Err(err), "op", uowOp)
+			return fmt.Errorf("%s: unable to safe delete product: %v", uowOp, err)
+		}
+
+		return nil
 	})
 
 	if err != nil {

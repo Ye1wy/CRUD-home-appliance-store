@@ -13,9 +13,6 @@ import (
 	"github.com/google/uuid"
 )
 
-var addressRepoName = uow.RepositoryName("address")
-var clientRepoName = uow.RepositoryName("client")
-
 type ClientReader interface {
 	GetAll(ctx context.Context, limit, offset int) ([]domain.Client, error)
 	GetByNameAndSurname(ctx context.Context, name, surname string) ([]domain.Client, error)
@@ -41,14 +38,13 @@ func (s *clientsService) Create(ctx context.Context, client domain.Client) error
 
 	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
 		uowOp := op + ".uow"
-		repo, err := tx.Get(addressRepoName)
+		addressRepoGen, err := getReposiotry(tx, uow.AddressRepoName, s.logger)
 		if err != nil {
 			s.logger.Debug("get address repository generator is unable", logger.Err(err), "op", uowOp)
-			return fmt.Errorf("%s: get adderss repository generator is unable: %v", uowOp, err)
+			return fmt.Errorf("%s: get address repository generator is unable: %v", uowOp, err)
 		}
 
-		repoGen := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
-		addressRepo := repoGen.(*postgres.AddressRepo)
+		addressRepo := addressRepoGen.(*postgres.AddressRepo)
 		address_id, err := addressRepo.Create(ctx, client.Address)
 		if err != nil {
 			s.logger.Debug("address creation is unavailable", logger.Err(err), "op", uowOp)
@@ -56,14 +52,15 @@ func (s *clientsService) Create(ctx context.Context, client domain.Client) error
 		}
 
 		client.Address.Id = address_id
-		repo, err = tx.Get(clientRepoName)
+
+		clientRepoGen, err := getReposiotry(tx, uow.ClientRepoName, s.logger)
 		if err != nil {
 			s.logger.Debug("get client repository generator is unable", logger.Err(err), "op", uowOp)
-			return fmt.Errorf("%s: get client repository generator is unable: %v", uowOp, err)
+			return fmt.Errorf("%s: error when try to get repository generator: %v", uowOp, err)
 		}
 
-		repoGen = repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
-		clientRepo := repoGen.(*postgres.ClientRepo)
+		clientRepo := clientRepoGen.(*postgres.ClientRepo)
+
 		if err := clientRepo.Create(ctx, client); err != nil {
 			s.logger.Debug("failed to create client", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: failed to create client: %v", uowOp, err)
@@ -118,28 +115,26 @@ func (s *clientsService) UpdateAddress(ctx context.Context, id uuid.UUID, addres
 	op := "services.clientsService.UpdateAddress"
 	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
 		uowOp := op + ".uow"
-		repo, err := tx.Get(addressRepoName)
+		addressRepoGen, err := getReposiotry(tx, uow.AddressRepoName, s.logger)
 		if err != nil {
 			s.logger.Debug("get address repository generator is unable", logger.Err(err), "op", uowOp)
-			return fmt.Errorf("%s: get adderss repository generator is unable: %v", uowOp, err)
+			return fmt.Errorf("%s: get address repository generator is unable: %v", uowOp, err)
 		}
 
-		repoGen := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
-		addressRepo := repoGen.(*postgres.AddressRepo)
+		addressRepo := addressRepoGen.(*postgres.AddressRepo)
 		addressId, err := addressRepo.Create(ctx, address)
 		if err != nil {
 			s.logger.Debug("address creation is unavailable", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: unable to create address: %v", uowOp, err)
 		}
 
-		repo, err = tx.Get(clientRepoName)
+		clientRepoGen, err := getReposiotry(tx, uow.ClientRepoName, s.logger)
 		if err != nil {
 			s.logger.Debug("get client repository generator is unable", logger.Err(err), "op", uowOp)
-			return fmt.Errorf("%s: get client repository generator is unable: %v", uowOp, err)
+			return fmt.Errorf("%s: error when try to get repository generator: %v", uowOp, err)
 		}
 
-		repoGen = repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
-		clientRepo := repoGen.(*postgres.ClientRepo)
+		clientRepo := clientRepoGen.(*postgres.ClientRepo)
 		if err := clientRepo.UpdateAddress(ctx, id, addressId); err != nil {
 			s.logger.Debug("failed to update address with client", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: failed to update address with client: %v", uowOp, err)
@@ -160,14 +155,14 @@ func (s *clientsService) Delete(ctx context.Context, id uuid.UUID) error {
 	op := "services.clientService.Delete"
 	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
 		uowOp := op + ".uow"
-		repo, err := tx.Get(clientRepoName)
+		clientRepoGen, err := getReposiotry(tx, uow.ClientRepoName, s.logger)
 		if err != nil {
 			s.logger.Debug("get client repository generator is unable", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: error when try to get repository generator: %v", uowOp, err)
 		}
 
-		repoGen := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
-		clientRepo := repoGen.(*postgres.ClientRepo)
+		clientRepo := clientRepoGen.(*postgres.ClientRepo)
+
 		client, err := clientRepo.GetById(ctx, id)
 		if err != nil {
 			if errors.Is(err, crud_errors.ErrNotFound) {
@@ -184,36 +179,19 @@ func (s *clientsService) Delete(ctx context.Context, id uuid.UUID) error {
 			return fmt.Errorf("%s: unable to delete client: %v", uowOp, err)
 		}
 
-		repo, err = tx.Get(addressRepoName)
+		addressRepoGen, err := getReposiotry(tx, uow.AddressRepoName, s.logger)
 		if err != nil {
 			s.logger.Debug("get address repository generator is unable", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: get address repository generator is unable: %v", uowOp, err)
 		}
 
-		repoGen = repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
-		addressRepo := repoGen.(*postgres.AddressRepo)
+		addressRepo := addressRepoGen.(*postgres.AddressRepo)
 
-		savepoint := `SAVEPOINT sq_delete_address;`
-		_, err = tx.GetTX().Exec(ctx, savepoint)
+		savepoint := `sp_delete_address`
+		err = safeDeleteAddress(ctx, tx.GetTX(), client.Address.Id, addressRepo.Delete, s.logger, uowOp, savepoint)
 		if err != nil {
-			s.logger.Debug("unable to set savepoint before delete address", logger.Err(err), "op", uowOp)
-			return fmt.Errorf("%s: unable to set savepoint: %v", uowOp, err)
-		}
-
-		if err := addressRepo.Delete(ctx, client.Address.Id); err != nil {
-			if errors.Is(err, crud_errors.ErrForeignKeyViolation) {
-				backToSave := `ROLLBACK TO SAVEPOINT sq_delete_address;`
-				_, err = tx.GetTX().Exec(ctx, backToSave)
-				if err != nil {
-					s.logger.Debug("unable back to savepoint after try delete address", logger.Err(err), "op", uowOp)
-					return fmt.Errorf("%s: unable back to savepoint: %v", uowOp, err)
-				}
-
-				return nil
-			}
-
-			s.logger.Debug("deleting is unable: unexpected error from delete address: rollback to savepoint is unavailable", logger.Err(err), "op", uowOp)
-			return fmt.Errorf("%s: unexpected error from delete address: %v", uowOp, err)
+			s.logger.Debug("unable to safe delete address", logger.Err(err), "op", uowOp)
+			return fmt.Errorf("%s: unable to safe delete address: %v", uowOp, err)
 		}
 
 		return nil

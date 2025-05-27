@@ -11,6 +11,14 @@ type RepositoryName string
 type Repository any
 type RepositoryGenerator func(tx pgx.Tx, log *logger.Logger) Repository
 
+const (
+	AddressRepoName  = RepositoryName("address")
+	ClientRepoName   = RepositoryName("client")
+	SupplierRepoName = RepositoryName("supplier")
+	ProductRepoName  = RepositoryName("product")
+	ImageRepoName    = RepositoryName("image")
+)
+
 type Transaction interface {
 	Get(name RepositoryName) (Repository, error)
 	GetTX() pgx.Tx

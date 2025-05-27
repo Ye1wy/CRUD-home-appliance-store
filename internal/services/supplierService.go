@@ -13,8 +13,6 @@ import (
 	"github.com/google/uuid"
 )
 
-var supplierRepoName = uow.RepositoryName("supplier")
-
 type supplierReader interface {
 	GetAll(ctx context.Context, limit, offset int) ([]domain.Supplier, error)
 	GetById(ctx context.Context, id uuid.UUID) (*domain.Supplier, error)
@@ -40,14 +38,13 @@ func (s *supplierService) Create(ctx context.Context, supplier domain.Supplier) 
 
 	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
 		uowOp := op + ".uow"
-		repo, err := tx.Get(addressRepoName)
+		addressRepoGen, err := getReposiotry(tx, uow.AddressRepoName, s.logger)
 		if err != nil {
 			s.logger.Debug("get address repository generator is unable", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: get address repository generator is unable: %v", uowOp, err)
 		}
 
-		repoGen := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
-		addressRepo := repoGen.(*postgres.AddressRepo)
+		addressRepo := addressRepoGen.(*postgres.AddressRepo)
 		addressId, err := addressRepo.Create(ctx, supplier.Address)
 		if err != nil {
 			s.logger.Debug("address creation is unavailable", logger.Err(err), "op", uowOp)
@@ -55,14 +52,14 @@ func (s *supplierService) Create(ctx context.Context, supplier domain.Supplier) 
 		}
 
 		supplier.Address.Id = addressId
-		repo, err = tx.Get(supplierRepoName)
+
+		supplierRepoGen, err := getReposiotry(tx, uow.SupplierRepoName, s.logger)
 		if err != nil {
 			s.logger.Debug("get supplier repository generator is unable", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: get supplier repository generator is unable: %v", uowOp, err)
 		}
 
-		repoGen = repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
-		supplierRepo := repoGen.(*postgres.SupplierRepo)
+		supplierRepo := supplierRepoGen.(*postgres.SupplierRepo)
 		if err := supplierRepo.Create(ctx, supplier); err != nil {
 			s.logger.Debug("failed to create supplier", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: failed to create supplier: %v", uowOp, err)
@@ -111,28 +108,27 @@ func (s *supplierService) UpdateAddress(ctx context.Context, id uuid.UUID, addre
 	op := "services.supplierService.UpdateAddress"
 	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
 		uowOp := op + ".uow"
-		repo, err := tx.Get(addressRepoName)
+		addressRepoGen, err := getReposiotry(tx, uow.AddressRepoName, s.logger)
 		if err != nil {
 			s.logger.Debug("get address repository generator is unable", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: get address repository generator is unable: %v", uowOp, err)
 		}
 
-		repoGen := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
-		addressRepo := repoGen.(*postgres.AddressRepo)
+		addressRepo := addressRepoGen.(*postgres.AddressRepo)
 		addressId, err := addressRepo.Create(ctx, address)
 		if err != nil {
 			s.logger.Debug("unable to create address", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: unable to create address: %v", uowOp, err)
 		}
 
-		repo, err = tx.Get(supplierRepoName)
+		supplierRepoGen, err := getReposiotry(tx, uow.SupplierRepoName, s.logger)
 		if err != nil {
-			s.logger.Debug("get supplier repository generator is unable ", logger.Err(err), "op", uowOp)
+			s.logger.Debug("get supplier repository generator is unable", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: get supplier repository generator is unable: %v", uowOp, err)
 		}
 
-		repoGen = repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
-		supplierRepo := repoGen.(*postgres.SupplierRepo)
+		supplierRepo := supplierRepoGen.(*postgres.SupplierRepo)
+
 		if err := supplierRepo.Update(ctx, id, addressId); err != nil {
 			s.logger.Debug("failed to update address with supplier", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: failed to update address with supplier: %v", uowOp, err)
@@ -153,14 +149,13 @@ func (s *supplierService) Delete(ctx context.Context, id uuid.UUID) error {
 	op := "services.supplierService.Delete"
 	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
 		uowOp := op + ".uow"
-		repo, err := tx.Get(supplierRepoName)
+		supplierRepoGen, err := getReposiotry(tx, uow.SupplierRepoName, s.logger)
 		if err != nil {
 			s.logger.Debug("get supplier repository generator is unable", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: get supplier repository generator is unable: %v", uowOp, err)
 		}
 
-		repoGen := repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
-		supplierRepo := repoGen.(*postgres.SupplierRepo)
+		supplierRepo := supplierRepoGen.(*postgres.SupplierRepo)
 		suppler, err := supplierRepo.GetById(ctx, id)
 		if err != nil {
 			if errors.Is(err, crud_errors.ErrNotFound) {
@@ -177,36 +172,19 @@ func (s *supplierService) Delete(ctx context.Context, id uuid.UUID) error {
 			return fmt.Errorf("%s: unable to delete supplier: %v", uowOp, err)
 		}
 
-		repo, err = tx.Get(addressRepoName)
+		addressRepoGen, err := getReposiotry(tx, uow.SupplierRepoName, s.logger)
 		if err != nil {
 			s.logger.Debug("get address repository generator is unable", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: get address repository generator is unable: %v", uowOp, err)
 		}
 
-		repoGen = repo.(uow.RepositoryGenerator)(tx.GetTX(), s.logger)
-		addressRepo := repoGen.(*postgres.AddressRepo)
+		addressRepo := addressRepoGen.(*postgres.AddressRepo)
 
-		savepoint := `SAVEPOINT sq_delete_address;`
-		_, err = tx.GetTX().Exec(ctx, savepoint)
+		savepoint := `sp_delete_address`
+		err = safeDeleteAddress(ctx, tx.GetTX(), suppler.Address.Id, addressRepo.Delete, s.logger, uowOp, savepoint)
 		if err != nil {
-			s.logger.Debug("unable to set savepoint before delete address", logger.Err(err), "op", uowOp)
-			return fmt.Errorf("%s: unable to set savepoint: %v", uowOp, err)
-		}
-
-		if err := addressRepo.Delete(ctx, suppler.Address.Id); err != nil {
-			if errors.Is(err, crud_errors.ErrForeignKeyViolation) {
-				backToSave := `ROLLBACK TO SAVEPOINT sq_delete_address;`
-				_, err := tx.GetTX().Exec(ctx, backToSave)
-				if err != nil {
-					s.logger.Debug("unable back to savepoint after try delete address", logger.Err(err), "op", uowOp)
-					return fmt.Errorf("%s: unable back to savepoint: %v", uowOp, err)
-				}
-
-				return nil
-			}
-
-			s.logger.Debug("deleting is unable: unexpected error from delete address: rollback to savepoint is unavailable", logger.Err(err), "op", uowOp)
-			return fmt.Errorf("%s: unexpected error from delete address: %v", uowOp, err)
+			s.logger.Debug("unable to safe delete address", logger.Err(err), "op", uowOp)
+			return fmt.Errorf("%s: unable to safe delete address: %v", uowOp, err)
 		}
 
 		return nil
