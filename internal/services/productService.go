@@ -166,7 +166,7 @@ func (s *productService) Delete(ctx context.Context, id uuid.UUID) error {
 		productRepo := productRepoGen.(*postgres.ProductRepo)
 
 		savepoint := `sp_delete_address`
-		err = safeDeleteAddress(ctx, tx.GetTX(), id, productRepo.Delete, s.logger, uowOp, savepoint)
+		err = safeDelete(ctx, tx.GetTX(), id, productRepo.Delete, s.logger, uowOp, savepoint)
 		if err != nil {
 			if errors.Is(err, crud_errors.ErrNotFound) {
 				s.logger.Debug("product not found", "op", op)

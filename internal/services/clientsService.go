@@ -186,7 +186,7 @@ func (s *clientsService) Delete(ctx context.Context, id uuid.UUID) error {
 		addressRepo := addressRepoGen.(*postgres.AddressRepo)
 
 		savepoint := `sp_delete_address`
-		err = safeDeleteAddress(ctx, tx.GetTX(), client.Address.Id, addressRepo.Delete, s.logger, uowOp, savepoint)
+		err = safeDelete(ctx, tx.GetTX(), client.Address.Id, addressRepo.Delete, s.logger, uowOp, savepoint)
 		if err != nil {
 			if errors.Is(err, crud_errors.ErrNotFound) {
 				s.logger.Debug("client not found", "op", uowOp)

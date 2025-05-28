@@ -179,7 +179,7 @@ func (s *supplierService) Delete(ctx context.Context, id uuid.UUID) error {
 		addressRepo := addressRepoGen.(*postgres.AddressRepo)
 
 		savepoint := `sp_delete_address`
-		err = safeDeleteAddress(ctx, tx.GetTX(), suppler.Address.Id, addressRepo.Delete, s.logger, uowOp, savepoint)
+		err = safeDelete(ctx, tx.GetTX(), suppler.Address.Id, addressRepo.Delete, s.logger, uowOp, savepoint)
 		if err != nil {
 			s.logger.Debug("unable to safe delete address", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: unable to safe delete address: %v", uowOp, err)

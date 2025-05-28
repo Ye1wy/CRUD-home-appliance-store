@@ -12,7 +12,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func safeDeleteAddress(
+func safeDelete(
 	ctx context.Context,
 	tx pgx.Tx,
 	id uuid.UUID,
