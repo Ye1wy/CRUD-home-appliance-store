@@ -54,7 +54,7 @@ func NewImageService(reader ImageReader, unit uow.UOW, logger *logger.Logger) *i
 	}
 }
 
-func (s *imageService) Create(ctx context.Context, image domain.Image) error {
+func (s *imageService) Create(ctx context.Context, image *domain.Image) error {
 	op := "services.imageService.Create"
 
 	if err := validateImage(image.Data); err != nil {
@@ -74,7 +74,7 @@ func (s *imageService) Create(ctx context.Context, image domain.Image) error {
 
 		image.Hash = generateImageHash(image.Data)
 
-		if err := imageRepo.Create(ctx, &image); err != nil {
+		if err := imageRepo.Create(ctx, image); err != nil {
 			s.logger.Debug("failed to create image", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: failed to create image: %v", uowOp, err)
 		}
