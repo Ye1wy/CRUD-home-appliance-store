@@ -15,6 +15,7 @@ type RouterConfig struct {
 	ClientController   *controllers.ClientController
 	ProductController  *controllers.ProductController
 	SupplierController *controllers.SupplierController
+	ImageController    *controllers.ImageController
 }
 
 func NewRouter(cfg RouterConfig) routes {
@@ -52,6 +53,15 @@ func NewRouter(cfg RouterConfig) routes {
 		supplierGroup.GET("/:id", cfg.SupplierController.GetById)
 		supplierGroup.PATCH("/:id", cfg.SupplierController.UpdateAddress)
 		supplierGroup.DELETE("/:id", cfg.SupplierController.Delete)
+	}
+
+	imageGroup := r.router.Group("/api/v1/images")
+	{
+		imageGroup.GET("", cfg.ImageController.GetAll)
+		imageGroup.POST("", cfg.ImageController.Create)
+		imageGroup.GET("/:id", cfg.ImageController.GetById)
+		imageGroup.PATCH("/:id", cfg.ImageController.Update)
+		imageGroup.DELETE("/:id", cfg.ImageController.Delete)
 	}
 
 	return r
