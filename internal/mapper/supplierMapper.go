@@ -6,27 +6,19 @@ import (
 )
 
 func SupplierToDTO(supplier domain.Supplier) dto.Supplier {
+	address := AddressToDto(supplier.Address)
 	return dto.Supplier{
-		Name: supplier.Name,
-		// AddressId:   supplier.AddressId,
+		Name:        supplier.Name,
 		PhoneNumber: supplier.PhoneNumber,
-		Address: dto.Address{
-			Country: supplier.Address.Country,
-			City:    supplier.Address.City,
-			Street:  supplier.Address.Street,
-		},
+		Address:     address,
 	}
 }
 
 func SupplierToDomain(supplier dto.Supplier) domain.Supplier {
+	address := AddressToDomain(supplier.Address)
 	return domain.Supplier{
-		Name: supplier.Name,
-		// AddressId:   dto.AddressId,
+		Name:        supplier.Name,
 		PhoneNumber: supplier.PhoneNumber,
-		Address: domain.Address{
-			Country: supplier.Address.Country,
-			City:    supplier.Address.City,
-			Street:  supplier.Address.Street,
-		},
+		Address:     address,
 	}
 }

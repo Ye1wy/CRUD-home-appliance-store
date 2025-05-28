@@ -22,7 +22,7 @@ func NewClientRepository(db DB, log *logger.Logger) *ClientRepo {
 	return &ClientRepo{baseRepo}
 }
 
-func (r *ClientRepo) Create(ctx context.Context, client domain.Client) error {
+func (r *ClientRepo) Create(ctx context.Context, client *domain.Client) error {
 	op := "repositories.postgres.clientRepository.Create"
 	sqlStatement := "INSERT INTO client(name, surname, birthday, gender, address_id) VALUES (@clientName, @clientSurname, @clientBirthday, @clientGender, @clientAddressId);"
 	args := pgx.NamedArgs{
@@ -167,18 +167,18 @@ func (r *ClientRepo) GetByNameAndSurname(ctx context.Context, name, surname stri
 func (r *ClientRepo) GetById(ctx context.Context, id uuid.UUID) (*domain.Client, error) {
 	op := "repositories.postgres.clientRepository.GetById"
 	sqlStatement := `SELECT
-	c.id,
-	c.name,
-	c.surname,
-	c.birthday,
-	c.gender,
-	a.id,
-	a.country,
-	a.city,
-	a.street
-	FROM client c
-	LEFT JOIN address a ON c.address_id = a.id
-	WHERE c.id = @id;`
+		c.id,
+		c.name,
+		c.surname,
+		c.birthday,
+		c.gender,
+		a.id,
+		a.country,
+		a.city,
+		a.street
+		FROM client c
+		LEFT JOIN address a ON c.address_id = a.id
+		WHERE c.id = @id;`
 	arg := pgx.NamedArgs{"id": id}
 
 	var client domain.Client

@@ -24,7 +24,7 @@ func NewSupplierRepository(db DB, logger *logger.Logger) *SupplierRepo {
 	}
 }
 
-func (r *SupplierRepo) Create(ctx context.Context, supplier domain.Supplier) error {
+func (r *SupplierRepo) Create(ctx context.Context, supplier *domain.Supplier) error {
 	op := "repository.postgres.supplierRepository.Create"
 	sqlStatement := "INSERT INTO supplier(name, address_id, phone_number) VALUES (@name, @address_id, @phone_number);"
 	args := pgx.NamedArgs{
@@ -45,16 +45,16 @@ func (r *SupplierRepo) Create(ctx context.Context, supplier domain.Supplier) err
 func (r *SupplierRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.Supplier, error) {
 	op := "repository.postgres.supplierRepository.GetAll"
 	sqlStatement := `SELECT
-	s.id,
-	s.name,
-	s.phone_number,
-	a.id,
-	a.country,
-	a.city,
-	a.street
-	FROM supplier s
-	LEFT JOIN address a ON s.address_id = a.id
-	LIMIT @limit OFFSET @offset;`
+		s.id,
+		s.name,
+		s.phone_number,
+		a.id,
+		a.country,
+		a.city,
+		a.street
+		FROM supplier s
+		LEFT JOIN address a ON s.address_id = a.id
+		LIMIT @limit OFFSET @offset;`
 	args := pgx.NamedArgs{
 		"limit":  limit,
 		"offset": offset,
@@ -95,6 +95,48 @@ func (r *SupplierRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.
 	}
 
 	return suppliers, nil
+}
+
+func (r *SupplierRepo) GetByName(ctx context.Context, name string) (*domain.Supplier, error) {
+	op := "repository.postgres.supplierRepository.GetById"
+	sqlStatement := `SELECT
+		s.id,
+		s.name,
+		s.phone_number,
+		a.id,
+		a.country,
+		a.city,
+		a.street
+		FROM supplier s
+		LEFT JOIN address a ON s.address_id = a.id
+		WHERE s.name = @name;`
+	arg := pgx.NamedArgs{
+		"name": name,
+	}
+
+	row := r.db.QueryRow(ctx, sqlStatement, arg)
+	supplier := domain.Supplier{}
+	err := row.Scan(
+		&supplier.Id,
+		&supplier.Name,
+		&supplier.PhoneNumber,
+		&supplier.Address.Id,
+		&supplier.Address.Country,
+		&supplier.Address.City,
+		&supplier.Address.Street,
+	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		r.logger.Debug("supplier not found", "op", op)
+		return nil, fmt.Errorf("%s: %w", op, crud_errors.ErrNotFound)
+	}
+
+	if err != nil {
+		r.logger.Debug("scan unable", logger.Err(err), "op", op)
+		return nil, fmt.Errorf("%s: scan failed: %v", op, err)
+	}
+
+	return &supplier, nil
 }
 
 func (r *SupplierRepo) GetById(ctx context.Context, id uuid.UUID) (*domain.Supplier, error) {

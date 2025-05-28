@@ -13,6 +13,6 @@ type Product struct {
 	Price          float32   `json:"price" bson:"price"`
 	AvailableStock int64     `json:"available_stock" bson:"available_stock"`
 	LastUpdateDate time.Time `json:"last_update_date" bson:"last_update_date"`
-	SupplierId     uuid.UUID `json:"supplier_id" bson:"supplier_id"`
-	ImageId        uuid.UUID `json:"image_id" bson:"image_id"`
+	Supplier       Supplier  `json:"supplier" bson:"supplier"`
+	Image          Image     `json:"image" bson:"image"`
 }

@@ -12,24 +12,42 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-type ImageRepository struct {
+type ImageRepo struct {
 	*basePostgresRepository
 }
 
-func NewImageRepository(db DB, logger *logger.Logger) *ImageRepository {
+func NewImageRepository(db DB, logger *logger.Logger) *ImageRepo {
 	repo := newBasePostgresRepository(db, logger)
-	return &ImageRepository{
+	return &ImageRepo{
 		repo,
 	}
 }
 
-func (r *ImageRepository) Create(ctx context.Context, image domain.Image) error {
+func (r *ImageRepo) Create(ctx context.Context, image *domain.Image) error {
 	op := "repository.postgres.imageRepository.Create"
-	sqlStatement := "INSERT INTO image(image) VALUES (@image)"
-	args := pgx.NamedArgs{"image": image.Image}
+	sqlInsert := `INSERT
+		INTO image(hash, data)
+		VALUES (@hash, @image)
+		ON CONFLICT (hash) DO NOTHING
+		RETURNING id;`
+	args := pgx.NamedArgs{
+		"hash":  image.Hash,
+		"image": image.Data,
+	}
 
-	_, err := r.db.Exec(ctx, sqlStatement, args)
+	err := r.db.QueryRow(ctx, sqlInsert, args).Scan(&image.Id)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			sqlSelect := `SELECT id FROM image WHERE hash = @hash`
+			err = r.db.QueryRow(ctx, sqlSelect, args).Scan(&image.Id)
+			if err != nil {
+				r.logger.Debug("failed to take exists image id", logger.Err(err), "op", op)
+				return fmt.Errorf("%s: image is exist, id take is unable: %v", op, err)
+			}
+
+			return nil
+		}
+
 		r.logger.Debug("failed to create image", logger.Err(err), "op", op)
 		return fmt.Errorf("%s: unable to insert row: %v", op, err)
 	}
@@ -37,7 +55,7 @@ func (r *ImageRepository) Create(ctx context.Context, image domain.Image) error 
 	return nil
 }
 
-func (r *ImageRepository) GetAll(ctx context.Context, limit, offset int) ([]domain.Image, error) {
+func (r *ImageRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.Image, error) {
 	op := "repostiory.postgres.imageRepository.GetAll"
 	sqlStatement := "SELECT * FROM image LIMIT @limit OFFSET @offset"
 	args := pgx.NamedArgs{
@@ -57,7 +75,7 @@ func (r *ImageRepository) GetAll(ctx context.Context, limit, offset int) ([]doma
 	for rows.Next() {
 		var image domain.Image
 
-		if err := rows.Scan(&image.Id, &image.Image); err != nil {
+		if err := rows.Scan(&image.Id, &image.Hash, &image.Data); err != nil {
 			return nil, fmt.Errorf("%s: failed to bind data %v", op, err)
 		}
 
@@ -71,7 +89,7 @@ func (r *ImageRepository) GetAll(ctx context.Context, limit, offset int) ([]doma
 	return images, nil
 }
 
-func (r *ImageRepository) GetById(ctx context.Context, id uuid.UUID) (*domain.Image, error) {
+func (r *ImageRepo) GetById(ctx context.Context, id uuid.UUID) (*domain.Image, error) {
 	op := "repository.postgres.imageRepositoru.GetById"
 	sqlStatement := "SELECT * FROM image WHERE id = $id"
 	arg := pgx.NamedArgs{
@@ -79,8 +97,8 @@ func (r *ImageRepository) GetById(ctx context.Context, id uuid.UUID) (*domain.Im
 	}
 
 	row := r.db.QueryRow(ctx, sqlStatement, arg)
-	image := &domain.Image{}
-	err := row.Scan(&image.Id, &image.Image)
+	image := domain.Image{}
+	err := row.Scan(&image.Id, &image.Hash, &image.Data)
 	if errors.Is(err, pgx.ErrNoRows) {
 		r.logger.Debug("image not found", "op", op)
 		return nil, fmt.Errorf("%s: %w", op, crud_errors.ErrNotFound)
@@ -91,15 +109,16 @@ func (r *ImageRepository) GetById(ctx context.Context, id uuid.UUID) (*domain.Im
 		return nil, fmt.Errorf("%s: scan failed: %v", op, err)
 	}
 
-	return image, nil
+	return &image, nil
 }
 
-func (r *ImageRepository) Update(ctx context.Context, image *domain.Image) error {
+func (r *ImageRepo) Update(ctx context.Context, image *domain.Image) error {
 	op := "repository.postgres.imageRepository.Update"
-	sqlStatement := "UPDATE image SET image = @image WHERE id = @id"
+	sqlStatement := `UPDATE image SET hash = @hash, data = @image WHERE id = @id`
 	args := pgx.NamedArgs{
 		"id":    image.Id,
-		"image": image.Image,
+		"hash":  image.Hash,
+		"image": image.Data,
 	}
 
 	tag, err := r.db.Exec(ctx, sqlStatement, args)
@@ -116,7 +135,7 @@ func (r *ImageRepository) Update(ctx context.Context, image *domain.Image) error
 	return nil
 }
 
-func (r *ImageRepository) Delete(ctx context.Context, id uuid.UUID) error {
+func (r *ImageRepo) Delete(ctx context.Context, id uuid.UUID) error {
 	op := "repository.postgres.productRepository.Delete"
 	sqlStatement := "DELETE FROM image WHERE id=@id"
 	arg := pgx.NamedArgs{

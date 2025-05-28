@@ -24,16 +24,16 @@ func NewProductRepository(db DB, logger *logger.Logger) *ProductRepo {
 	}
 }
 
-func (r *ProductRepo) Create(ctx context.Context, product domain.Product) error {
+func (r *ProductRepo) Create(ctx context.Context, product *domain.Product) error {
 	op := "repositories.postgres.productRepository.Create"
-	sqlStatement := "INSERT INTO product(name, category, price, available_stock, supplier_id, image_id) VALUE (@name, @category, @price, @available_stock, @supplier_id, @image_id)"
+	sqlStatement := "INSERT INTO product(name, category, price, available_stock,  supplier_id, image_id) VALUE (@name, @category, @price, @available_stock, @supplier_id, @image_id)"
 	args := pgx.NamedArgs{
 		"name":            product.Name,
 		"category":        product.Category,
 		"price":           product.Price,
 		"available_stock": product.AvailableStock,
-		"supplier_id":     product.SupplierId,
-		"image_id":        product.ImageId,
+		"supplier_id":     product.Supplier.Id,
+		"image_id":        product.Image.Id,
 	}
 
 	_, err := r.db.Exec(ctx, sqlStatement, args)
@@ -47,7 +47,26 @@ func (r *ProductRepo) Create(ctx context.Context, product domain.Product) error 
 
 func (r *ProductRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.Product, error) {
 	op := "repositories.postgres.productRepository.GetAll"
-	sqlStatement := "SELECT * FROM product LIMIT @limit OFFSET @offset"
+	sqlStatement := `SELECT
+		p.id,
+		p.name,
+		p.category,
+		p.price,
+		p.available_stock,
+		s.id,
+		s.name,
+		s.phone_number,
+		a.id,
+		a.country,
+		a.city,
+		a.street,
+		i.id,
+		i.image
+		FROM product p
+		LEFT JOIN supplier s ON p.supplier_id = s.id
+		LEFT JOIN address a ON s.address_id = a.id
+		LEFT JOIN image i ON p.image_id = i.id 
+		LIMIT @limit OFFSET @offset`
 	args := pgx.NamedArgs{
 		"limit":  limit,
 		"offset": offset,
@@ -64,9 +83,24 @@ func (r *ProductRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.P
 	for rows.Next() {
 		var product domain.Product
 
-		if err := rows.Scan(&product.Id, &product.Name, &product.Category,
-			&product.Price, &product.AvailableStock, &product.LastUpdateDate,
-			&product.SupplierId, &product.ImageId); err != nil {
+		err := rows.Scan(
+			&product.Id,
+			&product.Name,
+			&product.Category,
+			&product.Price,
+			&product.AvailableStock,
+			&product.Supplier.Id,
+			&product.Supplier.Name,
+			&product.Supplier.PhoneNumber,
+			&product.Supplier.Address.Id,
+			&product.Supplier.Address.Country,
+			&product.Supplier.Address.City,
+			&product.Supplier.Address.Street,
+			&product.Image.Id,
+			&product.Image.Data,
+		)
+
+		if err != nil {
 			r.logger.Debug("scan unable", logger.Err(err), "op", op)
 			return nil, fmt.Errorf("%s: scan failed: %v", op, err)
 		}
@@ -84,16 +118,48 @@ func (r *ProductRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.P
 
 func (r *ProductRepo) GetById(ctx context.Context, id uuid.UUID) (*domain.Product, error) {
 	op := "repository.postgres.productRepository.GetById"
-	sqlStatement := "SELECT * FROM product WHERE id=@id"
+	sqlStatement := `SELECT
+		p.id,
+		p.name,
+		p.category,
+		p.price,
+		p.available_stock,
+		s.id,
+		s.name,
+		s.phone_number,
+		a.id,
+		a.country,
+		a.city,
+		a.street,
+		i.id,
+		i.image
+		FROM product p
+		LEFT JOIN supplier s ON p.supplier_id = s.id
+		LEFT JOIN address a ON s.address_id = a.id
+		LEFT JOIN image i ON p.image_id = i.id 
+		WHERE p.id = @id`
 	arg := pgx.NamedArgs{
 		"id": id,
 	}
 
 	row := r.db.QueryRow(ctx, sqlStatement, arg)
 	product := domain.Product{}
-	err := row.Scan(&product.Id, &product.Name, &product.Category,
-		&product.Price, &product.AvailableStock, &product.LastUpdateDate,
-		&product.SupplierId, &product.ImageId)
+	err := row.Scan(
+		&product.Id,
+		&product.Name,
+		&product.Category,
+		&product.Price,
+		&product.AvailableStock,
+		&product.Supplier.Id,
+		&product.Supplier.Name,
+		&product.Supplier.PhoneNumber,
+		&product.Supplier.Address.Id,
+		&product.Supplier.Address.Country,
+		&product.Supplier.Address.City,
+		&product.Supplier.Address.Street,
+		&product.Image.Id,
+		&product.Image.Data,
+	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		r.logger.Debug("product not found", "op", op)
 		return nil, fmt.Errorf("%s: %w", op, crud_errors.ErrNotFound)

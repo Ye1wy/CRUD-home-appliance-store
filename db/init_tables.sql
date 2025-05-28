@@ -21,7 +21,9 @@ CREATE TABLE IF NOT EXISTS client (
 
 CREATE TABLE IF NOT EXISTS image (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    image BYTEA NOT NULL
+    hash BYTEA NOT NULL,
+    data BYTEA NOT NULL,
+    UNIQUE(hash)
 );
 
 
@@ -30,7 +32,8 @@ CREATE TABLE IF NOT EXISTS supplier (
     name TEXT NOT NULL,
     address_id UUID NOT NULL,
     phone_number TEXT NOT NULL,
-    FOREIGN KEY (address_id) REFERENCES address (id)
+    FOREIGN KEY (address_id) REFERENCES address (id),
+    UNIQUE(name)
 );
 
 CREATE TABLE IF NOT EXISTS product (

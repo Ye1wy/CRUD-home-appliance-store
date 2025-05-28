@@ -46,16 +46,22 @@ func (ctrl *ImageController) Create(c *gin.Context) {
 		return
 	}
 
-	image := &domain.Image{Image: imageRaw}
+	image := domain.Image{Data: imageRaw}
 
-	if err := ctrl.service.Create(c.Request.Context(), image); err != nil {
+	if err := ctrl.service.Create(c.Request.Context(), &image); err != nil {
+		if errors.Is(err, crud_errors.ErrImageCorruption) {
+			ctrl.logger.Error("Invalid image data", logger.Err(err), "op", op)
+			ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "invalid image"})
+			return
+		}
+
 		ctrl.logger.Error("Failed to add image", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"massage": "server is busy"})
 		return
 	}
 
-	ctrl.logger.Info("Image added successfully", "op", op)
-	ctrl.responce(c, http.StatusCreated, image)
+	ctrl.logger.Debug("Image added successfully", "op", op)
+	c.Status(http.StatusCreated)
 }
 
 func (ctrl *ImageController) GetAll(c *gin.Context) {
@@ -138,18 +144,24 @@ func (ctrl *ImageController) Update(c *gin.Context) {
 		return
 	}
 
-	image := &domain.Image{
-		Id:    id,
-		Image: imageRaw,
+	image := domain.Image{
+		Id:   id,
+		Data: imageRaw,
 	}
 
-	if err := ctrl.service.Update(c.Request.Context(), image); err != nil {
+	if err := ctrl.service.Update(c.Request.Context(), &image); err != nil {
+		if errors.Is(err, crud_errors.ErrImageCorruption) {
+			ctrl.logger.Error("Invalid image data", logger.Err(err), "op", op)
+			ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "invalid image"})
+			return
+		}
+
 		ctrl.logger.Error("Failed to update image", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"massage": "server is busy"})
 		return
 	}
 
-	ctrl.logger.Info("Image is updated", "op", op)
+	ctrl.logger.Debug("Image is updated", "op", op)
 	c.Status(http.StatusOK)
 }
 
@@ -169,6 +181,6 @@ func (ctrl *ImageController) Delete(c *gin.Context) {
 		return
 	}
 
-	ctrl.logger.Info("Image deleted", "op", op)
+	ctrl.logger.Debug("Image deleted", "op", op)
 	c.Status(http.StatusNoContent)
 }

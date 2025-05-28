@@ -33,7 +33,7 @@ func NewSupplierService(reader supplierReader, unit uow.UOW, logger *logger.Logg
 	}
 }
 
-func (s *supplierService) Create(ctx context.Context, supplier domain.Supplier) error {
+func (s *supplierService) Create(ctx context.Context, supplier *domain.Supplier) error {
 	op := "services.supplierService.Create"
 
 	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
@@ -45,13 +45,11 @@ func (s *supplierService) Create(ctx context.Context, supplier domain.Supplier) 
 		}
 
 		addressRepo := addressRepoGen.(*postgres.AddressRepo)
-		addressId, err := addressRepo.Create(ctx, supplier.Address)
+		err = addressRepo.Create(ctx, &supplier.Address)
 		if err != nil {
 			s.logger.Debug("address creation is unavailable", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: unable to create address: %v", uowOp, err)
 		}
-
-		supplier.Address.Id = addressId
 
 		supplierRepoGen, err := getReposiotry(tx, uow.SupplierRepoName, s.logger)
 		if err != nil {
@@ -69,7 +67,7 @@ func (s *supplierService) Create(ctx context.Context, supplier domain.Supplier) 
 	})
 
 	if err != nil {
-		s.logger.Debug("Something wrong with UOW creating", logger.Err(err), "op", op)
+		s.logger.Debug("something wrong with UOW creating", logger.Err(err), "op", op)
 		return fmt.Errorf("%s: unit of work creating problem: %v", op, err)
 	}
 
@@ -80,13 +78,13 @@ func (s *supplierService) GetAll(ctx context.Context, limit, offset int) ([]doma
 	op := "services.supplierService.GetAll"
 
 	if limit <= 0 || offset < 0 {
-		s.logger.Debug("Invalid parameter limit and offset", "limit", limit, "offset", offset, "op", op)
+		s.logger.Debug("invalid parameter limit and offset", "limit", limit, "offset", offset, "op", op)
 		return nil, fmt.Errorf("%s: %w", op, crud_errors.ErrInvalidParam)
 	}
 
 	supplier, err := s.reader.GetAll(ctx, limit, offset)
 	if err != nil {
-		s.logger.Debug("Error detected", logger.Err(err), "op", op)
+		s.logger.Debug("error detected", logger.Err(err), "op", op)
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -97,14 +95,14 @@ func (s *supplierService) GetById(ctx context.Context, id uuid.UUID) (*domain.Su
 	op := "services.supplierService.GetById"
 	supplier, err := s.reader.GetById(ctx, id)
 	if err != nil {
-		s.logger.Debug("Error detected", logger.Err(err), "op", op)
+		s.logger.Debug("error detected", logger.Err(err), "op", op)
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return supplier, nil
 }
 
-func (s *supplierService) UpdateAddress(ctx context.Context, id uuid.UUID, address domain.Address) error {
+func (s *supplierService) UpdateAddress(ctx context.Context, id uuid.UUID, address *domain.Address) error {
 	op := "services.supplierService.UpdateAddress"
 	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
 		uowOp := op + ".uow"
@@ -115,7 +113,7 @@ func (s *supplierService) UpdateAddress(ctx context.Context, id uuid.UUID, addre
 		}
 
 		addressRepo := addressRepoGen.(*postgres.AddressRepo)
-		addressId, err := addressRepo.Create(ctx, address)
+		err = addressRepo.Create(ctx, address)
 		if err != nil {
 			s.logger.Debug("unable to create address", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: unable to create address: %v", uowOp, err)
@@ -129,7 +127,7 @@ func (s *supplierService) UpdateAddress(ctx context.Context, id uuid.UUID, addre
 
 		supplierRepo := supplierRepoGen.(*postgres.SupplierRepo)
 
-		if err := supplierRepo.Update(ctx, id, addressId); err != nil {
+		if err := supplierRepo.Update(ctx, id, address.Id); err != nil {
 			s.logger.Debug("failed to update address with supplier", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: failed to update address with supplier: %v", uowOp, err)
 		}
@@ -138,7 +136,7 @@ func (s *supplierService) UpdateAddress(ctx context.Context, id uuid.UUID, addre
 	})
 
 	if err != nil {
-		s.logger.Debug("Something wrong with UOW creating", logger.Err(err), "op", op)
+		s.logger.Debug("something wrong with UOW creating", logger.Err(err), "op", op)
 		return fmt.Errorf("%s: unit of work creating problem: %v", op, err)
 	}
 
@@ -160,7 +158,7 @@ func (s *supplierService) Delete(ctx context.Context, id uuid.UUID) error {
 		if err != nil {
 			if errors.Is(err, crud_errors.ErrNotFound) {
 				s.logger.Debug("supplier not found", "op", uowOp)
-				return fmt.Errorf("%s: %w", uowOp, err)
+				return nil
 			}
 
 			s.logger.Debug("unable to get supplier data", logger.Err(err), "op", uowOp)
@@ -191,7 +189,7 @@ func (s *supplierService) Delete(ctx context.Context, id uuid.UUID) error {
 	})
 
 	if err != nil {
-		s.logger.Debug("Somethin wrong with UOW deleting", logger.Err(err), "op", op)
+		s.logger.Debug("somethin wrong with UOW deleting", logger.Err(err), "op", op)
 		return fmt.Errorf("%s: unit of work delete problem: %v", op, err)
 	}
 

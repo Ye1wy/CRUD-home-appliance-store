@@ -16,10 +16,10 @@ import (
 )
 
 type clientService interface {
-	Create(ctx context.Context, client domain.Client) error
+	Create(ctx context.Context, client *domain.Client) error
 	GetAll(ctx context.Context, limit, offset int) ([]domain.Client, error)
 	GetByNameAndSurname(ctx context.Context, name, surname string) ([]domain.Client, error)
-	UpdateAddress(ctx context.Context, id uuid.UUID, address domain.Address) error
+	UpdateAddress(ctx context.Context, id uuid.UUID, address *domain.Address) error
 	Delete(ctx context.Context, id uuid.UUID) error
 }
 
@@ -55,37 +55,22 @@ func NewClientsController(service clientService, logger *logger.Logger) *ClientC
 //		@Router			/api/v1/clients [post]
 func (ctrl *ClientController) Create(c *gin.Context) {
 	op := "controllers.clientController.Create"
-	var inputData dto.Client
+	var input dto.Client
 
-	if err := c.ShouldBind(&inputData); err != nil {
+	if err := c.ShouldBind(&input); err != nil {
 		ctrl.logger.Error("Failed to bind JSON for create", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
 		return
 	}
 
-	client, err := mapper.ClientToDomain(inputData)
+	client, err := mapper.ClientToDomain(input)
 	if err != nil {
 		ctrl.logger.Error("Failed mapping dto to domain", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalid birthady date in request payload"})
 		return
 	}
 
-	// var clientDTO dto.Client
-
-	// if err := c.ShouldBind(&clientDTO); err != nil {
-	// 	ctrl.logger.Error("Failed to bind JSON for Create", logger.Err(err), "op", op)
-	// 	ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
-	// 	return
-	// }
-
-	// client, err := mapper.ClientToDomain(clientDTO)
-	// if err != nil {
-	// 	ctrl.logger.Error("Failed mapping dto to domain", logger.Err(err), "op", op)
-	// 	ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Error from server"})
-	// 	return
-	// }
-
-	if err := ctrl.service.Create(c.Request.Context(), client); err != nil {
+	if err := ctrl.service.Create(c.Request.Context(), &client); err != nil {
 		ctrl.logger.Error("Failed to add client: ", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Failed to add client"})
 		return
@@ -212,17 +197,17 @@ func (ctrl *ClientController) UpdateAddress(c *gin.Context) {
 		return
 	}
 
-	var updateDTO dto.Address
+	var input dto.Address
 
-	if err := c.ShouldBind(&updateDTO); err != nil {
+	if err := c.ShouldBind(&input); err != nil {
 		ctrl.logger.Error("Failed to bind JSON for ChangeAddressIdParameter", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Invalid request payload"})
 		return
 	}
 
-	recentData := mapper.AddressToDomain(updateDTO)
+	newAddress := mapper.AddressToDomain(input)
 
-	if err := ctrl.service.UpdateAddress(c.Request.Context(), id, recentData); err != nil {
+	if err := ctrl.service.UpdateAddress(c.Request.Context(), id, &newAddress); err != nil {
 		ctrl.logger.Error("Failed to update address ID", "clientID", id, logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Failed to update address ID"})
 		return

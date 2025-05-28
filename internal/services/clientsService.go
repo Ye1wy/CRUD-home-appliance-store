@@ -33,7 +33,7 @@ func NewClientService(reader ClientReader, unit uow.UOW, logger *logger.Logger) 
 	}
 }
 
-func (s *clientsService) Create(ctx context.Context, client domain.Client) error {
+func (s *clientsService) Create(ctx context.Context, client *domain.Client) error {
 	op := "services.clientService.Create"
 
 	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
@@ -45,13 +45,11 @@ func (s *clientsService) Create(ctx context.Context, client domain.Client) error
 		}
 
 		addressRepo := addressRepoGen.(*postgres.AddressRepo)
-		address_id, err := addressRepo.Create(ctx, client.Address)
+		err = addressRepo.Create(ctx, &client.Address)
 		if err != nil {
 			s.logger.Debug("address creation is unavailable", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: unable to create address: %v", uowOp, err)
 		}
-
-		client.Address.Id = address_id
 
 		clientRepoGen, err := getReposiotry(tx, uow.ClientRepoName, s.logger)
 		if err != nil {
@@ -81,13 +79,13 @@ func (s *clientsService) GetAll(ctx context.Context, limit, offset int) ([]domai
 	op := "services.clientService.GetAll"
 
 	if limit <= 0 || offset < 0 {
-		s.logger.Debug("Invalid parameter limit and offset", "limit", limit, "offset", offset, "op", op)
+		s.logger.Debug("invalid parameter limit and offset", "limit", limit, "offset", offset, "op", op)
 		return nil, fmt.Errorf("%s: %w", op, crud_errors.ErrInvalidParam)
 	}
 
 	clients, err := s.reader.GetAll(ctx, limit, offset)
 	if err != nil {
-		s.logger.Debug("Error detected", logger.Err(err), "op", op)
+		s.logger.Debug("error detected", logger.Err(err), "op", op)
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -98,20 +96,20 @@ func (s *clientsService) GetByNameAndSurname(ctx context.Context, name, surname 
 	op := "services.clientsService.GetByNameAndSurname"
 
 	if name == "" || surname == "" {
-		s.logger.Debug("Name or Surname is empty", "op", op)
+		s.logger.Debug("name or surname is empty", "op", op)
 		return nil, fmt.Errorf("%s: %w", op, crud_errors.ErrInvalidParam)
 	}
 
 	clients, err := s.reader.GetByNameAndSurname(ctx, name, surname)
 	if err != nil {
-		s.logger.Debug("Error recieved from repository", logger.Err(err), "op", op)
-		return nil, fmt.Errorf("%s: Error when taking a client by first and last name: %w", op, err)
+		s.logger.Debug("error recieved from repository", logger.Err(err), "op", op)
+		return nil, fmt.Errorf("%s: error when taking a client by first and last name: %w", op, err)
 	}
 
 	return clients, nil
 }
 
-func (s *clientsService) UpdateAddress(ctx context.Context, id uuid.UUID, address domain.Address) error {
+func (s *clientsService) UpdateAddress(ctx context.Context, id uuid.UUID, address *domain.Address) error {
 	op := "services.clientsService.UpdateAddress"
 	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
 		uowOp := op + ".uow"
@@ -122,7 +120,7 @@ func (s *clientsService) UpdateAddress(ctx context.Context, id uuid.UUID, addres
 		}
 
 		addressRepo := addressRepoGen.(*postgres.AddressRepo)
-		addressId, err := addressRepo.Create(ctx, address)
+		err = addressRepo.Create(ctx, address)
 		if err != nil {
 			s.logger.Debug("address creation is unavailable", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: unable to create address: %v", uowOp, err)
@@ -135,7 +133,7 @@ func (s *clientsService) UpdateAddress(ctx context.Context, id uuid.UUID, addres
 		}
 
 		clientRepo := clientRepoGen.(*postgres.ClientRepo)
-		if err := clientRepo.UpdateAddress(ctx, id, addressId); err != nil {
+		if err := clientRepo.UpdateAddress(ctx, id, address.Id); err != nil {
 			s.logger.Debug("failed to update address with client", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: failed to update address with client: %v", uowOp, err)
 		}
@@ -190,6 +188,11 @@ func (s *clientsService) Delete(ctx context.Context, id uuid.UUID) error {
 		savepoint := `sp_delete_address`
 		err = safeDeleteAddress(ctx, tx.GetTX(), client.Address.Id, addressRepo.Delete, s.logger, uowOp, savepoint)
 		if err != nil {
+			if errors.Is(err, crud_errors.ErrNotFound) {
+				s.logger.Debug("client not found", "op", uowOp)
+				return nil
+			}
+
 			s.logger.Debug("unable to safe delete address", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: unable to safe delete address: %v", uowOp, err)
 		}
