@@ -38,7 +38,7 @@ func (r *ProductRepo) Create(ctx context.Context, product *domain.Product) error
 
 	_, err := r.db.Exec(ctx, sqlStatement, args)
 	if err != nil {
-		r.logger.Debug("failed to create product", logger.Err(err), "op", op)
+		r.logger.Error("failed to create product", logger.Err(err), "op", op)
 		return fmt.Errorf("%s: unable to insert row: %v", op, err)
 	}
 
@@ -74,7 +74,7 @@ func (r *ProductRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.P
 
 	rows, err := r.db.Query(ctx, sqlStatement, args)
 	if err != nil {
-		r.logger.Debug("query unvalable", logger.Err(err), "op", op)
+		r.logger.Error("query unvalable", logger.Err(err), "op", op)
 		return nil, fmt.Errorf("%s: query error: %v", op, err)
 	}
 
@@ -101,8 +101,8 @@ func (r *ProductRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.P
 		)
 
 		if err != nil {
-			r.logger.Debug("scan unable", logger.Err(err), "op", op)
-			return nil, fmt.Errorf("%s: scan failed: %v", op, err)
+			r.logger.Warn("scan unable", logger.Err(err), "op", op)
+			continue
 		}
 
 		products = append(products, product)
@@ -166,7 +166,7 @@ func (r *ProductRepo) GetById(ctx context.Context, id uuid.UUID) (*domain.Produc
 	}
 
 	if err != nil {
-		r.logger.Debug("scan unable", logger.Err(err), "op", op)
+		r.logger.Error("scan unable", logger.Err(err), "op", op)
 		return nil, fmt.Errorf("%s: scan failed: %v", op, err)
 	}
 
@@ -187,7 +187,7 @@ func (r *ProductRepo) Update(ctx context.Context, id uuid.UUID, decrease int) er
 	}
 
 	if err != nil {
-		r.logger.Debug("execute sql statement for update stock is unable", logger.Err(err), "op", op)
+		r.logger.Error("execute sql statement for update stock is unable", logger.Err(err), "op", op)
 		return fmt.Errorf("%s: failed exec query: %v", op, err)
 	}
 
@@ -203,7 +203,7 @@ func (r *ProductRepo) Delete(ctx context.Context, id uuid.UUID) error {
 
 	_, err := r.db.Exec(ctx, sqlStatement, arg)
 	if err != nil {
-		r.logger.Debug("execute sql statement for delete product is unable", logger.Err(err), "op", op)
+		r.logger.Error("execute sql statement for delete product is unable", logger.Err(err), "op", op)
 		return fmt.Errorf("%s: %v", op, err)
 	}
 

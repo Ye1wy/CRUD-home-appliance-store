@@ -35,7 +35,7 @@ func (r *ClientRepo) Create(ctx context.Context, client *domain.Client) error {
 
 	_, err := r.db.Exec(ctx, sqlStatement, args)
 	if err != nil {
-		r.logger.Debug("failed to create Client", logger.Err(err), "op", op)
+		r.logger.Error("failed to create Client", logger.Err(err), "op", op)
 		return fmt.Errorf("%s: unable to insert row: %v", op, err)
 	}
 
@@ -65,7 +65,7 @@ func (r *ClientRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.Cl
 
 	rows, err := r.db.Query(ctx, sqlStatement, args)
 	if err != nil {
-		r.logger.Debug("unable to query client: %v", logger.Err(err), "op", op)
+		r.logger.Error("unable to query client: %v", logger.Err(err), "op", op)
 		return nil, fmt.Errorf("%s: query error: %v", op, err)
 	}
 	defer rows.Close()
@@ -88,8 +88,8 @@ func (r *ClientRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.Cl
 			&client.Address.Street,
 		)
 		if err != nil {
-			r.logger.Debug("failed binding data", logger.Err(err), "op", op)
-			return nil, fmt.Errorf("%s: failed to bind data: %v", op, err)
+			r.logger.Warn("failed binding data", logger.Err(err), "op", op)
+			continue
 		}
 
 		clients = append(clients, client)
@@ -126,7 +126,7 @@ func (r *ClientRepo) GetByNameAndSurname(ctx context.Context, name, surname stri
 
 	rows, err := r.db.Query(ctx, sqlStatement, args)
 	if err != nil {
-		r.logger.Debug("failed get clients by name and surname", logger.Err(err), "op", op)
+		r.logger.Error("failed get clients by name and surname", logger.Err(err), "op", op)
 		return nil, fmt.Errorf("%s: query error: %v", op, err)
 	}
 	defer rows.Close()
@@ -149,8 +149,8 @@ func (r *ClientRepo) GetByNameAndSurname(ctx context.Context, name, surname stri
 			&client.Address.Street,
 		)
 		if err != nil {
-			r.logger.Debug("failed binding data", logger.Err(err), "op", op)
-			return nil, fmt.Errorf("%s: failed to bind data: %v", op, err)
+			r.logger.Warn("failed binding data", logger.Err(err), "op", op)
+			continue
 		}
 
 		clients = append(clients, client)
@@ -201,7 +201,7 @@ func (r *ClientRepo) GetById(ctx context.Context, id uuid.UUID) (*domain.Client,
 	}
 
 	if err != nil {
-		r.logger.Debug("scan unable", logger.Err(err), "op", op)
+		r.logger.Error("scan unable", logger.Err(err), "op", op)
 		return nil, fmt.Errorf("%s: %v", op, err)
 	}
 
@@ -223,7 +223,7 @@ func (r *ClientRepo) UpdateAddress(ctx context.Context, id, address uuid.UUID) e
 	}
 
 	if err != nil {
-		r.logger.Debug("failed execution update query", logger.Err(err), "op", op)
+		r.logger.Error("failed execution update query", logger.Err(err), "op", op)
 		return fmt.Errorf("%s: failed exec query: %v", op, err)
 	}
 
@@ -239,7 +239,7 @@ func (r *ClientRepo) Delete(ctx context.Context, id uuid.UUID) error {
 
 	_, err := r.db.Exec(ctx, sqlStatement, arg)
 	if err != nil {
-		r.logger.Debug("error in exec delete request to data base", "op", op)
+		r.logger.Error("error in exec delete request to data base", "op", op)
 		return fmt.Errorf("%s: %v", op, err)
 	}
 

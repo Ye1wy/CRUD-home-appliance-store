@@ -50,7 +50,7 @@ func (r *AddressRepo) Create(ctx context.Context, address *domain.Address) error
 
 	err = r.db.QueryRow(ctx, sqlSelect, args).Scan(&address.Id)
 	if err != nil {
-		r.logger.Debug("failed to get existing address id", logger.Err(err), "op", op)
+		r.logger.Error("failed to get existing address id", logger.Err(err), "op", op)
 		return fmt.Errorf("%s: %v", op, err)
 	}
 
@@ -64,9 +64,10 @@ func (r *AddressRepo) Delete(ctx context.Context, id uuid.UUID) error {
 		"id": id,
 	}
 
-	ct, _ := r.db.Exec(ctx, sqlStatement, arg)
+	ct, err := r.db.Exec(ctx, sqlStatement, arg)
 
 	if ct.RowsAffected() == 0 {
+		r.logger.Warn("No affected row, but error skiped", logger.Err(err), "op", op)
 		return fmt.Errorf("%s: no affected row. all errors from exec is skiped. %w", op, crud_errors.ErrForeignKeyViolation)
 	}
 

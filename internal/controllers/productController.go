@@ -191,7 +191,7 @@ func (ctrl *ProductController) Delete(c *gin.Context) {
 	id, err := uuid.Parse(rawId)
 	if err != nil {
 		ctrl.logger.Warn("Invalid id", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Invalid payload"})
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalid payload"})
 		return
 	}
 

@@ -35,7 +35,7 @@ func (r *SupplierRepo) Create(ctx context.Context, supplier *domain.Supplier) er
 
 	_, err := r.db.Exec(ctx, sqlStatement, args)
 	if err != nil {
-		r.logger.Debug("failed to create supplier", logger.Err(err), "op", op)
+		r.logger.Error("failed to create supplier", logger.Err(err), "op", op)
 		return fmt.Errorf("%s: unable to insert row: %v", op, err)
 	}
 
@@ -62,7 +62,7 @@ func (r *SupplierRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.
 
 	rows, err := r.db.Query(ctx, sqlStatement, args)
 	if err != nil {
-		r.logger.Debug("unable to query supplier: %v", logger.Err(err), "op", op)
+		r.logger.Error("unable to query supplier: %v", logger.Err(err), "op", op)
 		return nil, fmt.Errorf("%s: unable to insert row: %v", op, err)
 	}
 	defer rows.Close()
@@ -82,8 +82,8 @@ func (r *SupplierRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.
 			&supplier.Address.Street,
 		)
 		if err != nil {
-			r.logger.Debug("failed binding data", logger.Err(err), "op", op)
-			return nil, fmt.Errorf("%s: failed to bind data: %v", op, err)
+			r.logger.Warn("failed binding data", logger.Err(err), "op", op)
+			continue
 		}
 
 		suppliers = append(suppliers, supplier)
@@ -132,7 +132,7 @@ func (r *SupplierRepo) GetByName(ctx context.Context, name string) (*domain.Supp
 	}
 
 	if err != nil {
-		r.logger.Debug("scan unable", logger.Err(err), "op", op)
+		r.logger.Error("scan unable", logger.Err(err), "op", op)
 		return nil, fmt.Errorf("%s: scan failed: %v", op, err)
 	}
 
@@ -174,7 +174,7 @@ func (r *SupplierRepo) GetById(ctx context.Context, id uuid.UUID) (*domain.Suppl
 	}
 
 	if err != nil {
-		r.logger.Debug("scan unable", logger.Err(err), "op", op)
+		r.logger.Error("scan unable", logger.Err(err), "op", op)
 		return nil, fmt.Errorf("%s: scan failed: %v", op, err)
 	}
 
@@ -198,7 +198,7 @@ func (r *SupplierRepo) Update(ctx context.Context, id, address uuid.UUID) error 
 	}
 
 	if err != nil {
-		r.logger.Debug("failed execution update query", logger.Err(err), "op", op)
+		r.logger.Error("failed execution update query", logger.Err(err), "op", op)
 		return fmt.Errorf("%s: failed exec query: %v", op, err)
 	}
 
@@ -214,7 +214,7 @@ func (r *SupplierRepo) Delete(ctx context.Context, id uuid.UUID) error {
 
 	_, err := r.db.Exec(ctx, sqlStatement, arg)
 	if err != nil {
-		r.logger.Debug("execute sql statement is unable", logger.Err(err), "op", op)
+		r.logger.Error("execute sql statement is unable", logger.Err(err), "op", op)
 		return fmt.Errorf("%s: %v", op, err)
 	}
 

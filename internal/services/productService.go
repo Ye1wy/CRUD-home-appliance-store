@@ -40,7 +40,7 @@ func (s *productService) Create(ctx context.Context, product *domain.Product) er
 		uowOp := op + ".uow"
 		supplierRepoGen, err := getReposiotry(tx, uow.SupplierRepoName, s.logger)
 		if err != nil {
-			s.logger.Debug("get supplier repository generator is unable", logger.Err(err), "op", uowOp)
+			s.logger.Error("get supplier repository generator is unable", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: get supplier repository generator is unable: %v", uowOp, err)
 		}
 
@@ -48,7 +48,7 @@ func (s *productService) Create(ctx context.Context, product *domain.Product) er
 
 		supplier, err := supplierRepo.GetByName(ctx, product.Supplier.Name)
 		if err != nil {
-			s.logger.Debug("get supplier by name is failed or supplier is not found", logger.Err(err), "op", uowOp)
+			s.logger.Error("get supplier by name is failed or supplier is not found", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: supplier get is failed or supplier is not found: %w", uowOp, err)
 		}
 
@@ -57,7 +57,7 @@ func (s *productService) Create(ctx context.Context, product *domain.Product) er
 		if product.Image.Data != nil {
 			imageRepoGen, err := getReposiotry(tx, uow.ImageRepoName, s.logger)
 			if err != nil {
-				s.logger.Debug("get image repository generator is unable", logger.Err(err), "op", uowOp)
+				s.logger.Error("get image repository generator is unable", logger.Err(err), "op", uowOp)
 				return fmt.Errorf("%s: get image repository generator is unable: %v", uowOp, err)
 			}
 
@@ -70,14 +70,14 @@ func (s *productService) Create(ctx context.Context, product *domain.Product) er
 
 		productRepoGen, err := getReposiotry(tx, uow.ProductRepoName, s.logger)
 		if err != nil {
-			s.logger.Debug("get product repository generator is unable", logger.Err(err), "op", uowOp)
+			s.logger.Error("get product repository generator is unable", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: get product repository generator is unable: %v", uowOp, err)
 		}
 
 		productRepo := productRepoGen.(*postgres.ProductRepo)
 
 		if err := productRepo.Create(ctx, product); err != nil {
-			s.logger.Debug("failed to create product", logger.Err(err), "op", uowOp)
+			s.logger.Error("failed to create product", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: failed to create product: %v", uowOp, err)
 		}
 
@@ -85,7 +85,7 @@ func (s *productService) Create(ctx context.Context, product *domain.Product) er
 	})
 
 	if err != nil {
-		s.logger.Debug("something wrong with UOW creating", logger.Err(err), "op", op)
+		s.logger.Error("something wrong with UOW creating", logger.Err(err), "op", op)
 		return fmt.Errorf("%s: unit of work creating problem: %v", op, err)
 	}
 
@@ -96,13 +96,18 @@ func (s *productService) GetAll(ctx context.Context, limit, offset int) ([]domai
 	op := "services.productService.GetAll"
 
 	if limit <= 0 || offset < 0 {
-		s.logger.Debug("limit cannot be 0 or less and offset cannot be less by 0", "op", op)
+		s.logger.Error("limit cannot be 0 or less and offset cannot be less by 0", "op", op)
 		return nil, fmt.Errorf("%s: %w", op, crud_errors.ErrInvalidParam)
 	}
 
 	products, err := s.reader.GetAll(ctx, limit, offset)
 	if err != nil {
-		s.logger.Debug("error detected", logger.Err(err), "op", op)
+		if errors.Is(err, crud_errors.ErrNotFound) {
+			s.logger.Debug("No content", "op", op)
+		} else {
+			s.logger.Error("error detected", logger.Err(err), "op", op)
+		}
+
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -113,6 +118,12 @@ func (s *productService) GetById(ctx context.Context, id uuid.UUID) (*domain.Pro
 	op := "services.productService.GetById"
 	product, err := s.reader.GetById(ctx, id)
 	if err != nil {
+		if errors.Is(err, crud_errors.ErrNotFound) {
+			s.logger.Debug("product not found", "op", op)
+		} else {
+			s.logger.Error("failed get product data by id", logger.Err(err), "op", op)
+		}
+
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -122,7 +133,7 @@ func (s *productService) GetById(ctx context.Context, id uuid.UUID) (*domain.Pro
 func (s *productService) Update(ctx context.Context, id uuid.UUID, decrease int) error {
 	op := "services.productsService.Update"
 	if decrease <= 0 {
-		s.logger.Debug("not valid input value", "value", decrease, "op", op)
+		s.logger.Error("not valid input value", "value", decrease, "op", op)
 		return fmt.Errorf("%s: %w", op, crud_errors.ErrInvalidParam)
 	}
 
@@ -130,14 +141,19 @@ func (s *productService) Update(ctx context.Context, id uuid.UUID, decrease int)
 		uowOp := op + ".uow"
 		productRepoGen, err := getReposiotry(tx, uow.ProductRepoName, s.logger)
 		if err != nil {
-			s.logger.Debug("get product repository generator is unable", logger.Err(err), "op", uowOp)
+			s.logger.Error("get product repository generator is unable", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: get product repository generator is unable: %v", uowOp, err)
 		}
 
 		productRepo := productRepoGen.(*postgres.ProductRepo)
 
 		if err := productRepo.Update(ctx, id, decrease); err != nil {
-			s.logger.Debug("failed to update stock with product", logger.Err(err), "op", uowOp)
+			if errors.Is(err, crud_errors.ErrNotFound) {
+				s.logger.Warn("update initialize is unable", "op", uowOp)
+				return fmt.Errorf("%s: %w", uowOp, err)
+			}
+
+			s.logger.Error("failed to update stock with product", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: failed to update stock with product: %v", uowOp, err)
 		}
 
@@ -145,7 +161,12 @@ func (s *productService) Update(ctx context.Context, id uuid.UUID, decrease int)
 	})
 
 	if err != nil {
-		s.logger.Debug("something wrong with UOW updating", logger.Err(err), "op", op)
+		if errors.Is(err, crud_errors.ErrNotFound) {
+			s.logger.Warn("update initialize is unable: product not found", "op", op)
+			return fmt.Errorf("%s: %w", op, err)
+		}
+
+		s.logger.Error("something wrong with UOW updating", logger.Err(err), "op", op)
 		return fmt.Errorf("%s: unit of work update problem: %v", op, err)
 	}
 
@@ -159,13 +180,13 @@ func (s *productService) Delete(ctx context.Context, id uuid.UUID) error {
 		uowOp := op + ".uow"
 		productRepoGen, err := getReposiotry(tx, uow.ProductRepoName, s.logger)
 		if err != nil {
-			s.logger.Debug("get product repository generator is unable", logger.Err(err), "op", uowOp)
+			s.logger.Error("get product repository generator is unable", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: get product repository generator is unable: %v", uowOp, err)
 		}
 
 		productRepo := productRepoGen.(*postgres.ProductRepo)
 
-		savepoint := `sp_delete_address`
+		savepoint := `sp_delete_product`
 		err = safeDelete(ctx, tx.GetTX(), id, productRepo.Delete, s.logger, uowOp, savepoint)
 		if err != nil {
 			if errors.Is(err, crud_errors.ErrNotFound) {
@@ -173,7 +194,7 @@ func (s *productService) Delete(ctx context.Context, id uuid.UUID) error {
 				return nil
 			}
 
-			s.logger.Debug("unable to safe delete product", logger.Err(err), "op", uowOp)
+			s.logger.Error("unable to safe delete product", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: unable to safe delete product: %v", uowOp, err)
 		}
 
@@ -181,7 +202,7 @@ func (s *productService) Delete(ctx context.Context, id uuid.UUID) error {
 	})
 
 	if err != nil {
-		s.logger.Debug("something wrong with UOW deleting", logger.Err(err), "op", op)
+		s.logger.Error("something wrong with UOW deleting", logger.Err(err), "op", op)
 		return fmt.Errorf("%s: unit of work delete problem: %v", op, err)
 	}
 
