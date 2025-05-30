@@ -63,6 +63,8 @@ func (ctrl *ClientController) Create(c *gin.Context) {
 		return
 	}
 
+	ctrl.logger.Debug("check data", "data", input)
+
 	client, err := mapper.ClientToDomain(input)
 	if err != nil {
 		ctrl.logger.Error("Failed mapping dto to domain", logger.Err(err), "op", op)
@@ -185,7 +187,7 @@ func (ctrl *ClientController) GetByNameAndSurname(c *gin.Context) {
 //	@Failure		400	{object}	domain.Error
 //	@Failure		404	{object}	domain.Error
 //	@Failure		500	{object}	domain.Error
-//	@Router			/api/v1/clients/:id/decrease [patch]
+//	@Router			/api/v1/clients/:id [patch]
 func (ctrl *ClientController) UpdateAddress(c *gin.Context) {
 	op := "controllers.clientController.UpdateAddress"
 	rawId := c.Param("id")
@@ -207,6 +209,11 @@ func (ctrl *ClientController) UpdateAddress(c *gin.Context) {
 	newAddress := mapper.AddressToDomain(input)
 
 	if err := ctrl.service.UpdateAddress(c.Request.Context(), id, &newAddress); err != nil {
+		if errors.Is(err, crud_errors.ErrNotFound) {
+			ctrl.logger.Debug("Client not found", logger.Err(err), "op", op)
+			c.Status(http.StatusNotFound)
+			return
+		}
 		ctrl.logger.Error("Failed to update address ID", "clientID", id, logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Failed to update address ID"})
 		return
@@ -238,6 +245,12 @@ func (ctrl *ClientController) Delete(c *gin.Context) {
 	}
 
 	if err := ctrl.service.Delete(c.Request.Context(), id); err != nil {
+		if errors.Is(err, crud_errors.ErrNotFound) {
+			ctrl.logger.Debug("Client not found", "op", op)
+			c.Status(http.StatusNoContent)
+			return
+		}
+
 		ctrl.logger.Error("Failed to delete client", "clientID", rawId, logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Failed to delete client"})
 		return

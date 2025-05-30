@@ -211,6 +211,11 @@ func (s *clientsService) Delete(ctx context.Context, id uuid.UUID) error {
 	})
 
 	if err != nil {
+		if errors.Is(err, crud_errors.ErrNotFound) {
+			s.logger.Debug("client not found", "op", op)
+			return fmt.Errorf("%s: %w", op, err)
+		}
+
 		s.logger.Error("something wrong with UOW deleting", logger.Err(err), "op", op)
 		return fmt.Errorf("%s: unit of work delete problem: %v", op, err)
 	}
