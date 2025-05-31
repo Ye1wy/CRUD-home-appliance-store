@@ -58,8 +58,8 @@ func (ctrl *ClientController) Create(c *gin.Context) {
 	var input dto.Client
 
 	if err := c.ShouldBind(&input); err != nil {
-		ctrl.logger.Error("Failed to bind JSON for create", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		ctrl.logger.Warn("Failed to bind JSON/XML for create", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid request payload: invalid data received"})
 		return
 	}
 
@@ -67,18 +67,18 @@ func (ctrl *ClientController) Create(c *gin.Context) {
 
 	client, err := mapper.ClientToDomain(input)
 	if err != nil {
-		ctrl.logger.Error("Failed mapping dto to domain", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalid birthady date in request payload"})
+		ctrl.logger.Warn("Failed mapping dto to domain", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid birthady date in request payload"})
 		return
 	}
 
 	if err := ctrl.service.Create(c.Request.Context(), &client); err != nil {
-		ctrl.logger.Error("Failed to add client: ", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Failed to add client"})
+		ctrl.logger.Error("Failed to add client", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Server is busy"})
 		return
 	}
 
-	ctrl.logger.Debug("Client added successfully", "op", op)
+	ctrl.logger.Debug("Client created", "op", op)
 	c.Status(http.StatusCreated)
 }
 
@@ -98,39 +98,45 @@ func (ctrl *ClientController) GetAll(c *gin.Context) {
 	op := "controllers.clientController.getAll"
 	limit, err := strconv.Atoi(c.DefaultQuery("limit", defaultLimit))
 	if err != nil {
-		ctrl.logger.Error("Invalid limit parameter", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Invalid payload"})
+		ctrl.logger.Warn("Failed convert limit value", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid request payload: limit is not valid"})
 		return
 	}
 
 	offset, err := strconv.Atoi(c.DefaultQuery("offset", defaultOffset))
 	if err != nil {
-		ctrl.logger.Error("Invalid offset parameter", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Invalid payload"})
+		ctrl.logger.Warn("Failed convert offset value", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid request payload: offset is not valid"})
 		return
 	}
 
 	clients, err := ctrl.service.GetAll(c.Request.Context(), limit, offset)
-	if errors.Is(err, crud_errors.ErrNotFound) {
-		ctrl.logger.Warn("No content", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusNotFound, gin.H{"warning": "404: client's not found"})
-		return
-	}
-
 	if err != nil {
+		if errors.Is(err, crud_errors.ErrInvalidParam) {
+			ctrl.logger.Warn("Invalid limit or offset parameter", "op", op)
+			ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid request payload: limit cannot be less or equal 0, offset cannot be less than 0"})
+			return
+		}
+
+		if errors.Is(err, crud_errors.ErrNotFound) {
+			ctrl.logger.Debug("No content", logger.Err(err), "op", op)
+			ctrl.responce(c, http.StatusNotFound, gin.H{"massage": "404: no data is contains"})
+			return
+		}
+
 		ctrl.logger.Error("Failed to retrieve clients", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Failed to retrieve client"})
+		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Server is busy"})
 		return
 	}
 
-	output := make([]dto.Client, len(clients), cap(clients))
+	output := make([]dto.Client, len(clients))
 
 	for i, client := range clients {
 		dto := mapper.ClientToDTO(client)
 		output[i] = dto
 	}
 
-	ctrl.logger.Debug("Retrieved all clients", "limit", limit, "offset", offset, "op", op)
+	ctrl.logger.Debug("Retrieved all client's", "limit", limit, "offset", offset, "op", op)
 	ctrl.responce(c, http.StatusOK, output)
 }
 
@@ -152,26 +158,32 @@ func (ctrl *ClientController) GetByNameAndSurname(c *gin.Context) {
 	surname := c.Query("surname")
 
 	clients, err := ctrl.service.GetByNameAndSurname(c.Request.Context(), name, surname)
-	if errors.Is(err, crud_errors.ErrNotFound) {
-		ctrl.logger.Warn("Client not found", "op", op)
-		ctrl.responce(c, http.StatusNotFound, gin.H{"error": "Client not found"})
-		return
-	}
-
 	if err != nil {
-		ctrl.logger.Error("Error while searching client ", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Name and surname cannot be empty!"})
+		if errors.Is(err, crud_errors.ErrInvalidParam) {
+			ctrl.logger.Warn("Invalid value name or surname", logger.Err(err), "op", op)
+			ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid request payload: name and surname cannot be empty"})
+			return
+		}
+
+		if errors.Is(err, crud_errors.ErrNotFound) {
+			ctrl.logger.Debug("Client not found", "op", op)
+			ctrl.responce(c, http.StatusNotFound, gin.H{"massage": "404: client not found"})
+			return
+		}
+
+		ctrl.logger.Error("Failed to get data from database", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Server is busy"})
 		return
 	}
 
-	output := make([]dto.Client, len(clients), cap(clients))
+	output := make([]dto.Client, len(clients))
 
 	for i, client := range clients {
 		dto := mapper.ClientToDTO(client)
 		output[i] = dto
 	}
 
-	ctrl.logger.Debug("Client retrieved successfully", "name", name, "surname", surname, "op", op)
+	ctrl.logger.Debug("Client retrieved", "name", name, "surname", surname, "op", op)
 	ctrl.responce(c, http.StatusOK, output)
 }
 
@@ -193,16 +205,16 @@ func (ctrl *ClientController) UpdateAddress(c *gin.Context) {
 	rawId := c.Param("id")
 	id, err := uuid.Parse(rawId)
 	if err != nil {
-		ctrl.logger.Error("Failed parse id to uuid", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalud request payload"})
+		ctrl.logger.Warn("The received identifier is invalid", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalud request payload: id is not valid"})
 		return
 	}
 
 	var input dto.Address
 
 	if err := c.ShouldBind(&input); err != nil {
-		ctrl.logger.Error("Failed to bind JSON for ChangeAddressIdParameter", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		ctrl.logger.Warn("Failed to bind JSON/XML for update address", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid request payload: invalid data received"})
 		return
 	}
 
@@ -211,15 +223,16 @@ func (ctrl *ClientController) UpdateAddress(c *gin.Context) {
 	if err := ctrl.service.UpdateAddress(c.Request.Context(), id, &newAddress); err != nil {
 		if errors.Is(err, crud_errors.ErrNotFound) {
 			ctrl.logger.Debug("Client not found", logger.Err(err), "op", op)
-			c.Status(http.StatusNotFound)
+			ctrl.responce(c, http.StatusNotFound, gin.H{"massage": "404: client not found for update"})
 			return
 		}
-		ctrl.logger.Error("Failed to update address ID", "clientID", id, logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Failed to update address ID"})
+
+		ctrl.logger.Error("Failed to update address ID", "id", id, logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Server is busy"})
 		return
 	}
 
-	ctrl.logger.Debug("Address ID updated successfully", "op", op)
+	ctrl.logger.Debug("Client updated", "id", id, "op", op)
 	c.Status(http.StatusOK)
 }
 
@@ -239,8 +252,8 @@ func (ctrl *ClientController) Delete(c *gin.Context) {
 	rawId := c.Param("id")
 	id, err := uuid.Parse(rawId)
 	if err != nil {
-		ctrl.logger.Error("Invalid id", "op", op)
-		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalid id"})
+		ctrl.logger.Warn("The received identifier is invalid", "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalud request payload: id is not valid"})
 		return
 	}
 
@@ -251,11 +264,11 @@ func (ctrl *ClientController) Delete(c *gin.Context) {
 			return
 		}
 
-		ctrl.logger.Error("Failed to delete client", "clientID", rawId, logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Failed to delete client"})
+		ctrl.logger.Error("Failed delete client by id", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Server is busy"})
 		return
 	}
 
-	ctrl.logger.Debug("Client deleted successfully", "clientID", rawId, "op", op)
+	ctrl.logger.Debug("Client deleted", "id", id, "op", op)
 	c.Status(http.StatusNoContent)
 }

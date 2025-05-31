@@ -47,8 +47,8 @@ func (ctrl *ProductController) Create(c *gin.Context) {
 	var input dto.Product
 
 	if err := c.ShouldBind(&input); err != nil {
-		ctrl.logger.Error("Failed to bind JSON/XML for AddProduct", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		ctrl.logger.Warn("Failed to bind JSON/XML for AddProduct", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid request payload: invalid data received"})
 		return
 	}
 
@@ -56,17 +56,17 @@ func (ctrl *ProductController) Create(c *gin.Context) {
 
 	if err := ctrl.service.Create(c.Request.Context(), &product); err != nil {
 		if errors.Is(err, crud_errors.ErrNotFound) {
-			ctrl.logger.Warn("Invalid supplier data with create product", "op", op)
-			ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "invalid supplier data"})
+			ctrl.logger.Debug("Invalid supplier data with create product", "op", op)
+			ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid supplier data"})
 			return
 		}
 
 		ctrl.logger.Error("Failed to add client", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Failed to add product"})
+		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Server is busy"})
 		return
 	}
 
-	ctrl.logger.Debug("Product added successfully", "productID", product.Id, "op", op)
+	ctrl.logger.Debug("Product created", "id", product.Id, "op", op)
 	c.Status(http.StatusCreated)
 }
 
@@ -76,34 +76,34 @@ func (ctrl *ProductController) GetAll(c *gin.Context) {
 	op := "controllers.productController.GetAll"
 	limit, err := strconv.Atoi(c.DefaultQuery("limit", defaultLimit))
 	if err != nil {
-		ctrl.logger.Warn("Invalid limit parameter", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalid payload"})
+		ctrl.logger.Warn("Failed convert limit value", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid request payload: limit is not valid"})
 		return
 	}
 
 	offset, err := strconv.Atoi(c.DefaultQuery("offset", defaultOffset))
 	if err != nil {
-		ctrl.logger.Warn("Invalid offset parameter", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalid payload"})
+		ctrl.logger.Warn("Failed convert offset value", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid request payload: offset is not valid"})
 		return
 	}
 
 	product, err := ctrl.service.GetAll(c.Request.Context(), limit, offset)
 	if err != nil {
-		if errors.Is(err, crud_errors.ErrNotFound) {
-			ctrl.logger.Warn("Product not found", "op", op)
-			ctrl.responce(c, http.StatusNotFound, gin.H{"warning": "Product not found"})
+		if errors.Is(err, crud_errors.ErrInvalidParam) {
+			ctrl.logger.Warn("Invalid limit or offset parameter", "op", op)
+			ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid request payload: limit cannot be less or equal 0, offset cannot be less than 0"})
 			return
 		}
 
-		if errors.Is(err, crud_errors.ErrInvalidParam) {
-			ctrl.logger.Warn("Invalid limit or offset parameter", "op", op)
-			ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalid payload"})
+		if errors.Is(err, crud_errors.ErrNotFound) {
+			ctrl.logger.Debug("Product's not found: no content", "op", op)
+			ctrl.responce(c, http.StatusNotFound, gin.H{"massage": "404: no data is contains"})
 			return
 		}
 
 		ctrl.logger.Error("Failed to retrieve product", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Failed to retrieve product"})
+		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Server is busy"})
 		return
 	}
 
@@ -114,7 +114,7 @@ func (ctrl *ProductController) GetAll(c *gin.Context) {
 		output[i] = dto
 	}
 
-	ctrl.logger.Debug("retrieved all products", "limit", limit, "offset", offset)
+	ctrl.logger.Debug("Retrieved all products", "limit", limit, "offset", offset)
 	ctrl.responce(c, http.StatusOK, output)
 }
 
@@ -125,61 +125,67 @@ func (ctrl *ProductController) GetById(c *gin.Context) {
 	rawId := c.Param("id")
 	id, err := uuid.Parse(rawId)
 	if err != nil {
-		ctrl.logger.Warn("Invalid id", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalid payload"})
+		ctrl.logger.Warn("The received identifier is invalid", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalud request payload: id is not valid"})
 		return
 	}
 
 	product, err := ctrl.service.GetById(c.Request.Context(), id)
 	if err != nil {
 		if errors.Is(err, crud_errors.ErrNotFound) {
-			ctrl.logger.Warn("Product not found", "op", op)
-			ctrl.responce(c, http.StatusNotFound, gin.H{"warning": "product not found"})
+			ctrl.logger.Debug("Product not found", "op", op)
+			ctrl.responce(c, http.StatusNotFound, gin.H{"massage": "404: product not found"})
 			return
 		}
 
-		ctrl.logger.Error("Error while searching product", "op", op)
-		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "id cannot be empty or id is invalid"})
+		ctrl.logger.Error("Failed to get prodcut with id", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Server is busy"})
 		return
 	}
 
 	output := mapper.ProductToDTO(*product)
-	ctrl.logger.Debug("Product retrieved successfully", "id", rawId)
+	ctrl.logger.Debug("Product retrieved", "id", id, "op", op)
 	ctrl.responce(c, http.StatusOK, output)
 }
 
 // Patch /api/v1/products/:id/decrease=?
 // Decrease a parameter by a given value
-func (ctrl *ProductController) DecreaseStock(c *gin.Context) {
+func (ctrl *ProductController) Update(c *gin.Context) {
 	op := "controllers.productController.DecreaseStock"
 	rawId := c.Param("id")
 	id, err := uuid.Parse(rawId)
 	if err != nil {
-		ctrl.logger.Warn("Invalid id", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalid payload"})
+		ctrl.logger.Warn("The received identifier is invalid", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalud request payload: id is not valid"})
 		return
 	}
 
-	decreaseValue, err := strconv.Atoi(c.Query("decrease"))
+	value, err := strconv.Atoi(c.Query("decrease"))
 	if err != nil {
-		ctrl.logger.Warn("Error in convert string from query to int", "op", op)
-		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalid payload"})
+		ctrl.logger.Warn("Failed convert decrease value", "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid request payload: decrease value is invalid"})
 		return
 	}
 
-	if err := ctrl.service.Update(c.Request.Context(), id, decreaseValue); err != nil {
+	if err := ctrl.service.Update(c.Request.Context(), id, value); err != nil {
 		if errors.Is(err, crud_errors.ErrInvalidParam) {
-			ctrl.logger.Warn("Invalid deacrease value", "value", decreaseValue, "op", op)
-			ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalid payload"})
+			ctrl.logger.Warn("Invalid deacrease value", "value", value, "op", op)
+			ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid payload: decrease value cannot be less than 0"})
 			return
 		}
 
-		ctrl.logger.Error("Error in decrease stock", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": err})
+		if errors.Is(err, crud_errors.ErrNotFound) {
+			ctrl.logger.Debug("Product not found", logger.Err(err), "op", op)
+			ctrl.responce(c, http.StatusNotFound, gin.H{"massage": "404: product not found for update"})
+			return
+		}
+
+		ctrl.logger.Error("Failed to update avalilable stock", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Server is busy"})
 		return
 	}
 
-	ctrl.logger.Debug("Stock in product is decreased successfully", "op", op)
+	ctrl.logger.Debug("Product updated", "op", op)
 	c.Status(http.StatusOK)
 }
 
@@ -190,17 +196,23 @@ func (ctrl *ProductController) Delete(c *gin.Context) {
 	rawId := c.Param("id")
 	id, err := uuid.Parse(rawId)
 	if err != nil {
-		ctrl.logger.Warn("Invalid id", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalid payload"})
+		ctrl.logger.Warn("The received identifier is invalid", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalud request payload: id is not valid"})
 		return
 	}
 
 	if err := ctrl.service.Delete(c.Request.Context(), id); err != nil {
-		ctrl.logger.Error("Failed to delete product", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Failed to delete product"})
+		if errors.Is(err, crud_errors.ErrNotFound) {
+			ctrl.logger.Debug("Product not found", "op", op)
+			c.Status(http.StatusNoContent)
+			return
+		}
+
+		ctrl.logger.Error("Failed to delete product by id", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Server is busy"})
 		return
 	}
 
-	ctrl.logger.Debug("Product deleted successfully", "productID", rawId, "op", op)
+	ctrl.logger.Debug("Product deleted", "id", id, "op", op)
 	c.Status(http.StatusNoContent)
 }

@@ -153,7 +153,7 @@ func (s *clientsService) UpdateAddress(ctx context.Context, id uuid.UUID, addres
 		}
 
 		s.logger.Error("something wrong with UOW updating", logger.Err(err), "op", op)
-		return fmt.Errorf("%s: unit of work update problem: %w", op, err)
+		return fmt.Errorf("%s: unit of work update problem: %v", op, err)
 	}
 
 	return nil

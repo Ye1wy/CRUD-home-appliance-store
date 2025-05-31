@@ -42,37 +42,39 @@ func (ctrl *SupplierController) Create(c *gin.Context) {
 	var input dto.Supplier
 
 	if err := c.ShouldBind(&input); err != nil {
-		ctrl.logger.Warn("Failed to bind JSON for Create", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusBadRequest, err)
+		ctrl.logger.Warn("Failed to bind JSON/XML for create", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid request payload: invalid data received"})
 		return
 	}
+
+	ctrl.logger.Debug("check data", "data", input)
 
 	supplier := mapper.SupplierToDomain(input)
 
-	err := ctrl.service.Create(c, &supplier)
-	if err != nil {
+	if err := ctrl.service.Create(c, &supplier); err != nil {
 		ctrl.logger.Error("Failed create supplier", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusInternalServerError, err)
+		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Server is busy"})
 		return
 	}
 
-	ctrl.logger.Debug("New supplier created", "op", op)
+	ctrl.logger.Debug("Supplier created", "op", op)
 	c.Status(http.StatusCreated)
 }
 
 func (ctrl *SupplierController) GetAll(c *gin.Context) {
 	op := "controllers.supplierController.GetAll"
-	offset, err := strconv.Atoi(c.DefaultQuery("offset", defaultOffset))
-	if err != nil {
-		ctrl.logger.Warn("Failed convert offset value", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
-		return
-	}
 
 	limit, err := strconv.Atoi(c.DefaultQuery("limit", defaultLimit))
 	if err != nil {
 		ctrl.logger.Warn("Failed convert limit value", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid request payload: limit is not valid"})
+		return
+	}
+
+	offset, err := strconv.Atoi(c.DefaultQuery("offset", defaultOffset))
+	if err != nil {
+		ctrl.logger.Warn("Failed convert offset value", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid request payload: offset is not valid"})
 		return
 	}
 
@@ -80,28 +82,28 @@ func (ctrl *SupplierController) GetAll(c *gin.Context) {
 	if err != nil {
 		if errors.Is(err, crud_errors.ErrInvalidParam) {
 			ctrl.logger.Warn("Invalid value limit or offset", logger.Err(err), "op", op)
-			ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+			ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid request payload: limit cannot be less or equal 0, offset cannot be less than 0"})
 			return
 		}
 
 		if errors.Is(err, crud_errors.ErrNotFound) {
-			ctrl.logger.Warn("No supplier data", "op", op)
-			ctrl.responce(c, http.StatusNotFound, gin.H{"massage": "No data is contains"})
+			ctrl.logger.Debug("No supplier data", "op", op)
+			ctrl.responce(c, http.StatusNotFound, gin.H{"massage": "404: no data is contains"})
 			return
 		}
 
 		ctrl.logger.Error("Failed retrieved data", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusInternalServerError, gin.H{"massage": "Server is busy"})
+		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Server is busy"})
 		return
 	}
 
-	output := make([]dto.Supplier, len(supplier), cap(supplier))
+	output := make([]dto.Supplier, len(supplier))
 
 	for i, supplier := range supplier {
 		output[i] = mapper.SupplierToDTO(supplier)
 	}
 
-	ctrl.logger.Debug("All data is retrieved", "op", op)
+	ctrl.logger.Debug("Retrieved all supplier's", "limit", limit, "offset", offset, "op", op)
 	ctrl.responce(c, http.StatusOK, output)
 }
 
@@ -110,26 +112,26 @@ func (ctrl *SupplierController) GetById(c *gin.Context) {
 	rawId := c.Param("id")
 	id, err := uuid.Parse(rawId)
 	if err != nil {
-		ctrl.logger.Warn("Invalid id payload", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		ctrl.logger.Warn("The received identifier is invalid", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalud request payload: id is not valid"})
 		return
 	}
 
 	supplier, err := ctrl.service.GetById(c, id)
 	if err != nil {
 		if errors.Is(err, crud_errors.ErrNotFound) {
-			ctrl.logger.Warn("Supplier not found", "op", op)
-			ctrl.responce(c, http.StatusNotFound, gin.H{"massage": "supplier not found"})
+			ctrl.logger.Debug("Supplier not found", "op", op)
+			ctrl.responce(c, http.StatusNotFound, gin.H{"massage": "404: supplier not found"})
 			return
 		}
 
 		ctrl.logger.Error("Failed to get supplier with id", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusInternalServerError, gin.H{"massage": "Server is busy"})
+		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Server is busy"})
 		return
 	}
 
 	output := mapper.SupplierToDTO(*supplier)
-	ctrl.logger.Debug("Data retrieved", "op", op)
+	ctrl.logger.Debug("Supplier retrieved", "id", id, "op", op)
 	ctrl.responce(c, http.StatusOK, output)
 }
 
@@ -138,28 +140,34 @@ func (ctrl *SupplierController) UpdateAddress(c *gin.Context) {
 	rawId := c.Param("id")
 	id, err := uuid.Parse(rawId)
 	if err != nil {
-		ctrl.logger.Warn("Invalid id payload", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		ctrl.logger.Warn("The received identifier is invalid", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalud request payload: id is not valid"})
 		return
 	}
 
 	var input dto.Address
 
 	if err := c.ShouldBind(&input); err != nil {
-		ctrl.logger.Error("Failed to bind JSON for ChangeAddressIdParameter", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Invalid request payload"})
+		ctrl.logger.Warn("Failed to bind JSON/XML for update address", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid request payload: invalid data received"})
 		return
 	}
 
 	address := mapper.AddressToDomain(input)
 
 	if err := ctrl.service.UpdateAddress(c, id, &address); err != nil {
-		ctrl.logger.Error("Failed to update address ID", "SupplierId", id, logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Failed to update address ID"})
+		if errors.Is(err, crud_errors.ErrNotFound) {
+			ctrl.logger.Debug("Supplier not found", logger.Err(err), "op", op)
+			ctrl.responce(c, http.StatusNotFound, gin.H{"massage": "404: supplier not found for update"})
+			return
+		}
+
+		ctrl.logger.Error("Failed to update address ID", "id", id, logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Server is busy"})
 		return
 	}
 
-	ctrl.logger.Info("Address ID updated successfully", "op", op)
+	ctrl.logger.Debug("Supplier updated", "id", id, "op", op)
 	c.Status(http.StatusOK)
 }
 
@@ -168,17 +176,23 @@ func (ctrl *SupplierController) Delete(c *gin.Context) {
 	rawId := c.Param("id")
 	id, err := uuid.Parse(rawId)
 	if err != nil {
-		ctrl.logger.Warn("Invalid id payload", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		ctrl.logger.Warn("The received identifier is invalid", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalud request payload: id is not valid"})
 		return
 	}
 
 	if err := ctrl.service.Delete(c.Request.Context(), id); err != nil {
+		if errors.Is(err, crud_errors.ErrNotFound) {
+			ctrl.logger.Debug("Supplier not found", "op", op)
+			c.Status(http.StatusNoContent)
+			return
+		}
+
 		ctrl.logger.Error("Failed delete supplier by id", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusInternalServerError, gin.H{"massage": "server is busy"})
+		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Server is busy"})
 		return
 	}
 
-	ctrl.logger.Debug("Successfuly deleted", "Supplier id:", id, "op", op)
+	ctrl.logger.Debug("Supplier deleted", "id", id, "op", op)
 	c.Status(http.StatusNoContent)
 }

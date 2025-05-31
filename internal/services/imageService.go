@@ -93,7 +93,7 @@ func (s *imageService) Create(ctx context.Context, image *domain.Image) error {
 func (s *imageService) GetAll(ctx context.Context, limit, offset int) ([]domain.Image, error) {
 	op := "services.imageService.GetAll"
 
-	if limit <= 0 || offset <= 0 {
+	if limit <= 0 || offset < 0 {
 		s.logger.Error("invalid parameter limit and offset", "op", op)
 		return nil, fmt.Errorf("%s: %w", op, crud_errors.ErrInvalidParam)
 	}
