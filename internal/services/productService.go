@@ -44,7 +44,11 @@ func (s *productService) Create(ctx context.Context, product *domain.Product) er
 			return fmt.Errorf("%s: get supplier repository generator is unable: %v", uowOp, err)
 		}
 
-		supplierRepo := supplierRepoGen.(*postgres.SupplierRepo)
+		supplierRepo, ok := supplierRepoGen.(*postgres.SupplierRepo)
+		if !ok {
+			s.logger.Error("Conversion problem, not contained expected convesion", "op", op)
+			return fmt.Errorf("%s: %w", uowOp, crud_errors.ErrConversionProblem)
+		}
 
 		supplier, err := supplierRepo.GetByName(ctx, product.Supplier.Name)
 		if err != nil {
@@ -61,7 +65,11 @@ func (s *productService) Create(ctx context.Context, product *domain.Product) er
 				return fmt.Errorf("%s: get image repository generator is unable: %v", uowOp, err)
 			}
 
-			imageRepo := imageRepoGen.(*postgres.ImageRepo)
+			imageRepo, ok := imageRepoGen.(*postgres.ImageRepo)
+			if !ok {
+				s.logger.Error("Conversion problem, not contained expected convesion", "op", op)
+				return fmt.Errorf("%s: %w", uowOp, crud_errors.ErrConversionProblem)
+			}
 
 			if err := imageRepo.Create(ctx, &product.Image); err != nil {
 				s.logger.Error("unable to create image with creating product", logger.Err(err), "op", uowOp)
@@ -74,7 +82,11 @@ func (s *productService) Create(ctx context.Context, product *domain.Product) er
 			return fmt.Errorf("%s: get product repository generator is unable: %v", uowOp, err)
 		}
 
-		productRepo := productRepoGen.(*postgres.ProductRepo)
+		productRepo, ok := productRepoGen.(*postgres.ProductRepo)
+		if !ok {
+			s.logger.Error("Conversion problem, not contained expected convesion", "op", op)
+			return fmt.Errorf("%s: %w", uowOp, crud_errors.ErrConversionProblem)
+		}
 
 		if err := productRepo.Create(ctx, product); err != nil {
 			s.logger.Error("failed to create product", logger.Err(err), "op", uowOp)
@@ -86,7 +98,7 @@ func (s *productService) Create(ctx context.Context, product *domain.Product) er
 
 	if err != nil {
 		s.logger.Error("something wrong with UOW creating", logger.Err(err), "op", op)
-		return fmt.Errorf("%s: unit of work creating problem: %v", op, err)
+		return fmt.Errorf("%s: unit of work creating problem: %w", op, err)
 	}
 
 	return nil
@@ -103,7 +115,7 @@ func (s *productService) GetAll(ctx context.Context, limit, offset int) ([]domai
 	products, err := s.reader.GetAll(ctx, limit, offset)
 	if err != nil {
 		if errors.Is(err, crud_errors.ErrNotFound) {
-			s.logger.Debug("No content", "op", op)
+			s.logger.Warn("No content", "op", op)
 		} else {
 			s.logger.Error("error detected", logger.Err(err), "op", op)
 		}
@@ -145,16 +157,20 @@ func (s *productService) Update(ctx context.Context, id uuid.UUID, decrease int)
 			return fmt.Errorf("%s: get product repository generator is unable: %v", uowOp, err)
 		}
 
-		productRepo := productRepoGen.(*postgres.ProductRepo)
+		productRepo, ok := productRepoGen.(*postgres.ProductRepo)
+		if !ok {
+			s.logger.Error("Conversion problem, not contained expected convesion", "op", op)
+			return fmt.Errorf("%s: %w", uowOp, crud_errors.ErrConversionProblem)
+		}
 
 		if err := productRepo.Update(ctx, id, decrease); err != nil {
 			if errors.Is(err, crud_errors.ErrNotFound) {
 				s.logger.Warn("update initialize is unable", "op", uowOp)
-				return fmt.Errorf("%s: %w", uowOp, err)
+			} else {
+				s.logger.Error("failed to update stock with product", logger.Err(err), "op", uowOp)
 			}
 
-			s.logger.Error("failed to update stock with product", logger.Err(err), "op", uowOp)
-			return fmt.Errorf("%s: failed to update stock with product: %v", uowOp, err)
+			return fmt.Errorf("%s: failed to update stock with product: %w", uowOp, err)
 		}
 
 		return nil
@@ -163,11 +179,11 @@ func (s *productService) Update(ctx context.Context, id uuid.UUID, decrease int)
 	if err != nil {
 		if errors.Is(err, crud_errors.ErrNotFound) {
 			s.logger.Warn("update initialize is unable: product not found", "op", op)
-			return fmt.Errorf("%s: %w", op, err)
+		} else {
+			s.logger.Error("something wrong with UOW updating", logger.Err(err), "op", op)
 		}
 
-		s.logger.Error("something wrong with UOW updating", logger.Err(err), "op", op)
-		return fmt.Errorf("%s: unit of work update problem: %v", op, err)
+		return fmt.Errorf("%s: unit of work update problem: %w", op, err)
 	}
 
 	return nil
@@ -184,7 +200,11 @@ func (s *productService) Delete(ctx context.Context, id uuid.UUID) error {
 			return fmt.Errorf("%s: get product repository generator is unable: %v", uowOp, err)
 		}
 
-		productRepo := productRepoGen.(*postgres.ProductRepo)
+		productRepo, ok := productRepoGen.(*postgres.ProductRepo)
+		if !ok {
+			s.logger.Error("Conversion problem, not contained expected convesion", "op", op)
+			return fmt.Errorf("%s: %w", uowOp, crud_errors.ErrConversionProblem)
+		}
 
 		savepoint := `sp_delete_product`
 		err = safeDelete(ctx, tx.GetTX(), id, productRepo.Delete, s.logger, uowOp, savepoint)

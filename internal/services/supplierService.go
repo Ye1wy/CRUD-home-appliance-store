@@ -44,7 +44,12 @@ func (s *supplierService) Create(ctx context.Context, supplier *domain.Supplier)
 			return fmt.Errorf("%s: get address repository generator is unable: %v", uowOp, err)
 		}
 
-		addressRepo := addressRepoGen.(*postgres.AddressRepo)
+		addressRepo, ok := addressRepoGen.(*postgres.AddressRepo)
+		if !ok {
+			s.logger.Error("Conversion problem, not contained expected convesion", "op", op)
+			return fmt.Errorf("%s: %w", uowOp, crud_errors.ErrConversionProblem)
+		}
+
 		err = addressRepo.Create(ctx, &supplier.Address)
 		if err != nil {
 			s.logger.Error("address creation is unavailable", logger.Err(err), "op", uowOp)
@@ -57,7 +62,12 @@ func (s *supplierService) Create(ctx context.Context, supplier *domain.Supplier)
 			return fmt.Errorf("%s: get supplier repository generator is unable: %v", uowOp, err)
 		}
 
-		supplierRepo := supplierRepoGen.(*postgres.SupplierRepo)
+		supplierRepo, ok := supplierRepoGen.(*postgres.SupplierRepo)
+		if !ok {
+			s.logger.Error("Conversion problem, not contained expected convesion", "op", op)
+			return fmt.Errorf("%s: %w", uowOp, crud_errors.ErrConversionProblem)
+		}
+
 		if err := supplierRepo.Create(ctx, supplier); err != nil {
 			s.logger.Error("failed to create supplier", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: failed to create supplier: %v", uowOp, err)
@@ -122,7 +132,12 @@ func (s *supplierService) UpdateAddress(ctx context.Context, id uuid.UUID, addre
 			return fmt.Errorf("%s: get address repository generator is unable: %v", uowOp, err)
 		}
 
-		addressRepo := addressRepoGen.(*postgres.AddressRepo)
+		addressRepo, ok := addressRepoGen.(*postgres.AddressRepo)
+		if !ok {
+			s.logger.Error("Conversion problem, not contained expected convesion", "op", op)
+			return fmt.Errorf("%s: %w", uowOp, crud_errors.ErrConversionProblem)
+		}
+
 		err = addressRepo.Create(ctx, address)
 		if err != nil {
 			s.logger.Error("unable to create address", logger.Err(err), "op", uowOp)
@@ -135,16 +150,20 @@ func (s *supplierService) UpdateAddress(ctx context.Context, id uuid.UUID, addre
 			return fmt.Errorf("%s: get supplier repository generator is unable: %v", uowOp, err)
 		}
 
-		supplierRepo := supplierRepoGen.(*postgres.SupplierRepo)
+		supplierRepo, ok := supplierRepoGen.(*postgres.SupplierRepo)
+		if !ok {
+			s.logger.Error("Conversion problem, not contained expected convesion", "op", op)
+			return fmt.Errorf("%s: %w", uowOp, crud_errors.ErrConversionProblem)
+		}
 
 		if err := supplierRepo.Update(ctx, id, address.Id); err != nil {
 			if errors.Is(err, crud_errors.ErrNotFound) {
 				s.logger.Debug("update initialize is unable", logger.Err(err), "op", uowOp)
-				return fmt.Errorf("%s: %w", uowOp, err)
+			} else {
+				s.logger.Error("failed to update address with supplier", logger.Err(err), "op", uowOp)
 			}
 
-			s.logger.Error("failed to update address with supplier", logger.Err(err), "op", uowOp)
-			return fmt.Errorf("%s: failed to update address with supplier: %v", uowOp, err)
+			return fmt.Errorf("%s: failed to update address with supplier: %w", uowOp, err)
 		}
 
 		return nil
@@ -153,11 +172,11 @@ func (s *supplierService) UpdateAddress(ctx context.Context, id uuid.UUID, addre
 	if err != nil {
 		if errors.Is(err, crud_errors.ErrNotFound) {
 			s.logger.Debug("update initialize is unable: supplier not found", logger.Err(err), "op", op)
-			return fmt.Errorf("%s: %w", op, err)
+		} else {
+			s.logger.Debug("something wrong with UOW creating", logger.Err(err), "op", op)
 		}
 
-		s.logger.Debug("something wrong with UOW creating", logger.Err(err), "op", op)
-		return fmt.Errorf("%s: unit of work creating problem: %v", op, err)
+		return fmt.Errorf("%s: unit of work creating problem: %w", op, err)
 	}
 
 	return nil
@@ -173,7 +192,12 @@ func (s *supplierService) Delete(ctx context.Context, id uuid.UUID) error {
 			return fmt.Errorf("%s: get supplier repository generator is unable: %v", uowOp, err)
 		}
 
-		supplierRepo := supplierRepoGen.(*postgres.SupplierRepo)
+		supplierRepo, ok := supplierRepoGen.(*postgres.SupplierRepo)
+		if !ok {
+			s.logger.Error("Conversion problem, not contained expected convesion", "op", op)
+			return fmt.Errorf("%s: %w", uowOp, crud_errors.ErrConversionProblem)
+		}
+
 		suppler, err := supplierRepo.GetById(ctx, id)
 		if err != nil {
 			if errors.Is(err, crud_errors.ErrNotFound) {
@@ -190,13 +214,17 @@ func (s *supplierService) Delete(ctx context.Context, id uuid.UUID) error {
 			return fmt.Errorf("%s: unable to delete supplier: %v", uowOp, err)
 		}
 
-		addressRepoGen, err := getReposiotry(tx, uow.SupplierRepoName, s.logger)
+		addressRepoGen, err := getReposiotry(tx, uow.AddressRepoName, s.logger)
 		if err != nil {
 			s.logger.Error("get address repository generator is unable", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: get address repository generator is unable: %v", uowOp, err)
 		}
 
-		addressRepo := addressRepoGen.(*postgres.AddressRepo)
+		addressRepo, ok := addressRepoGen.(*postgres.AddressRepo)
+		if !ok {
+			s.logger.Error("Conversion problem, not contained expected convesion", "op", op)
+			return fmt.Errorf("%s: %w", uowOp, crud_errors.ErrConversionProblem)
+		}
 
 		savepoint := `sp_delete_address`
 		err = safeDelete(ctx, tx.GetTX(), suppler.Address.Id, addressRepo.Delete, s.logger, uowOp, savepoint)
@@ -209,7 +237,7 @@ func (s *supplierService) Delete(ctx context.Context, id uuid.UUID) error {
 	})
 
 	if err != nil {
-		s.logger.Error("somethin wrong with UOW deleting", logger.Err(err), "op", op)
+		s.logger.Error("something wrong with UOW deleting", logger.Err(err), "op", op)
 		return fmt.Errorf("%s: unit of work delete problem: %v", op, err)
 	}
 

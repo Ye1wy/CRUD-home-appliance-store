@@ -70,7 +70,11 @@ func (s *imageService) Create(ctx context.Context, image *domain.Image) error {
 			return fmt.Errorf("%s: get image repository generator is unable: %v", uowOp, err)
 		}
 
-		imageRepo := imageRepoGen.(*postgres.ImageRepo)
+		imageRepo, ok := imageRepoGen.(*postgres.ImageRepo)
+		if !ok {
+			s.logger.Error("Conversion problem, not contained expected convesion", "op", op)
+			return fmt.Errorf("%s: %w", uowOp, crud_errors.ErrConversionProblem)
+		}
 
 		image.Hash = generateImageHash(image.Data)
 
@@ -105,6 +109,7 @@ func (s *imageService) GetAll(ctx context.Context, limit, offset int) ([]domain.
 		} else {
 			s.logger.Error("extract data failed", logger.Err(err), "op", op)
 		}
+
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -119,10 +124,10 @@ func (s *imageService) GetById(ctx context.Context, id uuid.UUID) (*domain.Image
 	if err != nil {
 		if errors.Is(err, crud_errors.ErrNotFound) {
 			s.logger.Debug("image not found", "op", op)
-			return nil, fmt.Errorf("%s: %w", op, err)
+		} else {
+			s.logger.Error("extract data failed", logger.Err(err), "op", op)
 		}
 
-		s.logger.Error("extract data failed", logger.Err(err), "op", op)
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -145,17 +150,21 @@ func (s *imageService) Update(ctx context.Context, image *domain.Image) error {
 			return fmt.Errorf("%s: get image repository generator is unable: %v", uowOp, err)
 		}
 
-		imageRepo := imageRepoGen.(*postgres.ImageRepo)
+		imageRepo, ok := imageRepoGen.(*postgres.ImageRepo)
+		if !ok {
+			s.logger.Error("Conversion problem, not contained expected convesion", "op", op)
+			return fmt.Errorf("%s: %w", uowOp, crud_errors.ErrConversionProblem)
+		}
 
 		image.Hash = generateImageHash(image.Data)
 
 		if err := imageRepo.Update(ctx, image); err != nil {
 			if errors.Is(err, crud_errors.ErrNotFound) {
-				s.logger.Debug("update initialize is unable", "op", uowOp)
-				return fmt.Errorf("%s: %w", uowOp, err)
+				s.logger.Warn("update initialize is unable", "op", uowOp)
+			} else {
+				s.logger.Error("failed to update image", logger.Err(err), "op", uowOp)
 			}
 
-			s.logger.Error("failed to update image", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: failed to update image: %v", uowOp, err)
 		}
 
@@ -165,10 +174,10 @@ func (s *imageService) Update(ctx context.Context, image *domain.Image) error {
 	if err != nil {
 		if errors.Is(err, crud_errors.ErrNotFound) {
 			s.logger.Warn("update initialize is unable: image not found", "op", op)
-			return fmt.Errorf("%s: %w", op, err)
+		} else {
+			s.logger.Error("something wrong with UOW updating", logger.Err(err), "op", op)
 		}
 
-		s.logger.Error("something wrong with UOW updating", logger.Err(err), "op", op)
 		return fmt.Errorf("%s: unit of work update problem: %w", op, err)
 	}
 
@@ -186,7 +195,11 @@ func (s *imageService) Delete(ctx context.Context, id uuid.UUID) error {
 			return fmt.Errorf("%s: get image repository generator is unable: %v", uowOp, err)
 		}
 
-		imageRepo := imageRepoGen.(*postgres.ImageRepo)
+		imageRepo, ok := imageRepoGen.(*postgres.ImageRepo)
+		if !ok {
+			s.logger.Error("Conversion problem, not contained expected convesion", "op", op)
+			return fmt.Errorf("%s: %w", uowOp, crud_errors.ErrConversionProblem)
+		}
 
 		savepoint := `sp_delete_image`
 		err = safeDelete(ctx, tx.GetTX(), id, imageRepo.Delete, s.logger, uowOp, savepoint)
