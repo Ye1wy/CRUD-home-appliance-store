@@ -10,8 +10,7 @@ import (
 )
 
 type Config struct {
-	Env string `env:"env" env-default:"local"`
-	// mongodb.MongoConfig `env:"MONGODB"`
+	Env                       string `env:"env" env-default:"local"`
 	connection.PostgresConfig `env:"POSTGRES"`
 	HTTPServer                `env:"http_server"`
 }
@@ -26,16 +25,16 @@ func MustLoad() *Config {
 
 	configPath := os.Getenv("CONFIG_PATH")
 	if configPath == "" {
-		log.Fatalf("Op: %s, CONFIG_PATH is empty", op)
+		log.Fatalf("op: %s, CONFIG_PATH is empty", op)
 	}
 
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		log.Fatalf("Op: %s, Error: There is no config file: %v", op, err)
+		log.Fatalf("op: %s, Error: There is no config file: %v", op, err)
 	}
 
 	var cfg Config
 	if err := cleanenv.ReadConfig(configPath, &cfg); err != nil {
-		log.Fatalf("Op: %v, Error: Cannot read config: %v", op, err)
+		log.Fatalf("op: %v, Error: Cannot read config: %v", op, err)
 	}
 
 	return &cfg

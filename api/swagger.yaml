@@ -1,0 +1,12 @@
+basePath: /api/v1
+host: aboba.com
+info:
+  contact: {}
+  description: This is a sample server Petstore server.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: Swagger CRUD Home appliance store API
+  version: "1.0"
+paths: {}
+swagger: "2.0"

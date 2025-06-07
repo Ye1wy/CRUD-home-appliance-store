@@ -2,9 +2,10 @@ package routes
 
 import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/controllers"
-	"net/http"
 
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 type routes struct {
@@ -23,8 +24,8 @@ func NewRouter(cfg RouterConfig) routes {
 		router: gin.Default(),
 	}
 
-	r.router.GET("/api/v1/swagger/index.html", swaggerGive)
-	r.router.GET("/", func(c *gin.Context) {
+	r.router.GET("/api/v1/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	r.router.GET("/api/v1/amogus", func(c *gin.Context) {
 		c.File("./misc/images/amogus.gif")
 	})
 
@@ -69,8 +70,4 @@ func NewRouter(cfg RouterConfig) routes {
 
 func (r routes) Run(addr ...string) error {
 	return r.router.Run(addr...)
-}
-
-func swaggerGive(ctx *gin.Context) {
-	ctx.JSON(http.StatusTeapot, gin.H{"massage": "Hello durik!"})
 }

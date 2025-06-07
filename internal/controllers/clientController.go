@@ -36,23 +36,23 @@ func NewClientsController(service clientService, logger *logger.Logger) *ClientC
 	}
 }
 
-// Create Client godoc
+// CreateClient godoc
 //
-//		@Summary		Create client
-//		@Description	Client created from JSON or XML, for create endpoint required: name, surname, birthday, gender, address_id
-//		@Tags			clients
-//		@Accept			json/xml
-//		@Produce		json/xml
-//		@Param			name	path	string true "Client name"
-//		@Param			surname path	string true "Client surname"
-//	 	@Param			birthday path 	string true "Client birthday"
-//	 	@Param			gender path		string true "Client gender"
-//		@Param			address_id path string true uuid.UUID "Client living address"
-//		@Success		201	{object}
-//		@Failure		400	{object}	domain.Error
-//		@Failure		404	{object}	domain.Error
-//		@Failure		500	{object}	domain.Error
-//		@Router			/api/v1/clients [post]
+//	@Summary		Create client
+//	@Description	Client created from JSON or XML, for create endpoint required: name, surname, birthday, gender, address_id
+//	@Tags			clients
+//	@Accept			json/xml
+//	@Produce		json/xml
+//	@Param			name		path	string		true	"Client name"
+//	@Param			surname		path	string		true	"Client surname"
+//	@Param			birthday	path	string		true	"Client birthday"
+//	@Param			gender		path	string		true	"Client gender"
+//	@Param			address_id	path	uuid.UUID	true	"Client living address"
+//	@Success		201			{object}
+//	@Failure		400			{object}	domain.Error
+//	@Failure		404			{object}	domain.Error
+//	@Failure		500			{object}	domain.Error
+//	@Router			/api/v1/clients [post]
 func (ctrl *ClientController) Create(c *gin.Context) {
 	op := "controllers.clientController.Create"
 	var input dto.Client
@@ -151,7 +151,7 @@ func (ctrl *ClientController) GetAll(c *gin.Context) {
 //	@Failure		400	{object}	domain.Error
 //	@Failure		404	{object}	domain.Error
 //	@Failure		500	{object}	domain.Error
-//	@Router			/api/v1/clients/search [get]
+//	@Router			/api/v1/clients/search?name=&surname= [get]
 func (ctrl *ClientController) GetByNameAndSurname(c *gin.Context) {
 	op := "controllers.clientController.getByNameAndSurname"
 	name := c.Query("name")
@@ -194,12 +194,12 @@ func (ctrl *ClientController) GetByNameAndSurname(c *gin.Context) {
 //	@Tags			clients
 //	@Accept			json/xml
 //	@Produce		json/xml
-//	@Param	address_id path string true "New address"
-//	@Success		200	{object}
-//	@Failure		400	{object}	domain.Error
-//	@Failure		404	{object}	domain.Error
-//	@Failure		500	{object}	domain.Error
-//	@Router			/api/v1/clients/:id [patch]
+//	@Param			address_id	path	string	true	"New address"
+//	@Success		200			{object}
+//	@Failure		400			{object}	domain.Error
+//	@Failure		404			{object}	domain.Error
+//	@Failure		500			{object}	domain.Error
+//	@Router			/api/v1/clients/{id} [patch]
 func (ctrl *ClientController) UpdateAddress(c *gin.Context) {
 	op := "controllers.clientController.UpdateAddress"
 	rawId := c.Param("id")
@@ -246,7 +246,7 @@ func (ctrl *ClientController) UpdateAddress(c *gin.Context) {
 //	@Success		204	{object}
 //	@Failure		400	{object}	domain.Error
 //	@Failure		500	{object}	domain.Error
-//	@Router			/api/v1/clients/:id [delete]
+//	@Router			/api/v1/clients/{id} [delete]
 func (ctrl *ClientController) Delete(c *gin.Context) {
 	op := "controllers.clientController.Delete"
 	rawId := c.Param("id")

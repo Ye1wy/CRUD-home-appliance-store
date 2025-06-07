@@ -8,7 +8,7 @@ COPY  go.mod go.sum ./
 
 COPY . .
 
-RUN go build -o /app/crud-service ./cmd/crud/main.go
+RUN go build -o /app/crud-service ./cmd/main.go
 
 FROM alpine:latest AS runtime
 

@@ -44,15 +44,15 @@ func NewSupplierContoller(service supplierService, logger *logger.Logger) *Suppl
 //	@Tags			suppliers
 //	@Accept			json/xml
 //	@Produce		json/xml
-//	@Param			name	path	string true "Supplier name"
-//	@Param			phone_number path string true "Supplier phone number"
-//	@Param			country path string true "Supplier location country"
-//	@Param 			city path string true "Supplier location city"
-//	@Param 			street path string true "Supplier location street"
-//	@Success		201	{object}
-//	@Failure		400	{object}	domain.Error
-//	@Failure		404	{object}	domain.Error
-//	@Failure		500	{object}	domain.Error
+//	@Param			name			path	string	true	"Supplier name"
+//	@Param			phone_number	path	string	true	"Supplier phone number"
+//	@Param			country			path	string	true	"Supplier location country"
+//	@Param			city			path	string	true	"Supplier location city"
+//	@Param			street			path	string	true	"Supplier location street"
+//	@Success		201				{object}
+//	@Failure		400				{object}	domain.Error
+//	@Failure		404				{object}	domain.Error
+//	@Failure		500				{object}	domain.Error
 //	@Router			/api/v1/suppliers [post]
 func (ctrl *SupplierController) Create(c *gin.Context) {
 	op := "controllers.supplierController.Create"

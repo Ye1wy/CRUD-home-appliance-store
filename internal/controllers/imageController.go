@@ -44,11 +44,11 @@ func NewImageController(service imageService, logger *logger.Logger) *ImageContr
 //	@Tags			images
 //	@Accept			json/xml
 //	@Produce		json/xml
-//	@Param			image	path	byte true "Image data"
-//	@Success		201	{object}
-//	@Failure		400	{object}	domain.Error
-//	@Failure		404	{object}	domain.Error
-//	@Failure		500	{object}	domain.Error
+//	@Param			image	path	byte	true	"Image data"
+//	@Success		201		{object}
+//	@Failure		400		{object}	domain.Error
+//	@Failure		404		{object}	domain.Error
+//	@Failure		500		{object}	domain.Error
 //	@Router			/api/v1/images [post]
 func (ctrl *ImageController) Create(c *gin.Context) {
 	op := "controllers.imageController.Create"
@@ -183,12 +183,12 @@ func (ctrl *ImageController) GetById(c *gin.Context) {
 //	@Accept			json/xml
 //	@Produce		json/xml
 //
-// @Param image path []byte true "New image data"
+//	@Param			image	path		[]byte	true	"New image data"
 //
-//	@Success		200	{object}	dto.Image
-//	@Failure		400	{object}	domain.Error
-//	@Failure		404	{object}	domain.Error
-//	@Failure		500	{object}	domain.Error
+//	@Success		200		{object}	dto.Image
+//	@Failure		400		{object}	domain.Error
+//	@Failure		404		{object}	domain.Error
+//	@Failure		500		{object}	domain.Error
 //	@Router			/api/v1/images/:id [patch]
 func (ctrl *ImageController) Update(c *gin.Context) {
 	op := "controllers.imageController.Delete"

@@ -15,6 +15,15 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+//	@title		Swagger CRUD Home appliance store API
+//	@version	1.0
+
+//	@description	This is a sample server Petstore server.
+//	@license.name	Apache 2.0
+//	@license.url	http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host		aboba.com
+// @BasePath	/api/v1
 func main() {
 	cfg := config.MustLoad()
 
