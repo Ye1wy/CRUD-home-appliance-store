@@ -37,6 +37,19 @@ func NewImageController(service imageService, logger *logger.Logger) *ImageContr
 	}
 }
 
+// Create Image godoc
+//
+//	@Summary		Create image
+//	@Description	Image created from JSON or XML, for create endpoint required: image
+//	@Tags			images
+//	@Accept			json/xml
+//	@Produce		json/xml
+//	@Param			image	path	byte true "Image data"
+//	@Success		201	{object}
+//	@Failure		400	{object}	domain.Error
+//	@Failure		404	{object}	domain.Error
+//	@Failure		500	{object}	domain.Error
+//	@Router			/api/v1/images [post]
 func (ctrl *ImageController) Create(c *gin.Context) {
 	op := "controllers.imageController.Create"
 	imageRaw, err := io.ReadAll(c.Request.Body)
@@ -64,6 +77,18 @@ func (ctrl *ImageController) Create(c *gin.Context) {
 	c.Status(http.StatusCreated)
 }
 
+// Get All Images godoc
+//
+//	@Summary		Get all images
+//	@Description	The endpoint for retrieve all registered images in system
+//	@Tags			images
+//	@Accept			json/xml
+//	@Produce		json/xml
+//	@Success		200	{object}	[]dto.Image
+//	@Failure		400	{object}	domain.Error
+//	@Failure		404	{object}	domain.Error
+//	@Failure		500	{object}	domain.Error
+//	@Router			/api/v1/images [get]
 func (ctrl *ImageController) GetAll(c *gin.Context) {
 	op := "controllers.imageController.GetAll"
 	limit, err := strconv.Atoi(c.DefaultQuery("limit", defaultLimit))
@@ -110,6 +135,18 @@ func (ctrl *ImageController) GetAll(c *gin.Context) {
 	ctrl.responce(c, http.StatusOK, output)
 }
 
+// Get Image godoc
+//
+//	@Summary		Get all images
+//	@Description	The endpoint for retrieve registered image in system by id
+//	@Tags			images
+//	@Accept			json/xml
+//	@Produce		json/xml
+//	@Success		200	{object}	dto.Image
+//	@Failure		400	{object}	domain.Error
+//	@Failure		404	{object}	domain.Error
+//	@Failure		500	{object}	domain.Error
+//	@Router			/api/v1/images/:id [get]
 func (ctrl *ImageController) GetById(c *gin.Context) {
 	op := "controllers.imageController.GetById"
 	rawId := c.Query("id")
@@ -138,6 +175,21 @@ func (ctrl *ImageController) GetById(c *gin.Context) {
 	ctrl.responce(c, http.StatusOK, output)
 }
 
+// Update Image godoc
+//
+//	@Summary		Update image
+//	@Description	The endpoint for updating image data by ID to a new image given by the user
+//	@Tags			images
+//	@Accept			json/xml
+//	@Produce		json/xml
+//
+// @Param image path []byte true "New image data"
+//
+//	@Success		200	{object}	dto.Image
+//	@Failure		400	{object}	domain.Error
+//	@Failure		404	{object}	domain.Error
+//	@Failure		500	{object}	domain.Error
+//	@Router			/api/v1/images/:id [patch]
 func (ctrl *ImageController) Update(c *gin.Context) {
 	op := "controllers.imageController.Delete"
 	rawdId := c.Param("id")
@@ -181,6 +233,18 @@ func (ctrl *ImageController) Update(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
+// Delete Image godoc
+//
+//	@Summary		Delete image
+//	@Description	The endpoint for deleting image data by ID
+//	@Tags			images
+//	@Accept			json/xml
+//	@Produce		json/xml
+//	@Success		204	{object}
+//	@Failure		400	{object}	domain.Error
+//	@Failure		404	{object}	domain.Error
+//	@Failure		500	{object}	domain.Error
+//	@Router			/api/v1/images/:id [delete]
 func (ctrl *ImageController) Delete(c *gin.Context) {
 	op := "controllers.imageController.Delete"
 	rawId := c.Param("id")

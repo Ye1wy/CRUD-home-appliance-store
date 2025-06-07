@@ -37,11 +37,25 @@ func NewProductController(service productService, logger *logger.Logger) *Produc
 	}
 }
 
-// Post /api/v1/products
-// Add product
-// 201
-// 400
-// 500
+// Create Product godoc
+//
+//		@Summary		Create product
+//		@Description	Product created from JSON or XML, for create endpoint required: name, category, price, available_stock, supplier_name, supplier_phone_number, image
+//		@Tags			products
+//		@Accept			json/xml
+//		@Produce		json/xml
+//		@Param			name	path	string true "Product name"
+//	 	@Param			category path	string true "Product categoty"
+//	 	@Param			price path 	float64 true "Product price"
+//	 	@Param			available_stock path		int64 true "Prodcut available stock"
+//	 	@Param			supplier_name path string true "Product supplier name"
+//	 	@Param			supplier_phone_number path string true "Product supplier phone number"
+//	 	@Param			image path []byte true "Product image"
+//		@Success		201	{object}
+//		@Failure		400	{object}	domain.Error
+//		@Failure		404	{object}	domain.Error
+//		@Failure		500	{object}	domain.Error
+//		@Router			/api/v1/products [post]
 func (ctrl *ProductController) Create(c *gin.Context) {
 	op := "controllers.productController.Create"
 	var input dto.Product
@@ -70,8 +84,18 @@ func (ctrl *ProductController) Create(c *gin.Context) {
 	c.Status(http.StatusCreated)
 }
 
-// Get /api/v1/products?limit=&offset=
-// Retrieve all product
+// Get All Product godoc
+//
+//		@Summary		Get all product
+//	@Description	The endpoint for retrieve all registered product in system
+//		@Tags			products
+//		@Accept			json/xml
+//		@Produce		json/xml
+//		@Success		200	{object}	[]dto.Product
+//		@Failure		400	{object}	domain.Error
+//		@Failure		404	{object}	domain.Error
+//		@Failure		500	{object}	domain.Error
+//		@Router			/api/v1/products [get]
 func (ctrl *ProductController) GetAll(c *gin.Context) {
 	op := "controllers.productController.GetAll"
 	limit, err := strconv.Atoi(c.DefaultQuery("limit", defaultLimit))
@@ -118,8 +142,18 @@ func (ctrl *ProductController) GetAll(c *gin.Context) {
 	ctrl.responce(c, http.StatusOK, output)
 }
 
-// Get /api/v1/products/:id
-// Get product by id
+// Get Product godoc
+//
+//		@Summary		Get product by id
+//	@Description	The endpoint for retrieve registered product in system by id
+//		@Tags			products
+//		@Accept			json/xml
+//		@Produce		json/xml
+//		@Success		200	{object}	dto.Product
+//		@Failure		400	{object}	domain.Error
+//		@Failure		404	{object}	domain.Error
+//		@Failure		500	{object}	domain.Error
+//		@Router			/api/v1/products/:id [get]
 func (ctrl *ProductController) GetById(c *gin.Context) {
 	op := "controllers.productController.GetById"
 	rawId := c.Param("id")
@@ -148,8 +182,18 @@ func (ctrl *ProductController) GetById(c *gin.Context) {
 	ctrl.responce(c, http.StatusOK, output)
 }
 
-// Patch /api/v1/products/:id/decrease=?
-// Decrease a parameter by a given value
+// Update Product godoc
+//
+//		@Summary		Update product by ID
+//	@Description	The endpoint for updating product data (avaliable stock) by ID to a decrease avalible stock
+//		@Tags			products
+//		@Accept			json/xml
+//		@Produce		json/xml
+//		@Success		201	{object}
+//		@Failure		400	{object}	domain.Error
+//		@Failure		404	{object}	domain.Error
+//		@Failure		500	{object}	domain.Error
+//		@Router			/api/v1/products/:id?decrease= [patch]
 func (ctrl *ProductController) Update(c *gin.Context) {
 	op := "controllers.productController.DecreaseStock"
 	rawId := c.Param("id")
@@ -189,8 +233,18 @@ func (ctrl *ProductController) Update(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
-// Delete /api/v1/products/:id
-// Delete product by identificator
+// Delete Product godoc
+//
+//		@Summary		Delete product by ID
+//	@Description	The endpoint for deleting product data by ID
+//		@Tags			products
+//		@Accept			json/xml
+//		@Produce		json/xml
+//		@Success		204 {object}
+//		@Failure		400	{object}	domain.Error
+//		@Failure		404	{object}	domain.Error
+//		@Failure		500	{object}	domain.Error
+//		@Router			/api/v1/products/:id[delete]
 func (ctrl *ProductController) Delete(c *gin.Context) {
 	op := "controllers.productController.Delete"
 	rawId := c.Param("id")

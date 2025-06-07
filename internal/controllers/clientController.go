@@ -44,11 +44,11 @@ func NewClientsController(service clientService, logger *logger.Logger) *ClientC
 //		@Accept			json/xml
 //		@Produce		json/xml
 //		@Param			name	path	string true "Client name"
-//	 @Param			surname path	string true "Client surname"
-//	 @Param			birthday path 	string true "Client birthday"
-//	 @Param			gender path		string true "Client gender"
-//	 @Param			address_id path string true uuid.UUID "Client living address"
-//		@Success		200	{object}	dto.ClientDTO
+//		@Param			surname path	string true "Client surname"
+//	 	@Param			birthday path 	string true "Client birthday"
+//	 	@Param			gender path		string true "Client gender"
+//		@Param			address_id path string true uuid.UUID "Client living address"
+//		@Success		201	{object}
 //		@Failure		400	{object}	domain.Error
 //		@Failure		404	{object}	domain.Error
 //		@Failure		500	{object}	domain.Error
@@ -85,11 +85,11 @@ func (ctrl *ClientController) Create(c *gin.Context) {
 // Get All Client godoc
 //
 //	@Summary		Get all client
-//	@Description	That methods retrive all registered client in system
+//	@Description	That endpoint retrieve all registered client in system
 //	@Tags			clients
 //	@Accept			json/xml
 //	@Produce		json/xml
-//	@Success		200	{object}	dto.ClientDTO
+//	@Success		200	{object}	dto.Client
 //	@Failure		400	{object}	domain.Error
 //	@Failure		404	{object}	domain.Error
 //	@Failure		500	{object}	domain.Error
@@ -143,11 +143,11 @@ func (ctrl *ClientController) GetAll(c *gin.Context) {
 // Get Client godoc
 //
 //	@Summary		Get client filtered by name and surname
-//	@Description	That methods retrive all required registered client in system
+//	@Description	That endpoint retrieve all required registered client in system
 //	@Tags			clients
 //	@Accept			json/xml
 //	@Produce		json/xml
-//	@Success		200	{object}	[]dto.ClientDTO
+//	@Success		200	{object}	[]dto.Client
 //	@Failure		400	{object}	domain.Error
 //	@Failure		404	{object}	domain.Error
 //	@Failure		500	{object}	domain.Error
@@ -190,7 +190,7 @@ func (ctrl *ClientController) GetByNameAndSurname(c *gin.Context) {
 // Update Client field godoc
 //
 //	@Summary		Update address on client
-//	@Description	That methods change address on client
+//	@Description	That endpoint update client data (change address on client)
 //	@Tags			clients
 //	@Accept			json/xml
 //	@Produce		json/xml
