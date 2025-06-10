@@ -12,6 +12,7 @@ func Registration(cfg *config.Config) error {
 	op := "consul.registration.Registration"
 
 	consulConfig := consulapi.DefaultConfig()
+	consulConfig.Address = "http://consul-service:8500" // need to be moved to .env file
 	client, err := consulapi.NewClient(consulConfig)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
