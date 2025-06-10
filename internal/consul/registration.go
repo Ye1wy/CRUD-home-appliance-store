@@ -2,8 +2,10 @@ package consul
 
 import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/config"
+	"CRUD-HOME-APPLIANCE-STORE/pkg/logger"
 	"fmt"
 	"strconv"
+	"time"
 
 	consulapi "github.com/hashicorp/consul/api"
 )
@@ -36,4 +38,26 @@ func Registration(cfg *config.Config) error {
 	}
 
 	return client.Agent().ServiceRegister(reg)
+}
+
+func RetryRegistration(cfg *config.Config, log *logger.Logger) {
+	const maxAttempts = 5
+	const retryDelay = 2 * time.Second
+
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		err := Registration(cfg)
+		if err != nil {
+			log.Warn("Failed to register service in Consul, will retry...",
+				"attempt", attempt,
+				logger.Err(err),
+			)
+			time.Sleep(retryDelay)
+			continue
+		}
+
+		log.Info("Service successfully registered in Consul")
+		return
+	}
+
+	log.Error("Failed to register service in Consul after all retries")
 }

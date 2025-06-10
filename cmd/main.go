@@ -13,7 +13,6 @@ import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/uow"
 	"CRUD-HOME-APPLIANCE-STORE/pkg/logger"
 	"os"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -41,12 +40,7 @@ func main() {
 
 	log.Info("Connection is established")
 
-	go func() {
-		time.Sleep(10 * time.Second) // tamporary needed deleted in future
-		if err := consul.Registration(cfg); err != nil {
-			log.Error("Failed to register the service in consul", logger.Err(err))
-		}
-	}()
+	go consul.RetryRegistration(cfg, log)
 
 	unit := repository.NewUnitOfWork(conn, log)
 
