@@ -16,7 +16,15 @@ services:
      - "5432:5432"
     restart: always
     networks:
-      - crud-service-networks
+      - database-transfer
+  consul:
+    image: hashicorp/consul
+    container_name: consul-service
+    ports:
+      - "8500:8500"
+    restart: always
+    networks:
+      - consul-networks
   
   crud-service:
     build:
@@ -31,13 +39,16 @@ services:
       postgres-db:
         condition: service_healthy
     ports:
-      - "8080:80"
+      - "8080:8080"
     restart: always
     networks:
-      - crud-service-networks
+      - database-transfer
+      - consul-networks
       
 volumes:
   store_data:
 networks:
-  crud-service-networks:
+  database-transfer:
+    driver: bridge
+  consul-networks:
     driver: bridge

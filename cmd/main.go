@@ -3,6 +3,7 @@ package main
 import (
 	_ "CRUD-HOME-APPLIANCE-STORE/api"
 	"CRUD-HOME-APPLIANCE-STORE/internal/config"
+	"CRUD-HOME-APPLIANCE-STORE/internal/consul"
 	"CRUD-HOME-APPLIANCE-STORE/internal/controllers"
 	"CRUD-HOME-APPLIANCE-STORE/internal/database/connection"
 	repository "CRUD-HOME-APPLIANCE-STORE/internal/repositories"
@@ -38,6 +39,13 @@ func main() {
 	}
 
 	log.Info("Connection is established")
+
+	go func() {
+		if err := consul.Registration(cfg); err != nil {
+			log.Error("Failed to register the service in consul", logger.Err(err))
+		}
+	}()
+
 	unit := repository.NewUnitOfWork(conn, log)
 
 	err = unit.Register("client", func(tx pgx.Tx, log *logger.Logger) uow.Repository {

@@ -10,6 +10,8 @@ import (
 )
 
 type Config struct {
+	ServiceId                 string `env:"service_id" env-default:"go-service-0001"`
+	ServiceName               string `env:"service_name" env-default:"crud-service"`
 	Env                       string `env:"env" env-default:"local"`
 	connection.PostgresConfig `env:"POSTGRES"`
 	HTTPServer                `env:"http_server"`
