@@ -24,7 +24,7 @@ func safeDelete(
 	savepoint := fmt.Sprintf("SAVEPOINT %s;", savepointName)
 	_, err := tx.Exec(ctx, savepoint)
 	if err != nil {
-		log.Debug("unable to set SAVEPOINT before delete address", logger.Err(err), "op", op)
+		log.Debug("unable to set SAVEPOINT before delete", logger.Err(err), "op", op)
 		return fmt.Errorf("%s: unable to set SAVEPOINT: %v", op, err)
 	}
 
@@ -33,7 +33,7 @@ func safeDelete(
 			backToSave := fmt.Sprintf("ROLLBACK TO SAVEPOINT %s;", savepointName)
 			_, err := tx.Exec(ctx, backToSave)
 			if err != nil {
-				log.Debug("unable back to SAVEPOINT after try delete address", logger.Err(err), "op", op)
+				log.Debug("unable back to SAVEPOINT after try delete", logger.Err(err), "op", op)
 				return fmt.Errorf("%s: unable back to SAVEPOINT: %v", op, err)
 			}
 
@@ -41,7 +41,7 @@ func safeDelete(
 		}
 
 		log.Debug("unexpected error during delete: rollback to SAVEPOINT is unavailable", logger.Err(err), "op", op)
-		return fmt.Errorf("%s: unexpected error from delete address: %v", op, err)
+		return fmt.Errorf("%s: unexpected error from delete: %v", op, err)
 	}
 
 	return nil
@@ -50,7 +50,7 @@ func safeDelete(
 func getReposiotry(tx uow.Transaction, name uow.RepositoryName, log *logger.Logger) (uow.Repository, error) {
 	repo, err := tx.Get(name)
 	if err != nil {
-		return nil, fmt.Errorf("get address repository generator is unable: %v", err)
+		return nil, fmt.Errorf("get repository generator is unable: %v", err)
 	}
 
 	repoGen := repo.(uow.RepositoryGenerator)(tx.GetTX(), log)
