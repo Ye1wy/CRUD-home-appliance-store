@@ -24,7 +24,7 @@ func NewRouter(cfg RouterConfig) routes {
 		router: gin.Default(),
 	}
 
-	r.router.GET("/api/v1/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	r.router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.router.GET("/api/v1/amogus", func(c *gin.Context) {
 		c.File("./misc/images/amogus.gif")
 	})

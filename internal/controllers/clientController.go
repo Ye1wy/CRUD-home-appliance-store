@@ -41,17 +41,17 @@ func NewClientsController(service clientService, logger *logger.Logger) *ClientC
 //	@Summary		Create client
 //	@Description	Client created from JSON or XML, for create endpoint required: name, surname, birthday, gender, address_id
 //	@Tags			clients
-//	@Accept			json/xml
-//	@Produce		json/xml
+//	@Accept			json
+//	@Produce		json
 //	@Param			name		path	string		true	"Client name"
 //	@Param			surname		path	string		true	"Client surname"
 //	@Param			birthday	path	string		true	"Client birthday"
 //	@Param			gender		path	string		true	"Client gender"
 //	@Param			address_id	path	uuid.UUID	true	"Client living address"
-//	@Success		201			{object}
-//	@Failure		400			{object}	domain.Error
-//	@Failure		404			{object}	domain.Error
-//	@Failure		500			{object}	domain.Error
+//	@Success		201
+//	@Failure		400	{object}	domain.Error
+//	@Failure		404	{object}	domain.Error
+//	@Failure		500	{object}	domain.Error
 //	@Router			/api/v1/clients [post]
 func (ctrl *ClientController) Create(c *gin.Context) {
 	op := "controllers.clientController.Create"
@@ -68,7 +68,7 @@ func (ctrl *ClientController) Create(c *gin.Context) {
 	client, err := mapper.ClientToDomain(input)
 	if err != nil {
 		ctrl.logger.Warn("Failed mapping dto to domain", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid birthady date in request payload"})
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid birthday date in request payload"})
 		return
 	}
 
@@ -82,17 +82,19 @@ func (ctrl *ClientController) Create(c *gin.Context) {
 	c.Status(http.StatusCreated)
 }
 
-// Get All Client godoc
+// GetAllClient godoc
 //
 //	@Summary		Get all client
 //	@Description	That endpoint retrieve all registered client in system
 //	@Tags			clients
-//	@Accept			json/xml
-//	@Produce		json/xml
-//	@Success		200	{object}	dto.Client
-//	@Failure		400	{object}	domain.Error
-//	@Failure		404	{object}	domain.Error
-//	@Failure		500	{object}	domain.Error
+//	@Accept			json
+//	@Produce		json
+//	@Param			limit	query		int	false	"limit get data"
+//	@Param			offset	query		int	false	"offset get data"
+//	@Success		200		{array}		dto.Client
+//	@Failure		400		{object}	domain.Error
+//	@Failure		404		{object}	domain.Error
+//	@Failure		500		{object}	domain.Error
 //	@Router			/api/v1/clients [get]
 func (ctrl *ClientController) GetAll(c *gin.Context) {
 	op := "controllers.clientController.getAll"
@@ -140,18 +142,20 @@ func (ctrl *ClientController) GetAll(c *gin.Context) {
 	ctrl.responce(c, http.StatusOK, output)
 }
 
-// Get Client godoc
+// GetClientByNameAndSurname godoc
 //
 //	@Summary		Get client filtered by name and surname
-//	@Description	That endpoint retrieve all required registered client in system
+//	@Description	That endpoint retrieve all required registered client in system with gived name and surname
 //	@Tags			clients
-//	@Accept			json/xml
-//	@Produce		json/xml
-//	@Success		200	{object}	[]dto.Client
-//	@Failure		400	{object}	domain.Error
-//	@Failure		404	{object}	domain.Error
-//	@Failure		500	{object}	domain.Error
-//	@Router			/api/v1/clients/search?name=&surname= [get]
+//	@Accept			json
+//	@Produce		json
+//	@Param			name	query		string	true	"client name"
+//	@Param			surname	query		string	true	"client surname"
+//	@Success		200		{array}		dto.Client
+//	@Failure		400		{object}	domain.Error
+//	@Failure		404		{object}	domain.Error
+//	@Failure		500		{object}	domain.Error
+//	@Router			/api/v1/clients/search [get]
 func (ctrl *ClientController) GetByNameAndSurname(c *gin.Context) {
 	op := "controllers.clientController.getByNameAndSurname"
 	name := c.Query("name")
@@ -187,18 +191,19 @@ func (ctrl *ClientController) GetByNameAndSurname(c *gin.Context) {
 	ctrl.responce(c, http.StatusOK, output)
 }
 
-// Update Client field godoc
+// UpdateClient godoc
 //
 //	@Summary		Update address on client
 //	@Description	That endpoint update client data (change address on client)
 //	@Tags			clients
-//	@Accept			json/xml
-//	@Produce		json/xml
-//	@Param			address_id	path	string	true	"New address"
-//	@Success		200			{object}
-//	@Failure		400			{object}	domain.Error
-//	@Failure		404			{object}	domain.Error
-//	@Failure		500			{object}	domain.Error
+//	@Accept			json
+//	@Produce		json
+//	@Param			id		path	uuid.UUID	true	"Client ID"
+//	@Param			address	body	dto.Address	true	"Change address"
+//	@Success		200
+//	@Failure		400	{object}	domain.Error
+//	@Failure		404	{object}	domain.Error
+//	@Failure		500	{object}	domain.Error
 //	@Router			/api/v1/clients/{id} [patch]
 func (ctrl *ClientController) UpdateAddress(c *gin.Context) {
 	op := "controllers.clientController.UpdateAddress"
@@ -236,14 +241,15 @@ func (ctrl *ClientController) UpdateAddress(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
-// Delete Client godoc
+// DeleteClient godoc
 //
 //	@Summary		Delete client from system
 //	@Description	That methods deleting registered client in system by id
 //	@Tags			clients
-//	@Accept			json/xml
-//	@Produce		json/xml
-//	@Success		204	{object}
+//	@Accept			json
+//	@Produce		json
+//	@Param			id	path	uuid.UUID	true	"client id"
+//	@Success		204
 //	@Failure		400	{object}	domain.Error
 //	@Failure		500	{object}	domain.Error
 //	@Router			/api/v1/clients/{id} [delete]

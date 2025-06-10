@@ -1,4 +1,151 @@
 basePath: /api/v1
+definitions:
+  domain.Address:
+    properties:
+      city:
+        type: string
+      country:
+        type: string
+      id:
+        type: string
+      street:
+        type: string
+    type: object
+  domain.Error:
+    properties:
+      key:
+        type: string
+      value:
+        type: string
+    type: object
+  domain.Image:
+    properties:
+      data:
+        items:
+          type: integer
+        type: array
+      hash:
+        type: string
+      id:
+        type: string
+    type: object
+  domain.Product:
+    properties:
+      available_stock:
+        type: integer
+      category:
+        type: string
+      id:
+        type: string
+      image:
+        $ref: '#/definitions/domain.Image'
+      last_update_date:
+        type: string
+      name:
+        type: string
+      price:
+        type: number
+      supplier:
+        $ref: '#/definitions/domain.Supplier'
+    type: object
+  domain.Supplier:
+    properties:
+      address:
+        $ref: '#/definitions/domain.Address'
+      id:
+        type: string
+      name:
+        type: string
+      phone_number:
+        type: string
+    type: object
+  dto.Address:
+    properties:
+      city:
+        type: string
+      country:
+        type: string
+      street:
+        type: string
+    type: object
+  dto.Client:
+    properties:
+      birthday:
+        type: string
+      city:
+        type: string
+      country:
+        type: string
+      gender:
+        type: string
+      name:
+        type: string
+      street:
+        type: string
+      surname:
+        type: string
+    required:
+    - birthday
+    - gender
+    - name
+    - surname
+    type: object
+  dto.Image:
+    properties:
+      image:
+        items:
+          type: integer
+        type: array
+    required:
+    - image
+    type: object
+  dto.Product:
+    properties:
+      available_stock:
+        type: integer
+      category:
+        type: string
+      city:
+        type: string
+      country:
+        type: string
+      image:
+        items:
+          type: integer
+        type: array
+      name:
+        type: string
+      phone_number:
+        type: string
+      price:
+        type: number
+      street:
+        type: string
+    required:
+    - available_stock
+    - category
+    - image
+    - name
+    - name
+    - phone_number
+    - price
+    type: object
+  dto.Supplier:
+    properties:
+      city:
+        type: string
+      country:
+        type: string
+      name:
+        type: string
+      phone_number:
+        type: string
+      street:
+        type: string
+    required:
+    - name
+    - phone_number
+    type: object
 host: aboba.com
 info:
   contact: {}
@@ -8,5 +155,642 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   title: Swagger CRUD Home appliance store API
   version: "1.0"
-paths: {}
+paths:
+  /api/v1/clients:
+    get:
+      consumes:
+      - application/json
+      description: That endpoint retrieve all registered client in system
+      parameters:
+      - description: limit get data
+        in: query
+        name: limit
+        type: integer
+      - description: offset get data
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.Client'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.Error'
+      summary: Get all client
+      tags:
+      - clients
+    post:
+      consumes:
+      - application/json
+      description: 'Client created from JSON or XML, for create endpoint required:
+        name, surname, birthday, gender, address_id'
+      parameters:
+      - description: Client name
+        in: path
+        name: name
+        required: true
+        type: string
+      - description: Client surname
+        in: path
+        name: surname
+        required: true
+        type: string
+      - description: Client birthday
+        in: path
+        name: birthday
+        required: true
+        type: string
+      - description: Client gender
+        in: path
+        name: gender
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.Error'
+      summary: Create client
+      tags:
+      - clients
+  /api/v1/clients/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: That methods deleting registered client in system by id
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.Error'
+      summary: Delete client from system
+      tags:
+      - clients
+    patch:
+      consumes:
+      - application/json
+      description: That endpoint update client data (change address on client)
+      parameters:
+      - description: Change address
+        in: body
+        name: address
+        required: true
+        schema:
+          $ref: '#/definitions/dto.Address'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.Error'
+      summary: Update address on client
+      tags:
+      - clients
+  /api/v1/clients/search:
+    get:
+      consumes:
+      - application/json
+      description: That endpoint retrieve all required registered client in system
+        with gived name and surname
+      parameters:
+      - description: client name
+        in: query
+        name: name
+        required: true
+        type: string
+      - description: client surname
+        in: query
+        name: surname
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.Client'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.Error'
+      summary: Get client filtered by name and surname
+      tags:
+      - clients
+  /api/v1/images:
+    get:
+      consumes:
+      - application/json
+      description: The endpoint for retrieve all registered images in system
+      parameters:
+      - description: limit get images
+        in: query
+        name: limit
+        required: true
+        type: integer
+      - description: offset get images
+        in: query
+        name: offset
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.Image'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.Error'
+      summary: Get all images
+      tags:
+      - images
+    post:
+      consumes:
+      - application/json
+      description: 'Image created from JSON or XML, for create endpoint required:
+        image'
+      parameters:
+      - description: Image data
+        in: body
+        name: image
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Image'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.Error'
+      summary: Create image
+      tags:
+      - images
+  /api/v1/images/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: The endpoint for deleting image data by ID
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.Error'
+      summary: Delete image
+      tags:
+      - images
+    get:
+      consumes:
+      - application/json
+      description: The endpoint for retrieve registered image in system by id
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.Image'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.Error'
+      summary: Get all images
+      tags:
+      - images
+    patch:
+      consumes:
+      - application/json
+      description: The endpoint for updating image data by ID to a new image given
+        by the user
+      parameters:
+      - description: New image data
+        in: body
+        name: image
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Image'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.Error'
+      summary: Update image
+      tags:
+      - images
+  /api/v1/products:
+    get:
+      consumes:
+      - application/json
+      description: The endpoint for retrieve all registered product in system
+      parameters:
+      - description: limit get product
+        in: query
+        name: limit
+        type: integer
+      - description: offset get product
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.Product'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.Error'
+      summary: Get all product
+      tags:
+      - products
+    post:
+      consumes:
+      - application/json
+      description: 'Product created from JSON or XML, for create endpoint required:
+        name, category, price, available_stock, supplier_name, supplier_phone_number,
+        image'
+      parameters:
+      - description: Product data
+        in: body
+        name: product
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Product'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.Error'
+      summary: Create product
+      tags:
+      - products
+  /api/v1/products/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: The endpoint for deleting product data by ID
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.Error'
+      summary: Delete product by ID
+      tags:
+      - products
+    get:
+      consumes:
+      - application/json
+      description: The endpoint for retrieve registered product in system by id
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.Product'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.Error'
+      summary: Get product by id
+      tags:
+      - products
+    patch:
+      consumes:
+      - application/json
+      description: The endpoint for updating product data (avaliable stock) by ID
+        to a decrease avalible stock
+      parameters:
+      - description: Decrease value
+        in: query
+        name: decrease
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.Error'
+      summary: Update product by ID
+      tags:
+      - products
+  /api/v1/suppliers:
+    get:
+      consumes:
+      - application/json
+      description: That endpoint retrieve all registered supplier in system
+      parameters:
+      - description: limit get supplier
+        in: query
+        name: limit
+        type: integer
+      - description: offset get supplier
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.Supplier'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.Error'
+      summary: Get all supplier
+      tags:
+      - suppliers
+    post:
+      consumes:
+      - application/json
+      description: 'Supplier created from JSON or XML, for create endpoint required:
+        name, phone_number, country, city, street'
+      parameters:
+      - description: Supplier Data
+        in: body
+        name: supplier
+        required: true
+        schema:
+          $ref: '#/definitions/dto.Supplier'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.Error'
+      summary: Create supplier
+      tags:
+      - suppliers
+  /api/v1/suppliers/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: That endpoint delete supplier data by id
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.Error'
+      summary: Delete supplier by ID
+      tags:
+      - suppliers
+    get:
+      consumes:
+      - application/json
+      description: That endpoint retrieve registered supplier in system by ID
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.Supplier'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.Error'
+      summary: Get supplier by ID
+      tags:
+      - suppliers
+    patch:
+      consumes:
+      - application/json
+      description: That endpoint update supplier data (change address on supplier)
+      parameters:
+      - description: New address
+        in: body
+        name: address
+        required: true
+        schema:
+          $ref: '#/definitions/dto.Address'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/domain.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.Error'
+      summary: Update supplier by ID
+      tags:
+      - suppliers
 swagger: "2.0"

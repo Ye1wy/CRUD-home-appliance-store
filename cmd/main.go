@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "CRUD-HOME-APPLIANCE-STORE/api"
 	"CRUD-HOME-APPLIANCE-STORE/internal/config"
 	"CRUD-HOME-APPLIANCE-STORE/internal/controllers"
 	"CRUD-HOME-APPLIANCE-STORE/internal/database/connection"
@@ -15,10 +16,10 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-//	@title		Swagger CRUD Home appliance store API
-//	@version	1.0
-
+//	@title			Swagger CRUD Home appliance store API
+//	@version		1.0
 //	@description	This is a sample server Petstore server.
+
 //	@license.name	Apache 2.0
 //	@license.url	http://www.apache.org/licenses/LICENSE-2.0.html
 
@@ -39,25 +40,45 @@ func main() {
 	log.Info("Connection is established")
 	unit := repository.NewUnitOfWork(conn, log)
 
-	unit.Register("client", func(tx pgx.Tx, log *logger.Logger) uow.Repository {
+	err = unit.Register("client", func(tx pgx.Tx, log *logger.Logger) uow.Repository {
 		return postgres.NewClientRepository(tx, log)
 	})
+	if err != nil {
+		log.Error("Client repository registration in uow is unable")
+		os.Exit(1)
+	}
 
-	unit.Register("address", func(tx pgx.Tx, log *logger.Logger) uow.Repository {
+	err = unit.Register("address", func(tx pgx.Tx, log *logger.Logger) uow.Repository {
 		return postgres.NewAddressRepository(tx, log)
 	})
+	if err != nil {
+		log.Error("Address repository registration in uow is unable")
+		os.Exit(1)
+	}
 
-	unit.Register("supplier", func(tx pgx.Tx, log *logger.Logger) uow.Repository {
+	err = unit.Register("supplier", func(tx pgx.Tx, log *logger.Logger) uow.Repository {
 		return postgres.NewSupplierRepository(tx, log)
 	})
+	if err != nil {
+		log.Error("Supplier repository registration in uow is unable")
+		os.Exit(1)
+	}
 
-	unit.Register("image", func(tx pgx.Tx, log *logger.Logger) uow.Repository {
+	err = unit.Register("image", func(tx pgx.Tx, log *logger.Logger) uow.Repository {
 		return postgres.NewImageRepository(tx, log)
 	})
+	if err != nil {
+		log.Error("Image repository registration in uow is unable")
+		os.Exit(1)
+	}
 
-	unit.Register("product", func(tx pgx.Tx, log *logger.Logger) uow.Repository {
+	err = unit.Register("product", func(tx pgx.Tx, log *logger.Logger) uow.Repository {
 		return postgres.NewProductRepository(tx, log)
 	})
+	if err != nil {
+		log.Error("Product repository registration in uow is unable")
+		os.Exit(1)
+	}
 
 	clientRepo := postgres.NewClientRepository(conn, log)
 	clientService := services.NewClientService(clientRepo, unit, log)

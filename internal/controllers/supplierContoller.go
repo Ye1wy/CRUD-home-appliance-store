@@ -37,22 +37,18 @@ func NewSupplierContoller(service supplierService, logger *logger.Logger) *Suppl
 	}
 }
 
-// Create supplier godoc
+// CreateSupplier godoc
 //
 //	@Summary		Create supplier
 //	@Description	Supplier created from JSON or XML, for create endpoint required: name, phone_number, country, city, street
 //	@Tags			suppliers
-//	@Accept			json/xml
-//	@Produce		json/xml
-//	@Param			name			path	string	true	"Supplier name"
-//	@Param			phone_number	path	string	true	"Supplier phone number"
-//	@Param			country			path	string	true	"Supplier location country"
-//	@Param			city			path	string	true	"Supplier location city"
-//	@Param			street			path	string	true	"Supplier location street"
-//	@Success		201				{object}
-//	@Failure		400				{object}	domain.Error
-//	@Failure		404				{object}	domain.Error
-//	@Failure		500				{object}	domain.Error
+//	@Accept			json
+//	@Produce		json
+//	@Param			supplier	body	dto.Supplier	true	"Supplier Data"
+//	@Success		201
+//	@Failure		400	{object}	domain.Error
+//	@Failure		404	{object}	domain.Error
+//	@Failure		500	{object}	domain.Error
 //	@Router			/api/v1/suppliers [post]
 func (ctrl *SupplierController) Create(c *gin.Context) {
 	op := "controllers.supplierController.Create"
@@ -78,17 +74,19 @@ func (ctrl *SupplierController) Create(c *gin.Context) {
 	c.Status(http.StatusCreated)
 }
 
-// Get all supplier godoc
+// GetAllSupplier godoc
 //
 //	@Summary		Get all supplier
 //	@Description	That endpoint retrieve all registered supplier in system
 //	@Tags			suppliers
-//	@Accept			json/xml
-//	@Produce		json/xml
-//	@Success		200	{object}	[]dto.Supplier
-//	@Failure		400	{object}	domain.Error
-//	@Failure		404	{object}	domain.Error
-//	@Failure		500	{object}	domain.Error
+//	@Accept			json
+//	@Produce		json
+//	@Param			limit	query		int	false	"limit get supplier"
+//	@Param			offset	query		int	false	"offset get supplier"
+//	@Success		200		{array}		dto.Supplier
+//	@Failure		400		{object}	domain.Error
+//	@Failure		404		{object}	domain.Error
+//	@Failure		500		{object}	domain.Error
 //	@Router			/api/v1/suppliers [get]
 func (ctrl *SupplierController) GetAll(c *gin.Context) {
 	op := "controllers.supplierController.GetAll"
@@ -136,18 +134,19 @@ func (ctrl *SupplierController) GetAll(c *gin.Context) {
 	ctrl.responce(c, http.StatusOK, output)
 }
 
-// Get supplier godoc
+// GetSupplier godoc
 //
 //	@Summary		Get supplier by ID
 //	@Description	That endpoint retrieve registered supplier in system by ID
 //	@Tags			suppliers
-//	@Accept			json/xml
-//	@Produce		json/xml
+//	@Accept			json
+//	@Produce		json
+//	@Param			id	path		uuid.UUID	true	"Supplier ID"
 //	@Success		200	{object}	dto.Supplier
 //	@Failure		400	{object}	domain.Error
 //	@Failure		404	{object}	domain.Error
 //	@Failure		500	{object}	domain.Error
-//	@Router			/api/v1/suppliers/:id [get]
+//	@Router			/api/v1/suppliers/{id} [get]
 func (ctrl *SupplierController) GetById(c *gin.Context) {
 	op := "controllers.SupplierController.GetById"
 	rawId := c.Param("id")
@@ -176,18 +175,20 @@ func (ctrl *SupplierController) GetById(c *gin.Context) {
 	ctrl.responce(c, http.StatusOK, output)
 }
 
-// Update supplier godoc
+// UpdateSupplier godoc
 //
 //	@Summary		Update supplier by ID
 //	@Description	That endpoint update supplier data (change address on supplier)
 //	@Tags			suppliers
-//	@Accept			json/xml
-//	@Produce		json/xml
-//	@Success		200	{object}
+//	@Accept			json
+//	@Produce		json
+//	@Param			id		path	uuid.UUID	true	"Supplier ID"
+//	@Param			address	body	dto.Address	true	"New address"
+//	@Success		200
 //	@Failure		400	{object}	domain.Error
 //	@Failure		404	{object}	domain.Error
 //	@Failure		500	{object}	domain.Error
-//	@Router			/api/v1/suppliers/:id [patch]
+//	@Router			/api/v1/suppliers/{id} [patch]
 func (ctrl *SupplierController) UpdateAddress(c *gin.Context) {
 	op := "controllers.supplierController.UpdateAddress"
 	rawId := c.Param("id")
@@ -224,18 +225,19 @@ func (ctrl *SupplierController) UpdateAddress(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
-// Delete supplier godoc
+// DeleteSupplier godoc
 //
 //	@Summary		Delete supplier by ID
 //	@Description	That endpoint delete supplier data by id
 //	@Tags			suppliers
-//	@Accept			json/xml
-//	@Produce		json/xml
-//	@Success		204	{object}
+//	@Accept			json
+//	@Produce		json
+//	@Param			id	path	uuid.UUID	true	"Supplier ID"
+//	@Success		204
 //	@Failure		400	{object}	domain.Error
 //	@Failure		404	{object}	domain.Error
 //	@Failure		500	{object}	domain.Error
-//	@Router			/api/v1/suppliers/:id [delete]
+//	@Router			/api/v1/suppliers/{id} [delete]
 func (ctrl *SupplierController) Delete(c *gin.Context) {
 	op := "controllers.supplierController.Delete"
 	rawId := c.Param("id")
