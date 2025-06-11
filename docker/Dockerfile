@@ -14,6 +14,7 @@ FROM alpine:latest AS runtime
 
 WORKDIR /service
 
+COPY --from=build /app/api .
 COPY --from=build /app/crud-service .
 COPY --from=build /app/.env ./.env
 
