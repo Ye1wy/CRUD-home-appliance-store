@@ -1,5 +1,21 @@
 env=local
-MONGO_URI=mongodb://localhost:27017
-http_server:
-    address:localhost
-    port:8080
+
+# postgres varibale
+POSTGRES_HOST=postgres-db
+POSTGRES_PORT=5432
+POSTGRES_USER=root
+POSTGRES_PASSWORD=root
+POSTGRES_DB=service-crud-db
+timeout=5s
+
+# crud variable
+crud_service_id=go-service-0001
+crud_service_name=crud-service
+crud_service_address=crud-service
+crud_service_port=8080
+
+# consul variable
+consul_service_address=consul-service
+consul_service_port=8500
+consul_service_retry_delay=2s
+consul_service_max_attempts=5
