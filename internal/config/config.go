@@ -5,21 +5,30 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
 )
 
 type Config struct {
-	ServiceId                 string `env:"service_id" env-default:"go-service-0001"`
-	ServiceName               string `env:"service_name" env-default:"crud-service"`
-	Env                       string `env:"env" env-default:"local"`
-	connection.PostgresConfig `env:"POSTGRES"`
-	HTTPServer                `env:"http_server"`
+	Env string `env:"env" env-default:"local"`
+	connection.PostgresConfig
+	CrudService   CrudService
+	ConsulService ConsulConfig
 }
 
-type HTTPServer struct {
-	Address string `env:"address" env-default:"localhost"`
-	Port    string `env:"port" env-default:"8080"`
+type CrudService struct {
+	Id      string `env:"crud_service_id" env-default:"go-service-0001"`
+	Name    string `env:"crud_service_name" env-default:"crud-service"`
+	Address string `env:"crud_service_address" env-default:"localhost"`
+	Port    string `env:"crud_service_port" env-default:"8080"`
+}
+
+type ConsulConfig struct {
+	Address     string        `env:"consul_service_address"`
+	Port        string        `env:"consul_service_port" env-default:"8500"`
+	RetryDelay  time.Duration `env:"consul_service_retry_delay" env-default:"2s"`
+	MaxAttempts int           `env:"consul_service_max_attempts" env-default:"5"`
 }
 
 func MustLoad() *Config {
@@ -45,8 +54,8 @@ func MustLoad() *Config {
 func (cfg *Config) PrintInfo() {
 	fmt.Println("---------------------")
 	fmt.Println("env: " + cfg.Env)
-	fmt.Println("address: " + cfg.Address)
-	fmt.Println("port: " + cfg.Port)
+	fmt.Println("address: " + cfg.CrudService.Address)
+	fmt.Println("port: " + cfg.CrudService.Port)
 	fmt.Println("DNS: " + cfg.PostgresHost)
 	fmt.Println("---------------------")
 }

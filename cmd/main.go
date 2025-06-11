@@ -111,7 +111,7 @@ func main() {
 	log.Info("The paths are laid")
 
 	log.Info("Server started")
-	if err := router.Run(":" + cfg.Port); err != nil {
+	if err := router.Run(":" + cfg.CrudService.Port); err != nil {
 		log.Error("Error in start server: ", logger.Err(err))
 	}
 }

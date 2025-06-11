@@ -14,24 +14,24 @@ func Registration(cfg *config.Config) error {
 	op := "consul.registration.Registration"
 
 	consulConfig := consulapi.DefaultConfig()
-	consulConfig.Address = "http://consul-service:8500" // need to be moved to .env file
+	consulConfig.Address = fmt.Sprintf("http://%s:%s", cfg.ConsulService.Address, cfg.ConsulService.Port)
 	client, err := consulapi.NewClient(consulConfig)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	port, err := strconv.Atoi(cfg.Port)
+	servicePort, err := strconv.Atoi(cfg.CrudService.Port)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
 	reg := &consulapi.AgentServiceRegistration{
-		ID:      cfg.ServiceId,
-		Name:    cfg.ServiceName,
-		Port:    port,
-		Address: cfg.Address,
+		ID:      cfg.CrudService.Id,
+		Name:    cfg.CrudService.Name,
+		Port:    servicePort,
+		Address: cfg.CrudService.Address,
 		Check: &consulapi.AgentServiceCheck{
-			HTTP:     fmt.Sprintf("http://%s:%d/api/check", cfg.Address, port),
+			HTTP:     fmt.Sprintf("http://%s:%d/api/check", cfg.CrudService.Address, servicePort),
 			Interval: "10s",
 			Timeout:  cfg.ConnectTimeout.String(),
 		},
@@ -41,17 +41,14 @@ func Registration(cfg *config.Config) error {
 }
 
 func RetryRegistration(cfg *config.Config, log *logger.Logger) {
-	const maxAttempts = 5
-	const retryDelay = 2 * time.Second
-
-	for attempt := 1; attempt <= maxAttempts; attempt++ {
+	for attempt := 1; attempt <= cfg.ConsulService.MaxAttempts; attempt++ {
 		err := Registration(cfg)
 		if err != nil {
 			log.Warn("Failed to register service in Consul, will retry...",
 				"attempt", attempt,
 				logger.Err(err),
 			)
-			time.Sleep(retryDelay)
+			time.Sleep(cfg.ConsulService.RetryDelay)
 			continue
 		}
 
