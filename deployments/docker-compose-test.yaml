@@ -1,0 +1,65 @@
+services:
+  postgres-db-test:
+    image: postgres:latest
+    container_name: postgres-store-db-test
+    env_file:
+      - ../.env-test
+    volumes:
+      - ../db/init_tables.sql:/docker-entrypoint-initdb.d/init_table.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+    ports:
+     - "5432:5432"
+    restart: always
+    networks:
+      - database-test-networks
+  consul-test:
+    image: hashicorp/consul
+    container_name: consul-service-test
+    ports:
+      - "8500:8500"
+    restart: always
+    networks:
+      - consul-test-networks
+  
+  crud-service-test:
+    build:
+      context: ../
+      dockerfile: ./docker/Dockerfile.crud-test
+    container_name: crud-service-test
+    environment:
+      - CONFIG_PATH=/service/.env
+    env_file:
+      - ../.env-test
+    depends_on:
+      postgres-db-test:
+        condition: service_healthy
+      consul-test:
+        condition: service_started
+    ports:
+      - "8080:8080"
+    restart: always
+    networks:
+      - database-test-networks
+      - consul-test-networks
+  test:
+    build:
+      context: ../
+      dockerfile: ./docker/Dockerfile.test
+    environment:
+      - CONFIG_PATH=/service/.env
+    env_file:
+      - ../.env-test
+    depends_on:
+      - crud-service-test
+    command: ["go", "test", "-v", "./cmd"]
+    networks:
+      - database-test-networks
+networks:
+  database-test-networks:
+    driver: bridge
+  consul-test-networks:
+    driver: bridge
