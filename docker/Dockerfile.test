@@ -1,0 +1,9 @@
+FROM golang:1.24
+
+WORKDIR /service
+COPY . .
+
+RUN go mod tidy
+RUN mv .env-test .env
+
+CMD [ "go", "test", "-v", "./cmd" ]
