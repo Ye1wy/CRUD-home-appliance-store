@@ -38,6 +38,8 @@ services:
     depends_on:
       postgres-db:
         condition: service_healthy
+      consul:
+        condition: service_started
     ports:
       - "8080:8080"
     restart: always
