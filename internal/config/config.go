@@ -11,10 +11,10 @@ import (
 )
 
 type Config struct {
-	Env string `env:"env" env-default:"local"`
-	connection.PostgresConfig
-	CrudService   CrudService
-	ConsulService ConsulConfig
+	Env            string `env:"env" env-default:"local"`
+	PostgresConfig connection.PostgresConfig
+	CrudService    CrudService
+	ConsulService  ConsulConfig
 }
 
 type CrudService struct {
@@ -25,10 +25,12 @@ type CrudService struct {
 }
 
 type ConsulConfig struct {
-	Address     string        `env:"consul_service_address"`
-	Port        string        `env:"consul_service_port" env-default:"8500"`
-	RetryDelay  time.Duration `env:"consul_service_retry_delay" env-default:"2s"`
-	MaxAttempts int           `env:"consul_service_max_attempts" env-default:"5"`
+	Address        string        `env:"consul_service_address"`
+	Port           string        `env:"consul_service_port" env-default:"8500"`
+	RetryDelay     time.Duration `env:"consul_service_retry_delay" env-default:"2s"`
+	MaxAttempts    int           `env:"consul_service_max_attempts" env-default:"5"`
+	SurveyInterval string        `env:"consul_service_survey_interval" env-default:"60s"`
+	SurveyTimeout  string        `env:"consul_service_survey_timeout" env-default:"10s"`
 }
 
 func MustLoad() *Config {
@@ -56,6 +58,5 @@ func (cfg *Config) PrintInfo() {
 	fmt.Println("env: " + cfg.Env)
 	fmt.Println("address: " + cfg.CrudService.Address)
 	fmt.Println("port: " + cfg.CrudService.Port)
-	fmt.Println("DNS: " + cfg.PostgresHost)
 	fmt.Println("---------------------")
 }

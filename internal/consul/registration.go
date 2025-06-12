@@ -32,8 +32,8 @@ func Registration(cfg *config.Config) error {
 		Address: cfg.CrudService.Address,
 		Check: &consulapi.AgentServiceCheck{
 			HTTP:     fmt.Sprintf("http://%s:%d/api/check", cfg.CrudService.Address, servicePort),
-			Interval: "10s",
-			Timeout:  cfg.ConnectTimeout.String(),
+			Interval: cfg.ConsulService.SurveyInterval,
+			Timeout:  cfg.ConsulService.SurveyTimeout,
 		},
 	}
 

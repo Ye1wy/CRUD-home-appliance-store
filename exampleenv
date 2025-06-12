@@ -19,3 +19,5 @@ consul_service_address=consul-service
 consul_service_port=8500
 consul_service_retry_delay=2s
 consul_service_max_attempts=5
+consul_service_survey_interval=10s
+consul_service_survey_timeout=5s
