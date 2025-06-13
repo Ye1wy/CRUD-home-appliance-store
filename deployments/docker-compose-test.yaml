@@ -58,6 +58,7 @@ services:
     command: ["go", "test", "-v", "./cmd"]
     networks:
       - database-test-networks
+      - consul-test-networks
 networks:
   database-test-networks:
     driver: bridge

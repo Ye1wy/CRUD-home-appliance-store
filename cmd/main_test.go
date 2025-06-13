@@ -11,8 +11,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var (
+	cfg *config.Config
+)
+
 func TestMain(m *testing.M) {
-	cfg := config.MustLoad()
+	cfg = config.MustLoad()
 	err := consul.WaitForService(cfg)
 	if err != nil {
 		panic("Service not ready in Consul " + err.Error())
@@ -22,7 +26,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestCreateClient(t *testing.T) {
-	resp, err := http.Post("http://crud-service:8080/api/v1/clients", "application/json", strings.NewReader(
+	resp, err := http.Post("http://crud-service-test:8080/api/v1/clients", "application/json", strings.NewReader(
 		`{
 		"name": "Adrianna",
 		"surname": "Gopher",
