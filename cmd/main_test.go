@@ -3,16 +3,20 @@ package main
 import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/config"
 	"CRUD-HOME-APPLIANCE-STORE/internal/consul"
+	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"strings"
 	"testing"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
 )
 
 var (
 	cfg *config.Config
+	db  *pgx.Conn
 )
 
 func TestMain(m *testing.M) {
@@ -22,11 +26,18 @@ func TestMain(m *testing.M) {
 		panic("Service not ready in Consul " + err.Error())
 	}
 
+	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", cfg.PostgresConfig.PostgresUser, cfg.PostgresConfig.PostgresPassword, cfg.PostgresConfig.PostgresHost, cfg.PostgresConfig.PostgresPort, cfg.PostgresConfig.PostgresDatabase)
+	db, err = pgx.Connect(context.Background(), connStr)
+	if err != nil {
+		panic("Postgres not vailable")
+	}
+
 	os.Exit(m.Run())
 }
 
 func TestCreateClient(t *testing.T) {
-	resp, err := http.Post("http://crud-service-test:8080/api/v1/clients", "application/json", strings.NewReader(
+	url := fmt.Sprintf("http://%s:%s/api/v1/clients", cfg.CrudService.Address, cfg.CrudService.Port)
+	resp, err := http.Post(url, "application/json", strings.NewReader(
 		`{
 		"name": "Adrianna",
 		"surname": "Gopher",
