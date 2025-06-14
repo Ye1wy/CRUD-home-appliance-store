@@ -6,4 +6,4 @@ COPY . .
 RUN go mod tidy
 RUN mv .env-test .env
 
-CMD [ "go", "test", "-v", "./cmd" ]
+CMD [ "go", "test", "-v", "./test/integration" ]

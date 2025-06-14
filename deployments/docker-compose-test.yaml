@@ -55,7 +55,6 @@ services:
       - ../.env-test
     depends_on:
       - crud-service-test
-    command: ["go", "test", "-v", "./cmd"]
     networks:
       - database-test-networks
       - consul-test-networks
