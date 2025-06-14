@@ -1,4 +1,4 @@
-package integration_test
+package integration
 
 import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/mapper"
@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCreateClient(t *testing.T) {
+func (s *TestSuite) TestCreateClient() {
 	givedData := dto.Client{
 		Name:     "Adrianna",
 		Surname:  "Gopher",
@@ -29,42 +29,36 @@ func TestCreateClient(t *testing.T) {
 	}
 
 	send, err := json.Marshal(&givedData)
-	if err != nil {
-		panic("Something wrong with marshal struct")
-	}
+	s.Require().NoError(err)
 
-	url := fmt.Sprintf("http://%s:%s/api/v1/clients", cfg.CrudService.Address, cfg.CrudService.Port)
+	url := fmt.Sprintf("http://%s:%s/api/v1/clients", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
 	resp, err := http.Post(url, "application/json", strings.NewReader(
 		string(send),
 	))
 
-	require.NoError(t, err)
-	require.Equal(t, http.StatusCreated, resp.StatusCode)
+	s.Require().NoError(err)
+	s.Require().Equal(http.StatusCreated, resp.StatusCode)
 
-	log := logger.NewLogger(cfg.Env)
+	log := logger.NewLogger(s.cfg.Env)
 
-	clientRepo := postgres.NewClientRepository(db, log)
+	clientRepo := postgres.NewClientRepository(s.db, log)
 
-	client, repoErr := clientRepo.GetByNameAndSurname(context.Background(), givedData.Name, givedData.Surname)
-	if repoErr != nil {
-		panic("Invalid test")
-	}
+	client, err := clientRepo.GetByNameAndSurname(context.Background(), givedData.Name, givedData.Surname)
+	s.Require().NoError(err)
 
-	require.Equal(t, len(client), 1)
+	s.Require().Len(client, 1)
 
 	basicData, err := mapper.ClientToDomain(givedData)
-	if err != nil {
-		panic("Basic data is invalid")
-	}
+	s.Require().NoError(err)
 
 	for _, c := range client {
-		require.Equal(t, c.Name, basicData.Name)
-		require.Equal(t, c.Surname, basicData.Surname)
-		require.Equal(t, c.Birthday, basicData.Birthday)
-		require.Equal(t, c.Gender, basicData.Gender)
-		require.Equal(t, c.Address.Country, basicData.Address.Country)
-		require.Equal(t, c.Address.City, basicData.Address.City)
-		require.Equal(t, c.Address.Street, basicData.Address.Street)
+		s.Require().Equal(c.Name, basicData.Name)
+		s.Require().Equal(c.Surname, basicData.Surname)
+		s.Require().Equal(c.Birthday, basicData.Birthday)
+		s.Require().Equal(c.Gender, basicData.Gender)
+		s.Require().Equal(c.Address.Country, basicData.Address.Country)
+		s.Require().Equal(c.Address.City, basicData.Address.City)
+		s.Require().Equal(c.Address.Street, basicData.Address.Street)
 	}
 }
 
