@@ -232,6 +232,12 @@ func (ctrl *ClientController) UpdateAddress(c *gin.Context) {
 			return
 		}
 
+		if errors.Is(err, crud_errors.ErrAddressIsEmpty) {
+			ctrl.logger.Debug("Payload is empty", logger.Err(err), "op", op)
+			ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid request payload: invalid data received"})
+			return
+		}
+
 		ctrl.logger.Error("Failed to update address ID", "id", id, logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Server is busy"})
 		return
