@@ -8,11 +8,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
-	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/jackc/pgx/v5"
 )
 
 func (s *TestSuite) TestCreateClient() {
@@ -60,8 +60,94 @@ func (s *TestSuite) TestCreateClient() {
 		s.Require().Equal(c.Address.City, basicData.Address.City)
 		s.Require().Equal(c.Address.Street, basicData.Address.Street)
 	}
+
+	s.CleanTable()
 }
 
-func TestCreateClient2(t *testing.T) {
-	require.Equal(t, 1, 1)
+func (s *TestSuite) TestCreateClientWithOneAddress() {
+	commonAddress := dto.Address{
+		Country: "Japan",
+		City:    "Tokyo",
+		Street:  "Godzilla",
+	}
+	givedData := dto.Client{
+		Name:     "Adrianna",
+		Surname:  "Gopher",
+		Birthday: "2001-01-01",
+		Gender:   "female",
+		Address:  commonAddress,
+	}
+
+	send, err := json.Marshal(&givedData)
+	s.Require().NoError(err)
+
+	url := fmt.Sprintf("http://%s:%s/api/v1/clients", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
+	resp, err := http.Post(url, "application/json", strings.NewReader(
+		string(send),
+	))
+
+	s.Require().NoError(err)
+	s.Require().Equal(http.StatusCreated, resp.StatusCode)
+
+	givedData = dto.Client{
+		Name:     "Adrian",
+		Surname:  "Gopher",
+		Birthday: "2005-01-01",
+		Gender:   "male",
+		Address:  commonAddress,
+	}
+
+	send, err = json.Marshal(&givedData)
+	s.Require().NoError(err)
+
+	url = fmt.Sprintf("http://%s:%s/api/v1/clients", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
+	resp, err = http.Post(url, "application/json", strings.NewReader(
+		string(send),
+	))
+
+	s.Require().NoError(err)
+	s.Require().Equal(http.StatusCreated, resp.StatusCode)
+
+	query := `SELECT COUNT(id) FROM address WHERE country=@country AND city=@city AND street=@street`
+	args := pgx.NamedArgs{
+		"country": commonAddress.Country,
+		"city":    commonAddress.City,
+		"street":  commonAddress.Street,
+	}
+
+	var count int
+	err = s.db.QueryRow(context.Background(), query, args).Scan(&count)
+	s.Require().NoError(err)
+
+	s.Require().EqualValues(1, count)
+
+	url = fmt.Sprintf("http://%s:%s/api/v1/clients", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
+	resp, err = http.Get(url)
+	s.Require().NoError(err)
+	defer resp.Body.Close()
+
+	s.Require().Equal(http.StatusOK, resp.StatusCode)
+
+	body, err := io.ReadAll(resp.Body)
+	s.Require().NoError(err)
+
+	var clients []dto.Client
+	err = json.Unmarshal(body, &clients)
+	s.Require().NoError(err)
+	s.Require().Len(clients, 2)
+
+	s.Require().Contains(clients, dto.Client{
+		Name:     "Adrianna",
+		Surname:  "Gopher",
+		Birthday: "2001-01-01",
+		Gender:   "female",
+		Address:  commonAddress,
+	})
+	s.Require().Contains(clients, dto.Client{
+		Name:     "Adrian",
+		Surname:  "Gopher",
+		Birthday: "2005-01-01",
+		Gender:   "male",
+		Address:  commonAddress,
+	})
 }
