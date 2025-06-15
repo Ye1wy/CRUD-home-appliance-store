@@ -38,22 +38,25 @@ func (s *clientsService) Create(ctx context.Context, client *domain.Client) erro
 
 	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
 		uowOp := op + ".uow"
-		addressRepoGen, err := getReposiotry(tx, uow.AddressRepoName, s.logger)
-		if err != nil {
-			s.logger.Error("get address repository generator is unable", logger.Err(err), "op", uowOp)
-			return fmt.Errorf("%s: get address repository generator is unable: %v", uowOp, err)
-		}
 
-		addressRepo, ok := addressRepoGen.(*postgres.AddressRepo)
-		if !ok {
-			s.logger.Error("Conversion problem, not contained expected convesion", "op", op)
-			return fmt.Errorf("%s: %w", uowOp, crud_errors.ErrConversionProblem)
-		}
+		if client.Address != nil {
+			addressRepoGen, err := getReposiotry(tx, uow.AddressRepoName, s.logger)
+			if err != nil {
+				s.logger.Error("get address repository generator is unable", logger.Err(err), "op", uowOp)
+				return fmt.Errorf("%s: get address repository generator is unable: %v", uowOp, err)
+			}
 
-		err = addressRepo.Create(ctx, &client.Address)
-		if err != nil {
-			s.logger.Error("address creation is unavailable", logger.Err(err), "op", uowOp)
-			return fmt.Errorf("%s: unable to create address: %v", uowOp, err)
+			addressRepo, ok := addressRepoGen.(*postgres.AddressRepo)
+			if !ok {
+				s.logger.Error("Conversion problem, not contained expected convesion", "op", op)
+				return fmt.Errorf("%s: %w", uowOp, crud_errors.ErrConversionProblem)
+			}
+
+			err = addressRepo.Create(ctx, client.Address)
+			if err != nil {
+				s.logger.Error("address creation is unavailable", logger.Err(err), "op", uowOp)
+				return fmt.Errorf("%s: unable to create address: %v", uowOp, err)
+			}
 		}
 
 		clientRepoGen, err := getReposiotry(tx, uow.ClientRepoName, s.logger)
@@ -120,6 +123,10 @@ func (s *clientsService) GetByNameAndSurname(ctx context.Context, name, surname 
 
 func (s *clientsService) UpdateAddress(ctx context.Context, id uuid.UUID, address *domain.Address) error {
 	op := "services.clientsService.UpdateAddress"
+	if address.City == "" || address.Country == "" || address.Street == "" {
+		return fmt.Errorf("%s: %w", op, crud_errors.ErrAddressIsEmpty)
+	}
+
 	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
 		uowOp := op + ".uow"
 		addressRepoGen, err := getReposiotry(tx, uow.AddressRepoName, s.logger)

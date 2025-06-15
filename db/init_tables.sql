@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS client (
     birthday TIMESTAMP,
     gender TEXT CHECK (gender IN ('male', 'female')) NOT NULL,
     registration_date TIMESTAMP DEFAULT now(),
-    address_id UUID NOT NULL,
+    address_id UUID NULL,
     FOREIGN KEY (address_id) REFERENCES address (id)
 );
 
