@@ -10,14 +10,19 @@ import (
 const dateFormat = "2006-01-02"
 
 func ClientToDTO(client domain.Client) dto.Client {
-	address := AddressToDto(client.Address)
-	return dto.Client{
+	output := dto.Client{
 		Name:     client.Name,
 		Surname:  client.Surname,
 		Birthday: client.Birthday.Format(dateFormat),
 		Gender:   client.Gender,
-		Address:  address,
 	}
+
+	if client.Address != nil {
+		address := AddressToDto(*client.Address)
+		output.Address = &address
+	}
+
+	return output
 }
 
 func ClientToDomain(dto dto.Client) (domain.Client, error) {
@@ -26,13 +31,17 @@ func ClientToDomain(dto dto.Client) (domain.Client, error) {
 		return domain.Client{}, fmt.Errorf("clinet mapper: %v", err)
 	}
 
-	address := AddressToDomain(dto.Address)
-
-	return domain.Client{
+	client := domain.Client{
 		Name:     dto.Name,
 		Surname:  dto.Surname,
 		Birthday: dtoBirthday,
 		Gender:   dto.Gender,
-		Address:  address,
-	}, nil
+	}
+
+	if dto.Address != nil {
+		address := AddressToDomain(*dto.Address)
+		client.Address = &address
+	}
+
+	return client, nil
 }

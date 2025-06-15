@@ -13,5 +13,5 @@ type Client struct {
 	Birthday         time.Time `json:"birthday" bson:"birthday"`
 	Gender           string    `json:"gender" bson:"gender"`
 	RegistrationDate time.Time `json:"registration_date" bson:"registration_date"`
-	Address          Address   `json:"address" bson:"address"`
+	Address          *Address  `json:"address,omitempty" bson:"address,omitempty"`
 }
