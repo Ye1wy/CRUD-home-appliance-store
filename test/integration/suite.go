@@ -33,9 +33,22 @@ func (s *TestSuite) SetupTest() {
 	s.db, err = pgx.Connect(context.Background(), connStr)
 	s.Require().NoError(err)
 
+	s.CleanTable()
+
 	s.logger = logger.NewLogger(s.cfg.Env)
 }
 
 func (s *TestSuite) TearDownTest() {
+	s.CleanTable()
 	s.db.Close(context.Background())
+}
+
+func (s *TestSuite) CleanTable() {
+	tables := []string{"client", "product", "supplier", "image", "address"}
+
+	for _, table := range tables {
+		query := fmt.Sprintf(`TRUNCATE TABLE %s CASCADE `, table)
+		_, err := s.db.Exec(context.Background(), query)
+		s.Require().NoError(err)
+	}
 }
