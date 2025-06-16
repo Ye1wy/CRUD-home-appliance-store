@@ -217,28 +217,30 @@ func (s *clientsService) Delete(ctx context.Context, id uuid.UUID) error {
 			return fmt.Errorf("%s: unable to delete client: %v", uowOp, err)
 		}
 
-		addressRepoGen, err := getReposiotry(tx, uow.AddressRepoName, s.logger)
-		if err != nil {
-			s.logger.Error("get address repository generator is unable", logger.Err(err), "op", uowOp)
-			return fmt.Errorf("%s: get address repository generator is unable: %v", uowOp, err)
-		}
-
-		addressRepo, ok := addressRepoGen.(*postgres.AddressRepo)
-		if !ok {
-			s.logger.Error("Conversion problem, not contained expected convesion", "op", op)
-			return fmt.Errorf("%s: %w", uowOp, crud_errors.ErrConversionProblem)
-		}
-
-		savepoint := `sp_delete_address`
-		err = safeDelete(ctx, tx.GetTX(), client.Address.Id, addressRepo.Delete, s.logger, uowOp, savepoint)
-		if err != nil {
-			if errors.Is(err, crud_errors.ErrNotFound) {
-				s.logger.Debug("client not found", "op", uowOp)
-				return nil
+		if client.Address != nil {
+			addressRepoGen, err := getReposiotry(tx, uow.AddressRepoName, s.logger)
+			if err != nil {
+				s.logger.Error("get address repository generator is unable", logger.Err(err), "op", uowOp)
+				return fmt.Errorf("%s: get address repository generator is unable: %v", uowOp, err)
 			}
 
-			s.logger.Error("unable to safe delete address", logger.Err(err), "op", uowOp)
-			return fmt.Errorf("%s: unable to safe delete address: %v", uowOp, err)
+			addressRepo, ok := addressRepoGen.(*postgres.AddressRepo)
+			if !ok {
+				s.logger.Error("Conversion problem, not contained expected convesion", "op", op)
+				return fmt.Errorf("%s: %w", uowOp, crud_errors.ErrConversionProblem)
+			}
+
+			savepoint := `sp_delete_address`
+			err = safeDelete(ctx, tx.GetTX(), client.Address.Id, addressRepo.Delete, s.logger, uowOp, savepoint)
+			if err != nil {
+				if errors.Is(err, crud_errors.ErrNotFound) {
+					s.logger.Debug("client not found", "op", uowOp)
+					return nil
+				}
+
+				s.logger.Error("unable to safe delete address", logger.Err(err), "op", uowOp)
+				return fmt.Errorf("%s: unable to safe delete address: %v", uowOp, err)
+			}
 		}
 
 		return nil
