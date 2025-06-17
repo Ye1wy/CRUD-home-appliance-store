@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -867,6 +868,244 @@ func (s *TestSuite) TestClientDelete() {
 	}
 
 	temp := domain.Address{}
+	err = s.db.QueryRow(context.Background(), query, args).Scan(
+		&temp.Id,
+		&temp.Country,
+		&temp.City,
+		&temp.Street,
+	)
+	s.Require().NoError(err)
+
+	url = fmt.Sprintf("http://%s:%s/api/v1/clients", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
+	resp, err = http.Get(url)
+	s.Require().NoError(err)
+	defer resp.Body.Close()
+
+	s.Require().Equal(http.StatusOK, resp.StatusCode)
+
+	body, err := io.ReadAll(resp.Body)
+	s.Require().NoError(err)
+
+	var clients []dto.Client
+	err = json.Unmarshal(body, &clients)
+	s.Require().NoError(err)
+
+	s.Require().Contains(clients, first)
+	s.Require().Contains(clients, third)
+}
+
+func (s *TestSuite) TestClientDeleteGhost() {
+	s.CleanTable()
+
+	first := dto.Client{
+		Name:     "Adrianna",
+		Surname:  "Gopher",
+		Birthday: "2001-01-01",
+		Gender:   "female",
+		Address: &dto.Address{
+			Country: "Japan",
+			City:    "Tokyo",
+			Street:  "Godzilla",
+		},
+	}
+
+	second := dto.Client{
+		Name:     "Adrian",
+		Surname:  "Gopher",
+		Birthday: "2005-01-01",
+		Gender:   "male",
+		Address: &dto.Address{
+			Country: "Japan",
+			City:    "Tokyo",
+			Street:  "Godzilla",
+		},
+	}
+
+	third := dto.Client{
+		Name:     "Kazui",
+		Surname:  "Franclin",
+		Birthday: "2001-01-01",
+		Gender:   "male",
+	}
+
+	dataBank := []dto.Client{first, second, third}
+
+	for _, data := range dataBank {
+		send, err := json.Marshal(&data)
+		s.Require().NoError(err)
+
+		url := fmt.Sprintf("http://%s:%s/api/v1/clients", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
+		resp, err := http.Post(url, "application/json", strings.NewReader(
+			string(send),
+		))
+
+		s.Require().NoError(err)
+		s.Require().Equal(http.StatusCreated, resp.StatusCode)
+	}
+
+	randomId, err := uuid.NewRandom()
+	s.Require().NoError(err)
+
+	url := fmt.Sprintf("http://%s:%s/api/v1/clients/%s", s.cfg.CrudService.Address, s.cfg.CrudService.Port, randomId.String())
+
+	httpClient := http.Client{}
+	req, err := http.NewRequest(http.MethodDelete, url, nil)
+	req.Header.Set("Content-type", "application/json")
+	s.Require().NoError(err)
+
+	resp, err := httpClient.Do(req)
+	s.Require().NoError(err)
+	s.Require().Equal(http.StatusNoContent, resp.StatusCode)
+
+	query := `SELECT COUNT(id) FROM address`
+
+	var count int
+	err = s.db.QueryRow(context.Background(), query).Scan(&count)
+	s.Require().NoError(err)
+	s.Require().EqualValues(1, count)
+
+	query = `SELECT * FROM address WHERE country=@newCountry AND city=@newCity AND street=@newStreet`
+	args := pgx.NamedArgs{
+		"newCountry": "Japan",
+		"newCity":    "Tokyo",
+		"newStreet":  "Godzilla",
+	}
+
+	temp := domain.Address{}
+	err = s.db.QueryRow(context.Background(), query, args).Scan(
+		&temp.Id,
+		&temp.Country,
+		&temp.City,
+		&temp.Street,
+	)
+	s.Require().NoError(err)
+
+	url = fmt.Sprintf("http://%s:%s/api/v1/clients", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
+	resp, err = http.Get(url)
+	s.Require().NoError(err)
+	defer resp.Body.Close()
+
+	s.Require().Equal(http.StatusOK, resp.StatusCode)
+
+	body, err := io.ReadAll(resp.Body)
+	s.Require().NoError(err)
+
+	var clients []dto.Client
+	err = json.Unmarshal(body, &clients)
+	s.Require().NoError(err)
+
+	s.Require().Contains(clients, first)
+	s.Require().Contains(clients, second)
+	s.Require().Contains(clients, third)
+}
+
+func (s *TestSuite) TestClientDeleteWithAddress() {
+	s.CleanTable()
+
+	first := dto.Client{
+		Name:     "Adrianna",
+		Surname:  "Gopher",
+		Birthday: "2001-01-01",
+		Gender:   "female",
+		Address: &dto.Address{
+			Country: "Japan",
+			City:    "Tokyo",
+			Street:  "Godzilla",
+		},
+	}
+
+	second := dto.Client{
+		Name:     "Adrian",
+		Surname:  "Gopher",
+		Birthday: "2005-01-01",
+		Gender:   "male",
+		Address: &dto.Address{
+			Country: "Japan",
+			City:    "Tokyo",
+			Street:  "Jingu-dori",
+		},
+	}
+
+	third := dto.Client{
+		Name:     "Kazui",
+		Surname:  "Franclin",
+		Birthday: "2001-01-01",
+		Gender:   "male",
+	}
+
+	dataBank := []dto.Client{first, second, third}
+
+	for _, data := range dataBank {
+		send, err := json.Marshal(&data)
+		s.Require().NoError(err)
+
+		url := fmt.Sprintf("http://%s:%s/api/v1/clients", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
+		resp, err := http.Post(url, "application/json", strings.NewReader(
+			string(send),
+		))
+
+		s.Require().NoError(err)
+		s.Require().Equal(http.StatusCreated, resp.StatusCode)
+	}
+
+	clientRepo := postgres.NewClientRepository(s.db, s.logger)
+
+	testClients, err := clientRepo.GetByNameAndSurname(context.Background(), second.Name, second.Surname)
+	s.Require().NoError(err)
+
+	s.Require().Len(testClients, 1)
+
+	neededId := testClients[0].Id
+
+	query := `SELECT COUNT(id) FROM address`
+
+	var count int
+	err = s.db.QueryRow(context.Background(), query).Scan(&count)
+	s.Require().NoError(err)
+	s.Require().EqualValues(2, count)
+
+	url := fmt.Sprintf("http://%s:%s/api/v1/clients/%s", s.cfg.CrudService.Address, s.cfg.CrudService.Port, neededId.String())
+
+	httpClient := http.Client{}
+	req, err := http.NewRequest(http.MethodDelete, url, nil)
+	req.Header.Set("Content-type", "application/json")
+	s.Require().NoError(err)
+
+	resp, err := httpClient.Do(req)
+	s.Require().NoError(err)
+	s.Require().Equal(http.StatusNoContent, resp.StatusCode)
+
+	query = `SELECT COUNT(id) FROM address`
+
+	count = 0
+	err = s.db.QueryRow(context.Background(), query).Scan(&count)
+	s.Require().NoError(err)
+	s.Require().EqualValues(1, count)
+
+	query = `SELECT * FROM address WHERE country=@newCountry AND city=@newCity AND street=@newStreet`
+	args := pgx.NamedArgs{
+		"newCountry": "Japan",
+		"newCity":    "Tokyo",
+		"newStreet":  "Jingu-dori",
+	}
+
+	temp := domain.Address{}
+	err = s.db.QueryRow(context.Background(), query, args).Scan(
+		&temp.Id,
+		&temp.Country,
+		&temp.City,
+		&temp.Street,
+	)
+	s.Require().ErrorIs(err, pgx.ErrNoRows)
+
+	query = `SELECT * FROM address WHERE country=@newCountry AND city=@newCity AND street=@newStreet`
+	args = pgx.NamedArgs{
+		"newCountry": "Japan",
+		"newCity":    "Tokyo",
+		"newStreet":  "Godzilla",
+	}
+
+	temp = domain.Address{}
 	err = s.db.QueryRow(context.Background(), query, args).Scan(
 		&temp.Id,
 		&temp.Country,
