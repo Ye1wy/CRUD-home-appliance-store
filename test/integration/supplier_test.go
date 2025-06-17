@@ -1363,7 +1363,7 @@ func (s *TestSuite) TestDeleteSupplier() {
 
 	httpClient := http.Client{}
 	deleteUrl := fmt.Sprintf("http://%s:%s/api/v1/suppliers/%s", s.cfg.CrudService.Address, s.cfg.CrudService.Port, tempSup.Id.String())
-	req, err := http.NewRequest(http.MethodPatch, deleteUrl, nil)
+	req, err := http.NewRequest(http.MethodDelete, deleteUrl, nil)
 	s.Require().NoError(err)
 
 	deleteResp, err := httpClient.Do(req)
@@ -1376,7 +1376,7 @@ func (s *TestSuite) TestDeleteSupplier() {
 	s.Require().NoError(err)
 	s.Require().Equal(2, count)
 
-	query = `SELECT COUNT(id) FROM suppliers`
+	query = `SELECT COUNT(id) FROM supplier`
 	count = 0
 	err = s.db.QueryRow(context.Background(), query).Scan(&count)
 	s.Require().NoError(err)
@@ -1396,5 +1396,58 @@ func (s *TestSuite) TestDeleteSupplier() {
 }
 
 func (s *TestSuite) TestDeleteSupplierEmptyTable() {
+	s.CleanTable()
+	randomId, err := uuid.NewRandom()
+	s.Require().NoError(err)
 
+	httpClient := http.Client{}
+	deleteUrl := fmt.Sprintf("http://%s:%s/api/v1/suppliers/%s", s.cfg.CrudService.Address, s.cfg.CrudService.Port, randomId.String())
+	req, err := http.NewRequest(http.MethodDelete, deleteUrl, nil)
+	s.Require().NoError(err)
+
+	deleteResp, err := httpClient.Do(req)
+	s.Require().NoError(err)
+	s.Require().Equal(http.StatusNoContent, deleteResp.StatusCode)
+}
+
+func (s *TestSuite) TestDeleteSupplier2() {
+	s.CleanTable()
+
+	supplier := dto.Supplier{
+		Name:        "Terra Inc.",
+		PhoneNumber: "+7 999 233 13 23",
+		Address: &dto.Address{
+			Country: "Russia",
+			City:    "Moscow",
+			Street:  "Tverskaya Street",
+		},
+	}
+
+	postUrl := fmt.Sprintf("http://%s:%s/api/v1/suppliers", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
+	err := createSuppliers([]dto.Supplier{supplier}, postUrl)
+	s.Require().NoError(err)
+
+	supRepo := postgres.NewSupplierRepository(s.db, s.logger)
+	temp, err := supRepo.GetByName(context.Background(), supplier.Name)
+	s.Require().NoError(err)
+
+	httpClient := http.Client{}
+	deleteUrl := fmt.Sprintf("http://%s:%s/api/v1/suppliers/%s", s.cfg.CrudService.Address, s.cfg.CrudService.Port, temp.Id.String())
+	req, err := http.NewRequest(http.MethodDelete, deleteUrl, nil)
+	s.Require().NoError(err)
+
+	deleteResp, err := httpClient.Do(req)
+	s.Require().NoError(err)
+	s.Require().Equal(http.StatusNoContent, deleteResp.StatusCode)
+
+	getUrl := fmt.Sprintf("http://%s:%s/api/v1/suppliers", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
+	resp, err := http.Get(getUrl)
+	s.Require().NoError(err)
+	s.Require().Equal(http.StatusNotFound, resp.StatusCode)
+
+	query := `SELECT COUNT(*) FROM address`
+	var count int
+	err = s.db.QueryRow(context.Background(), query).Scan(&count)
+	s.Require().NoError(err)
+	s.Require().Equal(0, count)
 }
