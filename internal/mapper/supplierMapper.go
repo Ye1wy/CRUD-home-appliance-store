@@ -6,19 +6,19 @@ import (
 )
 
 func SupplierToDTO(supplier domain.Supplier) dto.Supplier {
-	address := AddressToDto(supplier.Address)
+	address := AddressToDto(*supplier.Address)
 	return dto.Supplier{
 		Name:        supplier.Name,
 		PhoneNumber: supplier.PhoneNumber,
-		Address:     address,
+		Address:     &address,
 	}
 }
 
 func SupplierToDomain(supplier dto.Supplier) domain.Supplier {
-	address := AddressToDomain(supplier.Address)
+	address := AddressToDomain(*supplier.Address)
 	return domain.Supplier{
 		Name:        supplier.Name,
 		PhoneNumber: supplier.PhoneNumber,
-		Address:     address,
+		Address:     &address,
 	}
 }

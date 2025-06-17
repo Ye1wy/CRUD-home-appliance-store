@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type SupplierRepo struct {
@@ -35,6 +36,12 @@ func (r *SupplierRepo) Create(ctx context.Context, supplier *domain.Supplier) er
 
 	_, err := r.db.Exec(ctx, sqlStatement, args)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			r.logger.Debug("Duplicate creation", "op", op)
+			return fmt.Errorf("%s: unable to insert row: %w", op, crud_errors.ErrDuplicateKeyValue)
+		}
+
 		r.logger.Error("failed to create supplier", logger.Err(err), "op", op)
 		return fmt.Errorf("%s: unable to insert row: %v", op, err)
 	}
@@ -70,7 +77,9 @@ func (r *SupplierRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.
 	var suppliers []domain.Supplier
 
 	for rows.Next() {
-		var supplier domain.Supplier
+		supplier := domain.Supplier{
+			Address: &domain.Address{},
+		}
 
 		err := rows.Scan(
 			&supplier.Id,
@@ -115,7 +124,9 @@ func (r *SupplierRepo) GetByName(ctx context.Context, name string) (*domain.Supp
 	}
 
 	row := r.db.QueryRow(ctx, sqlStatement, arg)
-	supplier := domain.Supplier{}
+	supplier := domain.Supplier{
+		Address: &domain.Address{},
+	}
 	err := row.Scan(
 		&supplier.Id,
 		&supplier.Name,
@@ -157,7 +168,9 @@ func (r *SupplierRepo) GetById(ctx context.Context, id uuid.UUID) (*domain.Suppl
 	}
 
 	row := r.db.QueryRow(ctx, sqlStatement, arg)
-	supplier := domain.Supplier{}
+	supplier := domain.Supplier{
+		Address: &domain.Address{},
+	}
 	err := row.Scan(
 		&supplier.Id,
 		&supplier.Name,

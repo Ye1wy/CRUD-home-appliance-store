@@ -12,6 +12,7 @@ var (
 	ErrAddressIsExist      = errors.New("address is exists")
 	ErrAddressIsEmpty      = errors.New("address is empty")
 	ErrForeignKeyViolation = errors.New("foragin key violation, someone links is alive")
+	ErrDuplicateKeyValue   = errors.New("duplicate key value in unique field")
 	ErrImageCorruption     = errors.New("image is corrupted or input data is not image")
 	ErrConversionProblem   = errors.New("conversion problem, panic awoided")
 )
