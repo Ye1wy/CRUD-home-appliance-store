@@ -62,9 +62,21 @@ func (ctrl *SupplierController) Create(c *gin.Context) {
 
 	ctrl.logger.Debug("check data", "data", input)
 
+	if input.Address == nil {
+		ctrl.logger.Warn("Address cannot be empty", "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid request payload: address cannot be empty"})
+		return
+	}
+
 	supplier := mapper.SupplierToDomain(input)
 
 	if err := ctrl.service.Create(c, &supplier); err != nil {
+		if errors.Is(err, crud_errors.ErrDuplicateKeyValue) {
+			ctrl.logger.Warn("Failed create supplier: duplicate supplier received", "op", op)
+			ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Cannot create duplicate"})
+			return
+		}
+
 		ctrl.logger.Error("Failed create supplier", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusInternalServerError, gin.H{"error": "Server is busy"})
 		return
@@ -206,6 +218,8 @@ func (ctrl *SupplierController) UpdateAddress(c *gin.Context) {
 		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid request payload: invalid data received"})
 		return
 	}
+
+	ctrl.logger.Debug("data received", "input", input, "op", op)
 
 	address := mapper.AddressToDomain(input)
 
