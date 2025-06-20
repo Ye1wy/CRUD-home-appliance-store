@@ -15,25 +15,25 @@ import (
 	"github.com/google/uuid"
 )
 
-func createSuppliers(data []dto.Supplier, url string) error {
-	for _, s := range data {
-		payload, err := json.Marshal(&s)
-		if err != nil {
-			return err
-		}
+// func createSuppliers(data []dto.Supplier, url string) error {
+// 	for _, s := range data {
+// 		payload, err := json.Marshal(&s)
+// 		if err != nil {
+// 			return err
+// 		}
 
-		resp, err := http.Post(url, "application/json", strings.NewReader(string(payload)))
-		if err != nil {
-			return err
-		}
+// 		resp, err := http.Post(url, "application/json", strings.NewReader(string(payload)))
+// 		if err != nil {
+// 			return err
+// 		}
 
-		if resp.StatusCode != http.StatusCreated {
-			return fmt.Errorf("status: %d", resp.StatusCode)
-		}
-	}
+// 		if resp.StatusCode != http.StatusCreated {
+// 			return fmt.Errorf("status: %d", resp.StatusCode)
+// 		}
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 func (s *TestSuite) TestCreateSupplier() {
 	s.CleanTable()
@@ -492,8 +492,11 @@ func (s *TestSuite) TestGetAllSupplier() {
 	}
 
 	url := fmt.Sprintf("http://%s:%s/api/v1/suppliers", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
-	err := createSuppliers(suppliers, url)
-	s.Require().NoError(err)
+
+	for _, alone := range suppliers {
+		err := createObject(alone, url)
+		s.Require().NoError(err)
+	}
 
 	resp, err := http.Get(url)
 	s.Require().NoError(err)
@@ -698,8 +701,11 @@ func (s *TestSuite) TestGetAllSupplierWithLimitAndOffset() {
 	}
 
 	url := fmt.Sprintf("http://%s:%s/api/v1/suppliers", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
-	err := createSuppliers(suppliers, url)
-	s.Require().NoError(err)
+
+	for _, alone := range suppliers {
+		err := createObject(alone, url)
+		s.Require().NoError(err)
+	}
 
 	url = fmt.Sprintf("http://%s:%s/api/v1/suppliers?limit=5&offset=3", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
 	resp, err := http.Get(url)
@@ -842,8 +848,11 @@ func (s *TestSuite) TestGetByIdSupplier() {
 	}
 
 	url := fmt.Sprintf("http://%s:%s/api/v1/suppliers", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
-	err := createSuppliers(suppliers, url)
-	s.Require().NoError(err)
+
+	for _, alone := range suppliers {
+		err := createObject(alone, url)
+		s.Require().NoError(err)
+	}
 
 	supRepo := postgres.NewSupplierRepository(s.db, s.logger)
 	sup, err := supRepo.GetByName(context.Background(), "São Paulo Imports")
@@ -987,8 +996,11 @@ func (s *TestSuite) TestGetByIdGhostSupplier() {
 	}
 
 	url := fmt.Sprintf("http://%s:%s/api/v1/suppliers", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
-	err := createSuppliers(suppliers, url)
-	s.Require().NoError(err)
+
+	for _, alone := range suppliers {
+		err := createObject(alone, url)
+		s.Require().NoError(err)
+	}
 
 	randomId, err := uuid.NewRandom()
 	s.Require().NoError(err)
@@ -1022,9 +1034,9 @@ func (s *TestSuite) TestUpdateAddressSupplier() {
 	}
 
 	postUrl := fmt.Sprintf("http://%s:%s/api/v1/suppliers", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
-	err := createSuppliers([]dto.Supplier{supplier}, postUrl)
-	s.Require().NoError(err)
 
+	err := createObject(supplier, postUrl)
+	s.Require().NoError(err)
 	sR := postgres.NewSupplierRepository(s.db, s.logger)
 	takedData, err := sR.GetByName(context.Background(), supplier.Name)
 	check := mapper.SupplierToDTO(*takedData)
@@ -1097,10 +1109,11 @@ func (s *TestSuite) TestUpdateAddressSupplierNotLinkedAddressBehavior() {
 		},
 	}
 
-	suppliers := []dto.Supplier{first, second}
-
 	postUrl := fmt.Sprintf("http://%s:%s/api/v1/suppliers", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
-	err := createSuppliers(suppliers, postUrl)
+	err := createObject(first, postUrl)
+	s.Require().NoError(err)
+
+	err = createObject(second, postUrl)
 	s.Require().NoError(err)
 
 	supRepo := postgres.NewSupplierRepository(s.db, s.logger)
@@ -1171,10 +1184,12 @@ func (s *TestSuite) TestUpdateAddressSupplierFromSameAddress() {
 		},
 	}
 
-	suppliers := []dto.Supplier{first, second}
-
 	postUrl := fmt.Sprintf("http://%s:%s/api/v1/suppliers", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
-	err := createSuppliers(suppliers, postUrl)
+
+	err := createObject(first, postUrl)
+	s.Require().NoError(err)
+
+	err = createObject(second, postUrl)
 	s.Require().NoError(err)
 
 	supRepo := postgres.NewSupplierRepository(s.db, s.logger)
@@ -1255,10 +1270,15 @@ func (s *TestSuite) TestUpdateAddressSupplier2() {
 		},
 	}
 
-	suppliers := []dto.Supplier{first, second, third}
-
 	postUrl := fmt.Sprintf("http://%s:%s/api/v1/suppliers", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
-	err := createSuppliers(suppliers, postUrl)
+
+	err := createObject(first, postUrl)
+	s.Require().NoError(err)
+
+	err = createObject(second, postUrl)
+	s.Require().NoError(err)
+
+	err = createObject(third, postUrl)
 	s.Require().NoError(err)
 
 	supRepo := postgres.NewSupplierRepository(s.db, s.logger)
@@ -1341,7 +1361,13 @@ func (s *TestSuite) TestDeleteSupplier() {
 	}
 
 	postUrl := fmt.Sprintf("http://%s:%s/api/v1/suppliers", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
-	err := createSuppliers([]dto.Supplier{first, second, third}, postUrl)
+	err := createObject(first, postUrl)
+	s.Require().NoError(err)
+
+	err = createObject(second, postUrl)
+	s.Require().NoError(err)
+
+	err = createObject(third, postUrl)
 	s.Require().NoError(err)
 
 	getUrl := fmt.Sprintf("http://%s:%s/api/v1/suppliers", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
@@ -1424,7 +1450,7 @@ func (s *TestSuite) TestDeleteSupplier2() {
 	}
 
 	postUrl := fmt.Sprintf("http://%s:%s/api/v1/suppliers", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
-	err := createSuppliers([]dto.Supplier{supplier}, postUrl)
+	err := createObject(supplier, postUrl)
 	s.Require().NoError(err)
 
 	supRepo := postgres.NewSupplierRepository(s.db, s.logger)
