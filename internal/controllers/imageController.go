@@ -52,10 +52,25 @@ func NewImageController(service imageService, logger *logger.Logger) *ImageContr
 //	@Router			/api/v1/images [post]
 func (ctrl *ImageController) Create(c *gin.Context) {
 	op := "controllers.imageController.Create"
-	imageRaw, err := io.ReadAll(c.Request.Body)
+
+	if c.ContentType() != contentTypeFormData {
+		ctrl.logger.Warn("Invalid content-type", "got", c.ContentType(), "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"message": "Expected multipart/form-data"})
+		return
+	}
+
+	file, _, err := c.Request.FormFile("image")
+	if err != nil {
+		ctrl.logger.Warn("Failed to read form file", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"message": "Image not found in form-data"})
+		return
+	}
+	defer file.Close()
+
+	imageRaw, err := io.ReadAll(file)
 	if err != nil {
 		ctrl.logger.Warn("Failed to read image bytes", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusInternalServerError, gin.H{"massage": "Invalid request payload: invalid image in request body"})
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid request payload: invalid image in request body"})
 		return
 	}
 
@@ -194,6 +209,13 @@ func (ctrl *ImageController) GetById(c *gin.Context) {
 //	@Router			/api/v1/images/{id} [patch]
 func (ctrl *ImageController) Update(c *gin.Context) {
 	op := "controllers.imageController.Delete"
+
+	if c.ContentType() != contentTypeFormData {
+		ctrl.logger.Warn("Invalid content-type", "got", c.ContentType(), "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"message": "Expected multipart/form-data"})
+		return
+	}
+
 	rawdId := c.Param("id")
 	id, err := uuid.Parse(rawdId)
 	if err != nil {
@@ -202,7 +224,15 @@ func (ctrl *ImageController) Update(c *gin.Context) {
 		return
 	}
 
-	imageRaw, err := io.ReadAll(c.Request.Body)
+	file, _, err := c.Request.FormFile("image")
+	if err != nil {
+		ctrl.logger.Warn("Failed to read form file", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"message": "Image not found in form-data"})
+		return
+	}
+	defer file.Close()
+
+	imageRaw, err := io.ReadAll(file)
 	if err != nil {
 		ctrl.logger.Warn("Failed to read image bytes", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid request payload: invalid image body"})
