@@ -1,6 +1,7 @@
 package controllers
 
 const (
-	defaultLimit  = "10"
-	defaultOffset = "0"
+	contentTypeFormData = "multipart/form-data"
+	defaultLimit        = "10"
+	defaultOffset       = "0"
 )
