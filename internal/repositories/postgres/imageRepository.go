@@ -26,28 +26,16 @@ func NewImageRepository(db DB, logger *logger.Logger) *ImageRepo {
 func (r *ImageRepo) Create(ctx context.Context, image *domain.Image) error {
 	op := "repository.postgres.imageRepository.Create"
 	sqlInsert := `INSERT
-		INTO image(hash, data)
-		VALUES (@hash, @image)
-		ON CONFLICT (hash) DO NOTHING
+		INTO image(title, data)
+		VALUES (@title, @image)
 		RETURNING id;`
 	args := pgx.NamedArgs{
-		"hash":  image.Hash,
+		"title": image.Title,
 		"image": image.Data,
 	}
 
 	err := r.db.QueryRow(ctx, sqlInsert, args).Scan(&image.Id)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			sqlSelect := `SELECT id FROM image WHERE hash = @hash`
-			err = r.db.QueryRow(ctx, sqlSelect, args).Scan(&image.Id)
-			if err != nil {
-				r.logger.Error("failed to take exists image id", logger.Err(err), "op", op)
-				return fmt.Errorf("%s: image is exist, id take is unable: %v", op, err)
-			}
-
-			return nil
-		}
-
 		r.logger.Error("failed to create image", logger.Err(err), "op", op)
 		return fmt.Errorf("%s: unable to insert row: %v", op, err)
 	}
@@ -57,7 +45,8 @@ func (r *ImageRepo) Create(ctx context.Context, image *domain.Image) error {
 
 func (r *ImageRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.Image, error) {
 	op := "repostiory.postgres.imageRepository.GetAll"
-	sqlStatement := "SELECT * FROM image LIMIT @limit OFFSET @offset"
+	sqlStatement := `SELECT * FROM image LIMIT @limit OFFSET @offset;`
+	r.logger.Debug("check limit and offset", "limit", limit, "offset", offset)
 	args := pgx.NamedArgs{
 		"limit":  limit,
 		"offset": offset,
@@ -75,10 +64,12 @@ func (r *ImageRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.Ima
 	for rows.Next() {
 		var image domain.Image
 
-		if err := rows.Scan(&image.Id, &image.Hash, &image.Data); err != nil {
+		if err := rows.Scan(&image.Id, &image.Title, &image.Data); err != nil {
 			r.logger.Warn("failed to bind data", logger.Err(err), "op", op)
 			continue
 		}
+
+		r.logger.Debug("extracted data", "image id", image.Id, "image title", image.Title, "op", op)
 
 		images = append(images, image)
 	}
@@ -93,14 +84,14 @@ func (r *ImageRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.Ima
 
 func (r *ImageRepo) GetById(ctx context.Context, id uuid.UUID) (*domain.Image, error) {
 	op := "repository.postgres.imageRepositoru.GetById"
-	sqlStatement := "SELECT * FROM image WHERE id = $id"
+	sqlStatement := "SELECT * FROM image WHERE id = @id"
 	arg := pgx.NamedArgs{
 		"id": id,
 	}
 
 	row := r.db.QueryRow(ctx, sqlStatement, arg)
 	image := domain.Image{}
-	err := row.Scan(&image.Id, &image.Hash, &image.Data)
+	err := row.Scan(&image.Id, &image.Title, &image.Data)
 	if errors.Is(err, pgx.ErrNoRows) {
 		r.logger.Debug("image not found", "op", op)
 		return nil, fmt.Errorf("%s: %w", op, crud_errors.ErrNotFound)
@@ -116,10 +107,10 @@ func (r *ImageRepo) GetById(ctx context.Context, id uuid.UUID) (*domain.Image, e
 
 func (r *ImageRepo) Update(ctx context.Context, image *domain.Image) error {
 	op := "repository.postgres.imageRepository.Update"
-	sqlStatement := `UPDATE image SET hash = @hash, data = @image WHERE id = @id`
+	sqlStatement := `UPDATE image SET title = @title, data = @image WHERE id = @id`
 	args := pgx.NamedArgs{
 		"id":    image.Id,
-		"hash":  image.Hash,
+		"title": image.Title,
 		"image": image.Data,
 	}
 

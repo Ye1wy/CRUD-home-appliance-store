@@ -1,7 +1,8 @@
 package controllers
 
 const (
-	contentTypeFormData = "multipart/form-data"
-	defaultLimit        = "10"
-	defaultOffset       = "0"
+	contentTypeOctetStream = "application/octet-stream"
+	headerXImageTitle      = "X-Image-Title"
+	defaultLimit           = "10"
+	defaultOffset          = "0"
 )

@@ -7,12 +7,14 @@ import (
 
 func ImageToDomain(dto dto.Image) domain.Image {
 	return domain.Image{
-		Data: dto.Image,
+		Title: dto.Title,
+		Data:  dto.Image,
 	}
 }
 
 func ImageToDTO(domain domain.Image) dto.Image {
 	return dto.Image{
+		Title: domain.Title,
 		Image: domain.Data,
 	}
 }
