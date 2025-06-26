@@ -8,8 +8,6 @@ import (
 	"CRUD-HOME-APPLIANCE-STORE/pkg/logger"
 	"bytes"
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"image"
@@ -34,10 +32,10 @@ func validateImage(data []byte) error {
 	return nil
 }
 
-func generateImageHash(data []byte) string {
-	h := sha256.Sum256(data)
-	return hex.EncodeToString(h[:])
-}
+// func generateImageHash(data []byte) string {
+// 	h := sha256.Sum256(data)
+// 	return hex.EncodeToString(h[:])
+// }
 
 type imageService struct {
 	uow    uow.UOW
@@ -75,8 +73,6 @@ func (s *imageService) Create(ctx context.Context, image *domain.Image) error {
 			s.logger.Error("Conversion problem, not contained expected convesion", "op", op)
 			return fmt.Errorf("%s: %w", uowOp, crud_errors.ErrConversionProblem)
 		}
-
-		image.Hash = generateImageHash(image.Data)
 
 		if err := imageRepo.Create(ctx, image); err != nil {
 			s.logger.Error("failed to create image", logger.Err(err), "op", uowOp)
@@ -155,8 +151,6 @@ func (s *imageService) Update(ctx context.Context, image *domain.Image) error {
 			s.logger.Error("Conversion problem, not contained expected convesion", "op", op)
 			return fmt.Errorf("%s: %w", uowOp, crud_errors.ErrConversionProblem)
 		}
-
-		image.Hash = generateImageHash(image.Data)
 
 		if err := imageRepo.Update(ctx, image); err != nil {
 			if errors.Is(err, crud_errors.ErrNotFound) {

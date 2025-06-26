@@ -24,6 +24,15 @@ type imageService interface {
 	Delete(ctx context.Context, id uuid.UUID) error
 }
 
+// func getImageBuffer(file multipart.File) ([]byte, error) {
+// 	buf := bytes.NewBuffer(nil)
+// 	if _, err := io.Copy(buf, file); err != nil {
+// 		return nil, err
+// 	}
+
+// 	return buf.Bytes(), nil
+// }
+
 type ImageController struct {
 	*BaseController
 	service imageService
@@ -53,28 +62,55 @@ func NewImageController(service imageService, logger *logger.Logger) *ImageContr
 func (ctrl *ImageController) Create(c *gin.Context) {
 	op := "controllers.imageController.Create"
 
-	if c.ContentType() != contentTypeFormData {
+	ctrl.logger.Debug("Content-Type contains", "data", c.ContentType())
+
+	if c.ContentType() != contentTypeOctetStream {
 		ctrl.logger.Warn("Invalid content-type", "got", c.ContentType(), "op", op)
 		ctrl.responce(c, http.StatusBadRequest, gin.H{"message": "Expected multipart/form-data"})
 		return
 	}
 
-	file, _, err := c.Request.FormFile("image")
-	if err != nil {
-		ctrl.logger.Warn("Failed to read form file", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusBadRequest, gin.H{"message": "Image not found in form-data"})
+	title := c.Request.Header.Get(headerXImageTitle)
+
+	if title == "" {
+		ctrl.logger.Warn("Empty title", "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "MetaData \"X-Image-Title\" is empty"})
 		return
 	}
-	defer file.Close()
 
-	imageRaw, err := io.ReadAll(file)
+	rawImage, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		ctrl.logger.Warn("Failed to read image bytes", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid request payload: invalid image in request body"})
 		return
 	}
 
-	image := domain.Image{Data: imageRaw}
+	// rawImage, err := c.FormFile("image")
+	// if err != nil {
+	// 	ctrl.logger.Warn("Failed to read form file", logger.Err(err), "op", op)
+	// 	ctrl.responce(c, http.StatusBadRequest, gin.H{"message": "Image not found in form-data"})
+	// 	return
+	// }
+
+	// file, err := rawImage.Open()
+	// if err != nil {
+	// 	ctrl.logger.Warn("Failed to open file form multipart.FileHeader", logger.Err(err), "op", op)
+	// 	ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Image is not valid"})
+	// 	return
+	// }
+	// defer file.Close()
+
+	// imageByte, err := getImageBuffer(file)
+	// if err != nil {
+	// 	ctrl.logger.Warn("Failed convert image to array of bytes", logger.Err(err), "op", op)
+	// 	ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Image is not valid"})
+	// 	return
+	// }
+
+	image := domain.Image{
+		Title: title,
+		Data:  rawImage,
+	}
 
 	if err := ctrl.service.Create(c.Request.Context(), &image); err != nil {
 		if errors.Is(err, crud_errors.ErrImageCorruption) {
@@ -115,7 +151,7 @@ func (ctrl *ImageController) GetAll(c *gin.Context) {
 		return
 	}
 
-	offset, err := strconv.Atoi(c.DefaultQuery("offset", defaultLimit))
+	offset, err := strconv.Atoi(c.DefaultQuery("offset", defaultOffset))
 	if err != nil {
 		ctrl.logger.Warn("Failed convert offset value", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid request payload: offset is not valid"})
@@ -210,38 +246,61 @@ func (ctrl *ImageController) GetById(c *gin.Context) {
 func (ctrl *ImageController) Update(c *gin.Context) {
 	op := "controllers.imageController.Delete"
 
-	if c.ContentType() != contentTypeFormData {
+	if c.ContentType() != contentTypeOctetStream {
 		ctrl.logger.Warn("Invalid content-type", "got", c.ContentType(), "op", op)
 		ctrl.responce(c, http.StatusBadRequest, gin.H{"message": "Expected multipart/form-data"})
 		return
 	}
 
-	rawdId := c.Param("id")
-	id, err := uuid.Parse(rawdId)
+	rawId := c.Param("id")
+	id, err := uuid.Parse(rawId)
 	if err != nil {
 		ctrl.logger.Warn("The received identifier is invalid", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid request payload: id is not valid"})
 		return
 	}
 
-	file, _, err := c.Request.FormFile("image")
-	if err != nil {
-		ctrl.logger.Warn("Failed to read form file", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusBadRequest, gin.H{"message": "Image not found in form-data"})
+	title := c.Request.Header.Get(headerXImageTitle)
+
+	if title == "" {
+		ctrl.logger.Warn("Empty title", "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "MetaData \"X-Image-Title\" is empty"})
 		return
 	}
-	defer file.Close()
 
-	imageRaw, err := io.ReadAll(file)
+	rawImage, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		ctrl.logger.Warn("Failed to read image bytes", logger.Err(err), "op", op)
-		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid request payload: invalid image body"})
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid request payload: invalid image in request body"})
 		return
 	}
 
+	// rawImage, err := c.FormFile("image")
+	// if err != nil {
+	// 	ctrl.logger.Warn("Failed to read form file", logger.Err(err), "op", op)
+	// 	ctrl.responce(c, http.StatusBadRequest, gin.H{"message": "Image not found in form-data"})
+	// 	return
+	// }
+
+	// file, err := rawImage.Open()
+	// if err != nil {
+	// 	ctrl.logger.Warn("Failed to open file form multipart.FileHeader", logger.Err(err), "op", op)
+	// 	ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Image is not valid"})
+	// 	return
+	// }
+	// defer file.Close()
+
+	// imageByte, err := getImageBuffer(file)
+	// if err != nil {
+	// 	ctrl.logger.Warn("Failed convert image to array of bytes", logger.Err(err), "op", op)
+	// 	ctrl.responce(c, http.StatusBadRequest, gin.H{"error": "Image is not valid"})
+	// 	return
+	// }
+
 	image := domain.Image{
-		Id:   id,
-		Data: imageRaw,
+		Id:    id,
+		Title: title,
+		Data:  rawImage,
 	}
 
 	if err := ctrl.service.Update(c.Request.Context(), &image); err != nil {

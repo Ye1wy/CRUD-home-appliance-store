@@ -21,11 +21,9 @@ CREATE TABLE IF NOT EXISTS client (
 
 CREATE TABLE IF NOT EXISTS image (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    hash BYTEA NOT NULL,
-    data BYTEA NOT NULL,
-    UNIQUE(hash)
+    title TEXT NOT NULL,
+    data BYTEA NOT NULL
 );
-
 
 CREATE TABLE IF NOT EXISTS supplier (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
