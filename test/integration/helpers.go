@@ -2,6 +2,8 @@ package integration
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"image"
@@ -72,4 +74,9 @@ func extractImageData(path, filename string) (*bytes.Buffer, error) {
 	}
 
 	return buf, nil
+}
+
+func hashBytes(data []byte) string {
+	outputHash := sha256.Sum256(data)
+	return hex.EncodeToString(outputHash[:])
 }
