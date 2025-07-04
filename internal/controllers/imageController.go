@@ -203,7 +203,7 @@ func (ctrl *ImageController) GetAll(c *gin.Context) {
 //	@Router			/api/v1/images/{id} [get]
 func (ctrl *ImageController) GetById(c *gin.Context) {
 	op := "controllers.imageController.GetById"
-	rawId := c.Query("id")
+	rawId := c.Param("id")
 	id, err := uuid.Parse(rawId)
 	if err != nil {
 		ctrl.logger.Warn("The received identifier is invalid", logger.Err(err), "op", op)
@@ -244,7 +244,7 @@ func (ctrl *ImageController) GetById(c *gin.Context) {
 //	@Failure		500	{object}	domain.Error
 //	@Router			/api/v1/images/{id} [patch]
 func (ctrl *ImageController) Update(c *gin.Context) {
-	op := "controllers.imageController.Delete"
+	op := "controllers.imageController.Update"
 
 	if c.ContentType() != contentTypeOctetStream {
 		ctrl.logger.Warn("Invalid content-type", "got", c.ContentType(), "op", op)
@@ -261,17 +261,16 @@ func (ctrl *ImageController) Update(c *gin.Context) {
 	}
 
 	title := c.Request.Header.Get(headerXImageTitle)
-
-	if title == "" {
-		ctrl.logger.Warn("Empty title", "op", op)
-		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "MetaData \"X-Image-Title\" is empty"})
-		return
-	}
-
 	rawImage, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		ctrl.logger.Warn("Failed to read image bytes", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid request payload: invalid image in request body"})
+		return
+	}
+
+	if len(rawImage) == 0 {
+		ctrl.logger.Warn("Image not recived", "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid request payload: empty image data"})
 		return
 	}
 
@@ -313,6 +312,7 @@ func (ctrl *ImageController) Update(c *gin.Context) {
 		if errors.Is(err, crud_errors.ErrNotFound) {
 			ctrl.logger.Debug("Image not found", logger.Err(err), "op", op)
 			ctrl.responce(c, http.StatusNotFound, gin.H{"massage": "404: image not found for update"})
+			return
 		}
 
 		ctrl.logger.Error("Failed to update image", logger.Err(err), "op", op)

@@ -92,12 +92,12 @@ func (r *ImageRepo) GetById(ctx context.Context, id uuid.UUID) (*domain.Image, e
 	row := r.db.QueryRow(ctx, sqlStatement, arg)
 	image := domain.Image{}
 	err := row.Scan(&image.Id, &image.Title, &image.Data)
-	if errors.Is(err, pgx.ErrNoRows) {
-		r.logger.Debug("image not found", "op", op)
-		return nil, fmt.Errorf("%s: %w", op, crud_errors.ErrNotFound)
-	}
-
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			r.logger.Debug("image not found", "op", op)
+			return nil, fmt.Errorf("%s: %w", op, crud_errors.ErrNotFound)
+		}
+
 		r.logger.Error("failed get image by id", logger.Err(err), "op", op)
 		return nil, fmt.Errorf("%s: scan failed: %v", op, err)
 	}
