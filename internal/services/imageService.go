@@ -102,10 +102,11 @@ func (s *imageService) GetAll(ctx context.Context, limit, offset int) ([]domain.
 	if err != nil {
 		if errors.Is(err, crud_errors.ErrNotFound) {
 			s.logger.Debug("no content", "op", op)
-		} else {
-			s.logger.Error("extract data failed", logger.Err(err), "op", op)
+			return nil, fmt.Errorf("%s: %w", op, err)
+
 		}
 
+		s.logger.Error("extract data failed", logger.Err(err), "op", op)
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -116,14 +117,13 @@ func (s *imageService) GetById(ctx context.Context, id uuid.UUID) (*domain.Image
 	op := "services.imageService.GetById"
 
 	image, err := s.reader.GetById(ctx, id)
-
 	if err != nil {
 		if errors.Is(err, crud_errors.ErrNotFound) {
 			s.logger.Debug("image not found", "op", op)
-		} else {
-			s.logger.Error("extract data failed", logger.Err(err), "op", op)
+			return nil, fmt.Errorf("%s: %w", op, err)
 		}
 
+		s.logger.Error("extract data failed", logger.Err(err), "op", op)
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -135,7 +135,7 @@ func (s *imageService) Update(ctx context.Context, image *domain.Image) error {
 
 	if err := validateImage(image.Data); err != nil {
 		s.logger.Error("image is corruption or taked data is not image", logger.Err(err), "op", op)
-		return fmt.Errorf("%s: validation error: %v", op, err)
+		return fmt.Errorf("%s: validation error: %w", op, err)
 	}
 
 	err := s.uow.Do(ctx, func(ctx context.Context, tx uow.Transaction) error {
@@ -152,13 +152,28 @@ func (s *imageService) Update(ctx context.Context, image *domain.Image) error {
 			return fmt.Errorf("%s: %w", uowOp, crud_errors.ErrConversionProblem)
 		}
 
+		if image.Title == "" {
+			previosData, err := imageRepo.GetById(ctx, image.Id)
+			if err != nil {
+				if errors.Is(err, crud_errors.ErrNotFound) {
+					s.logger.Warn("update initialize is unable", "op", uowOp)
+					return fmt.Errorf("%s: %w", op, err)
+				}
+
+				s.logger.Error("failed to update image", logger.Err(err), "op", uowOp)
+				return fmt.Errorf("%s: failed to update image: %v", uowOp, err)
+			}
+
+			image.Title = previosData.Title
+		}
+
 		if err := imageRepo.Update(ctx, image); err != nil {
 			if errors.Is(err, crud_errors.ErrNotFound) {
 				s.logger.Warn("update initialize is unable", "op", uowOp)
-			} else {
-				s.logger.Error("failed to update image", logger.Err(err), "op", uowOp)
+				return fmt.Errorf("%s: %w", uowOp, err)
 			}
 
+			s.logger.Error("failed to update image", logger.Err(err), "op", uowOp)
 			return fmt.Errorf("%s: failed to update image: %v", uowOp, err)
 		}
 
@@ -168,10 +183,10 @@ func (s *imageService) Update(ctx context.Context, image *domain.Image) error {
 	if err != nil {
 		if errors.Is(err, crud_errors.ErrNotFound) {
 			s.logger.Warn("update initialize is unable: image not found", "op", op)
-		} else {
-			s.logger.Error("something wrong with UOW updating", logger.Err(err), "op", op)
+			return fmt.Errorf("%s: %w", op, err)
 		}
 
+		s.logger.Error("something wrong with UOW updating", logger.Err(err), "op", op)
 		return fmt.Errorf("%s: unit of work update problem: %w", op, err)
 	}
 
