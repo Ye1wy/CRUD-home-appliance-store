@@ -6,3 +6,5 @@ model_error.go
 
 *.env
 .env*
+
+*.txt
