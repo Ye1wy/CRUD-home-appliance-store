@@ -177,10 +177,10 @@ func (ctrl *ImageController) GetAll(c *gin.Context) {
 		return
 	}
 
-	output := make([]dto.Image, len(images))
+	output := make([]dto.ImageResponse, len(images))
 
 	for i, image := range images {
-		dto := mapper.ImageToDTO(image)
+		dto := mapper.ImageDomainToImageResponse(image)
 		output[i] = dto
 	}
 
@@ -224,7 +224,7 @@ func (ctrl *ImageController) GetById(c *gin.Context) {
 		return
 	}
 
-	output := mapper.ImageToDTO(*image)
+	output := mapper.ImageDomainToImageResponse(*image)
 	ctrl.logger.Debug("Image retrieved", "id", id, "op", op)
 	ctrl.responce(c, http.StatusOK, output)
 }

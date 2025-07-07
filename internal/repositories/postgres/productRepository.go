@@ -26,7 +26,9 @@ func NewProductRepository(db DB, logger *logger.Logger) *ProductRepo {
 
 func (r *ProductRepo) Create(ctx context.Context, product *domain.Product) error {
 	op := "repositories.postgres.productRepository.Create"
-	sqlStatement := "INSERT INTO product(name, category, price, available_stock,  supplier_id, image_id) VALUE (@name, @category, @price, @available_stock, @supplier_id, @image_id)"
+	sqlStatement := `
+	INSERT INTO product(name, category, price, available_stock,  supplier_id, image_id) 
+	VALUES (@name, @category, @price, @available_stock, @supplier_id, @image_id);`
 	args := pgx.NamedArgs{
 		"name":            product.Name,
 		"category":        product.Category,

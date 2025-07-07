@@ -55,7 +55,7 @@ func NewClientsController(service clientService, logger *logger.Logger) *ClientC
 //	@Router			/api/v1/clients [post]
 func (ctrl *ClientController) Create(c *gin.Context) {
 	op := "controllers.clientController.Create"
-	var input dto.Client
+	var input dto.ClientRequest
 
 	if err := c.ShouldBind(&input); err != nil {
 		ctrl.logger.Warn("Failed to bind JSON/XML for create", logger.Err(err), "op", op)
@@ -65,7 +65,7 @@ func (ctrl *ClientController) Create(c *gin.Context) {
 
 	ctrl.logger.Debug("check data", "data", input)
 
-	client, err := mapper.ClientToDomain(input)
+	client, err := mapper.ClientRequestToDomain(input)
 	if err != nil {
 		ctrl.logger.Warn("Failed mapping dto to domain", logger.Err(err), "op", op)
 		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid birthday date in request payload"})
@@ -131,10 +131,10 @@ func (ctrl *ClientController) GetAll(c *gin.Context) {
 		return
 	}
 
-	output := make([]dto.Client, len(clients))
+	output := make([]dto.ClientResponse, len(clients))
 
 	for i, client := range clients {
-		dto := mapper.ClientToDTO(client)
+		dto := mapper.ClientDomainToClientResponse(client)
 		output[i] = dto
 	}
 
@@ -180,10 +180,10 @@ func (ctrl *ClientController) GetByNameAndSurname(c *gin.Context) {
 		return
 	}
 
-	output := make([]dto.Client, len(clients))
+	output := make([]dto.ClientResponse, len(clients))
 
 	for i, client := range clients {
-		dto := mapper.ClientToDTO(client)
+		dto := mapper.ClientDomainToClientResponse(client)
 		output[i] = dto
 	}
 

@@ -5,11 +5,12 @@ import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/dto"
 )
 
-func ProductToDTO(product domain.Product) dto.Product {
-	supplier := SupplierToDTO(product.Supplier)
-	image := ImageToDTO(product.Image)
+func ProductDomainToProductResponse(product domain.Product) dto.ProductResponse {
+	supplier := SupplierDomainToSupplierResponse(product.Supplier)
+	image := ImageDomainToImageResponse(product.Image)
 
-	return dto.Product{
+	return dto.ProductResponse{
+		Id:             product.Id,
 		Name:           product.Name,
 		Category:       product.Category,
 		Price:          product.Price,
@@ -19,16 +20,13 @@ func ProductToDTO(product domain.Product) dto.Product {
 	}
 }
 
-func ProductToDomain(dto dto.Product) domain.Product {
-	supplier := SupplierToDomain(dto.Supplier)
-	image := ImageToDomain(dto.Image)
-
+func ProductRequestToDomain(request dto.ProductRequest) domain.Product {
 	return domain.Product{
-		Name:           dto.Name,
-		Category:       dto.Category,
-		Price:          dto.Price,
-		AvailableStock: dto.AvailableStock,
-		Supplier:       supplier,
-		Image:          image,
+		Name:           request.Name,
+		Category:       request.Category,
+		Price:          request.Price,
+		AvailableStock: request.AvailableStock,
+		Supplier:       domain.Supplier{Id: request.SupplierId},
+		Image:          domain.Image{Id: request.ImageId},
 	}
 }

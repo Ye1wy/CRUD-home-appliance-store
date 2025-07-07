@@ -9,8 +9,9 @@ import (
 
 const dateFormat = "2006-01-02"
 
-func ClientToDTO(client domain.Client) dto.Client {
-	output := dto.Client{
+func ClientDomainToClientResponse(client domain.Client) dto.ClientResponse {
+	output := dto.ClientResponse{
+		Id:       client.Id,
 		Name:     client.Name,
 		Surname:  client.Surname,
 		Birthday: client.Birthday.Format(dateFormat),
@@ -25,7 +26,7 @@ func ClientToDTO(client domain.Client) dto.Client {
 	return output
 }
 
-func ClientToDomain(dto dto.Client) (domain.Client, error) {
+func ClientRequestToDomain(dto dto.ClientRequest) (domain.Client, error) {
 	dtoBirthday, err := time.Parse(dateFormat, dto.Birthday)
 	if err != nil {
 		return domain.Client{}, fmt.Errorf("clinet mapper: %v", err)
