@@ -52,7 +52,7 @@ func NewSupplierContoller(service supplierService, logger *logger.Logger) *Suppl
 //	@Router			/api/v1/suppliers [post]
 func (ctrl *SupplierController) Create(c *gin.Context) {
 	op := "controllers.supplierController.Create"
-	var input dto.Supplier
+	var input dto.SupplierRequest
 
 	if err := c.ShouldBind(&input); err != nil {
 		ctrl.logger.Warn("Failed to bind JSON/XML for create", logger.Err(err), "op", op)
@@ -68,7 +68,7 @@ func (ctrl *SupplierController) Create(c *gin.Context) {
 		return
 	}
 
-	supplier := mapper.SupplierToDomain(input)
+	supplier := mapper.SupplierRequestToDomain(input)
 
 	if err := ctrl.service.Create(c, &supplier); err != nil {
 		if errors.Is(err, crud_errors.ErrDuplicateKeyValue) {
@@ -136,10 +136,10 @@ func (ctrl *SupplierController) GetAll(c *gin.Context) {
 		return
 	}
 
-	output := make([]dto.Supplier, len(supplier))
+	output := make([]dto.SupplierResponse, len(supplier))
 
 	for i, supplier := range supplier {
-		output[i] = mapper.SupplierToDTO(supplier)
+		output[i] = mapper.SupplierDomainToSupplierResponse(supplier)
 	}
 
 	ctrl.logger.Debug("Retrieved all supplier's", "limit", limit, "offset", offset, "op", op)
@@ -182,7 +182,7 @@ func (ctrl *SupplierController) GetById(c *gin.Context) {
 		return
 	}
 
-	output := mapper.SupplierToDTO(*supplier)
+	output := mapper.SupplierDomainToSupplierResponse(*supplier)
 	ctrl.logger.Debug("Supplier retrieved", "id", id, "op", op)
 	ctrl.responce(c, http.StatusOK, output)
 }

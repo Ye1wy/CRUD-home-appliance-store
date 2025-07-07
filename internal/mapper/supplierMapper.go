@@ -5,16 +5,17 @@ import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/dto"
 )
 
-func SupplierToDTO(supplier domain.Supplier) dto.Supplier {
+func SupplierDomainToSupplierResponse(supplier domain.Supplier) dto.SupplierResponse {
 	address := AddressToDto(*supplier.Address)
-	return dto.Supplier{
+	return dto.SupplierResponse{
+		Id:          supplier.Id,
 		Name:        supplier.Name,
 		PhoneNumber: supplier.PhoneNumber,
 		Address:     &address,
 	}
 }
 
-func SupplierToDomain(supplier dto.Supplier) domain.Supplier {
+func SupplierRequestToDomain(supplier dto.SupplierRequest) domain.Supplier {
 	address := AddressToDomain(*supplier.Address)
 	return domain.Supplier{
 		Name:        supplier.Name,

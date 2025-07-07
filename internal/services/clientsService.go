@@ -3,7 +3,6 @@ package services
 import (
 	crud_errors "CRUD-HOME-APPLIANCE-STORE/internal/errors"
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/domain"
-	"CRUD-HOME-APPLIANCE-STORE/internal/repositories/postgres"
 	"CRUD-HOME-APPLIANCE-STORE/internal/uow"
 	"CRUD-HOME-APPLIANCE-STORE/pkg/logger"
 	"context"
@@ -13,18 +12,25 @@ import (
 	"github.com/google/uuid"
 )
 
-type ClientReader interface {
+type clientReader interface {
 	GetAll(ctx context.Context, limit, offset int) ([]domain.Client, error)
 	GetByNameAndSurname(ctx context.Context, name, surname string) ([]domain.Client, error)
+	GetById(ctx context.Context, id uuid.UUID) (*domain.Client, error)
+}
+
+type clientWriter interface {
+	Create(ctx context.Context, client *domain.Client) error
+	UpdateAddress(ctx context.Context, id, address uuid.UUID) error
+	Delete(ctx context.Context, id uuid.UUID) error
 }
 
 type clientsService struct {
 	uow    uow.UOW
-	reader ClientReader
+	reader clientReader
 	logger *logger.Logger
 }
 
-func NewClientService(reader ClientReader, unit uow.UOW, logger *logger.Logger) *clientsService {
+func NewClientService(reader clientReader, unit uow.UOW, logger *logger.Logger) *clientsService {
 	logger.Debug("Client service is created")
 	return &clientsService{
 		uow:    unit,
@@ -46,7 +52,7 @@ func (s *clientsService) Create(ctx context.Context, client *domain.Client) erro
 				return fmt.Errorf("%s: get address repository generator is unable: %v", uowOp, err)
 			}
 
-			addressRepo, ok := addressRepoGen.(*postgres.AddressRepo)
+			addressRepo, ok := addressRepoGen.(addressWriter)
 			if !ok {
 				s.logger.Error("Conversion problem, not contained expected convesion", "op", op)
 				return fmt.Errorf("%s: %w", uowOp, crud_errors.ErrConversionProblem)
@@ -65,7 +71,7 @@ func (s *clientsService) Create(ctx context.Context, client *domain.Client) erro
 			return fmt.Errorf("%s: error when try to get repository generator: %v", uowOp, err)
 		}
 
-		clientRepo, ok := clientRepoGen.(*postgres.ClientRepo)
+		clientRepo, ok := clientRepoGen.(clientWriter)
 		if !ok {
 			s.logger.Error("Conversion problem, not contained expected convesion", "op", op)
 			return fmt.Errorf("%s: %w", uowOp, crud_errors.ErrConversionProblem)
@@ -135,7 +141,7 @@ func (s *clientsService) UpdateAddress(ctx context.Context, id uuid.UUID, addres
 			return fmt.Errorf("%s: get address repository generator is unable: %v", uowOp, err)
 		}
 
-		addressRepo, ok := addressRepoGen.(*postgres.AddressRepo)
+		addressRepo, ok := addressRepoGen.(addressWriter)
 		if !ok {
 			s.logger.Error("Conversion problem, not contained expected convesion", "op", op)
 			return fmt.Errorf("%s: %w", uowOp, crud_errors.ErrConversionProblem)
@@ -153,7 +159,7 @@ func (s *clientsService) UpdateAddress(ctx context.Context, id uuid.UUID, addres
 			return fmt.Errorf("%s: error when try to get repository generator: %v", uowOp, err)
 		}
 
-		clientRepo, ok := clientRepoGen.(*postgres.ClientRepo)
+		clientRepo, ok := clientRepoGen.(clientWriter)
 		if !ok {
 			s.logger.Error("Conversion problem, not contained expected convesion", "op", op)
 			return fmt.Errorf("%s: %w", uowOp, crud_errors.ErrConversionProblem)
@@ -175,11 +181,11 @@ func (s *clientsService) UpdateAddress(ctx context.Context, id uuid.UUID, addres
 	if err != nil {
 		if errors.Is(err, crud_errors.ErrNotFound) {
 			s.logger.Warn("update initialize is unable: client not found", logger.Err(err), "op", op)
-		} else {
-			s.logger.Error("something wrong with UOW updating", logger.Err(err), "op", op)
+			return fmt.Errorf("%s: %w", op, err)
 		}
 
-		return fmt.Errorf("%s: unit of work update problem: %w", op, err)
+		s.logger.Error("something wrong with UOW updating", logger.Err(err), "op", op)
+		return fmt.Errorf("%s: unit of work update problem: %v", op, err)
 	}
 
 	return nil
@@ -195,13 +201,13 @@ func (s *clientsService) Delete(ctx context.Context, id uuid.UUID) error {
 			return fmt.Errorf("%s: error when try to get repository generator: %v", uowOp, err)
 		}
 
-		clientRepo, ok := clientRepoGen.(*postgres.ClientRepo)
+		clientRepo, ok := clientRepoGen.(clientWriter)
 		if !ok {
 			s.logger.Error("Conversion problem, not contained expected convesion", "op", op)
 			return fmt.Errorf("%s: %w", uowOp, crud_errors.ErrConversionProblem)
 		}
 
-		client, err := clientRepo.GetById(ctx, id)
+		client, err := s.reader.GetById(ctx, id)
 		if err != nil {
 			if errors.Is(err, crud_errors.ErrNotFound) {
 				s.logger.Debug("client not found", "op", uowOp)
@@ -224,7 +230,7 @@ func (s *clientsService) Delete(ctx context.Context, id uuid.UUID) error {
 				return fmt.Errorf("%s: get address repository generator is unable: %v", uowOp, err)
 			}
 
-			addressRepo, ok := addressRepoGen.(*postgres.AddressRepo)
+			addressRepo, ok := addressRepoGen.(addressWriter)
 			if !ok {
 				s.logger.Error("Conversion problem, not contained expected convesion", "op", op)
 				return fmt.Errorf("%s: %w", uowOp, crud_errors.ErrConversionProblem)
@@ -249,11 +255,11 @@ func (s *clientsService) Delete(ctx context.Context, id uuid.UUID) error {
 	if err != nil {
 		if errors.Is(err, crud_errors.ErrNotFound) {
 			s.logger.Debug("client not found", "op", op)
-		} else {
-			s.logger.Error("something wrong with UOW deleting", logger.Err(err), "op", op)
+			return fmt.Errorf("%s: %w", op, err)
 		}
 
-		return fmt.Errorf("%s: unit of work delete problem: %w", op, err)
+		s.logger.Error("something wrong with UOW deleting", logger.Err(err), "op", op)
+		return fmt.Errorf("%s: unit of work delete problem: %v", op, err)
 	}
 
 	return nil

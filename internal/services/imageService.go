@@ -3,7 +3,6 @@ package services
 import (
 	crud_errors "CRUD-HOME-APPLIANCE-STORE/internal/errors"
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/domain"
-	"CRUD-HOME-APPLIANCE-STORE/internal/repositories/postgres"
 	"CRUD-HOME-APPLIANCE-STORE/internal/uow"
 	"CRUD-HOME-APPLIANCE-STORE/pkg/logger"
 	"bytes"
@@ -18,9 +17,15 @@ import (
 	"github.com/google/uuid"
 )
 
-type ImageReader interface {
+type imageReader interface {
 	GetAll(ctx context.Context, limit, offset int) ([]domain.Image, error)
 	GetById(ctx context.Context, id uuid.UUID) (*domain.Image, error)
+}
+
+type imageWriter interface {
+	Create(ctx context.Context, image *domain.Image) error
+	Update(ctx context.Context, image *domain.Image) error
+	Delete(ctx context.Context, id uuid.UUID) error
 }
 
 func validateImage(data []byte) error {
@@ -39,11 +44,11 @@ func validateImage(data []byte) error {
 
 type imageService struct {
 	uow    uow.UOW
-	reader ImageReader
+	reader imageReader
 	logger *logger.Logger
 }
 
-func NewImageService(reader ImageReader, unit uow.UOW, logger *logger.Logger) *imageService {
+func NewImageService(reader imageReader, unit uow.UOW, logger *logger.Logger) *imageService {
 	logger.Debug("image service is created")
 	return &imageService{
 		uow:    unit,
@@ -68,7 +73,7 @@ func (s *imageService) Create(ctx context.Context, image *domain.Image) error {
 			return fmt.Errorf("%s: get image repository generator is unable: %v", uowOp, err)
 		}
 
-		imageRepo, ok := imageRepoGen.(*postgres.ImageRepo)
+		imageRepo, ok := imageRepoGen.(imageWriter)
 		if !ok {
 			s.logger.Error("Conversion problem, not contained expected convesion", "op", op)
 			return fmt.Errorf("%s: %w", uowOp, crud_errors.ErrConversionProblem)
@@ -146,14 +151,14 @@ func (s *imageService) Update(ctx context.Context, image *domain.Image) error {
 			return fmt.Errorf("%s: get image repository generator is unable: %v", uowOp, err)
 		}
 
-		imageRepo, ok := imageRepoGen.(*postgres.ImageRepo)
+		imageRepo, ok := imageRepoGen.(imageWriter)
 		if !ok {
 			s.logger.Error("Conversion problem, not contained expected convesion", "op", op)
 			return fmt.Errorf("%s: %w", uowOp, crud_errors.ErrConversionProblem)
 		}
 
 		if image.Title == "" {
-			previosData, err := imageRepo.GetById(ctx, image.Id)
+			previosData, err := s.reader.GetById(ctx, image.Id)
 			if err != nil {
 				if errors.Is(err, crud_errors.ErrNotFound) {
 					s.logger.Warn("update initialize is unable", "op", uowOp)
@@ -204,7 +209,7 @@ func (s *imageService) Delete(ctx context.Context, id uuid.UUID) error {
 			return fmt.Errorf("%s: get image repository generator is unable: %v", uowOp, err)
 		}
 
-		imageRepo, ok := imageRepoGen.(*postgres.ImageRepo)
+		imageRepo, ok := imageRepoGen.(imageWriter)
 		if !ok {
 			s.logger.Error("Conversion problem, not contained expected convesion", "op", op)
 			return fmt.Errorf("%s: %w", uowOp, crud_errors.ErrConversionProblem)

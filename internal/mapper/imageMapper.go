@@ -5,15 +5,16 @@ import (
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/dto"
 )
 
-func ImageToDomain(dto dto.Image) domain.Image {
+func ImageRequestToDomain(dto dto.ImageRequest) domain.Image {
 	return domain.Image{
 		Title: dto.Title,
 		Data:  dto.Image,
 	}
 }
 
-func ImageToDTO(domain domain.Image) dto.Image {
-	return dto.Image{
+func ImageDomainToImageResponse(domain domain.Image) dto.ImageResponse {
+	return dto.ImageResponse{
+		Id:    domain.Id,
 		Title: domain.Title,
 		Image: domain.Data,
 	}

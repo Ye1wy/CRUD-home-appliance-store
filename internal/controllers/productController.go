@@ -52,7 +52,7 @@ func NewProductController(service productService, logger *logger.Logger) *Produc
 //	@Router			/api/v1/products [post]
 func (ctrl *ProductController) Create(c *gin.Context) {
 	op := "controllers.productController.Create"
-	var input dto.Product
+	var input dto.ProductRequest
 
 	if err := c.ShouldBind(&input); err != nil {
 		ctrl.logger.Warn("Failed to bind JSON/XML for AddProduct", logger.Err(err), "op", op)
@@ -60,7 +60,19 @@ func (ctrl *ProductController) Create(c *gin.Context) {
 		return
 	}
 
-	product := mapper.ProductToDomain(input)
+	if err := uuid.Validate(input.SupplierId.String()); err != nil {
+		ctrl.logger.Warn("Invalid payload: supplier uuid", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid request payload: invalid supplier id"})
+		return
+	}
+
+	if err := uuid.Validate(input.ImageId.String()); err != nil {
+		ctrl.logger.Warn("Invalid payload: image uuid", logger.Err(err), "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid request payload: invalid image id"})
+		return
+	}
+
+	product := mapper.ProductRequestToDomain(input)
 
 	if err := ctrl.service.Create(c.Request.Context(), &product); err != nil {
 		if errors.Is(err, crud_errors.ErrNotFound) {
@@ -127,10 +139,10 @@ func (ctrl *ProductController) GetAll(c *gin.Context) {
 		return
 	}
 
-	output := make([]dto.Product, len(product), cap(product))
+	output := make([]dto.ProductResponse, len(product))
 
 	for i, item := range product {
-		dto := mapper.ProductToDTO(item)
+		dto := mapper.ProductDomainToProductResponse(item)
 		output[i] = dto
 	}
 
@@ -174,7 +186,7 @@ func (ctrl *ProductController) GetById(c *gin.Context) {
 		return
 	}
 
-	output := mapper.ProductToDTO(*product)
+	output := mapper.ProductDomainToProductResponse(*product)
 	ctrl.logger.Debug("Product retrieved", "id", id, "op", op)
 	ctrl.responce(c, http.StatusOK, output)
 }
