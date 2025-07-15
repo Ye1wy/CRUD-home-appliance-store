@@ -39,7 +39,7 @@ func (s *TestSuite) TestCreateImage() {
 	rawData, err := io.ReadAll(getResp.Body)
 	s.Require().NoError(err)
 
-	var extracted []dto.Image
+	var extracted []dto.ImageResponse
 	err = json.Unmarshal(rawData, &extracted)
 	s.Require().NoError(err)
 	s.Require().Len(extracted, 1)
@@ -132,7 +132,7 @@ func (s *TestSuite) TestGetAllImage() {
 	rawData, err := io.ReadAll(getResp.Body)
 	s.Require().NoError(err)
 
-	var extracted []dto.Image
+	var extracted []dto.ImageResponse
 	err = json.Unmarshal(rawData, &extracted)
 	s.Require().NoError(err)
 	s.Require().Len(extracted, 10)
@@ -184,7 +184,7 @@ func (s *TestSuite) TestGetAllImageWithLimit() {
 	rawData, err := io.ReadAll(getResp.Body)
 	s.Require().NoError(err)
 
-	var extracted []dto.Image
+	var extracted []dto.ImageResponse
 	err = json.Unmarshal(rawData, &extracted)
 	s.Require().NoError(err)
 	s.Require().Len(extracted, 17)
@@ -236,7 +236,7 @@ func (s *TestSuite) TestGetAllImageWithOffset() {
 	rawData, err := io.ReadAll(getResp.Body)
 	s.Require().NoError(err)
 
-	var extracted []dto.Image
+	var extracted []dto.ImageResponse
 	err = json.Unmarshal(rawData, &extracted)
 	s.Require().NoError(err)
 	s.Require().Len(extracted, 7)
@@ -288,7 +288,7 @@ func (s *TestSuite) TestGetAllImageWithLimitAndOffset() {
 	rawData, err := io.ReadAll(getResp.Body)
 	s.Require().NoError(err)
 
-	var extracted []dto.Image
+	var extracted []dto.ImageResponse
 	err = json.Unmarshal(rawData, &extracted)
 	s.Require().NoError(err)
 	s.Require().Len(extracted, 12)
@@ -357,7 +357,7 @@ func (s *TestSuite) TestGetByIdImage() {
 
 	buf, err := io.ReadAll(getResp.Body)
 	s.Require().NoError(err)
-	var takedData dto.Image
+	var takedData dto.ImageResponse
 	err = json.Unmarshal(buf, &takedData)
 	s.Require().NoError(err)
 
