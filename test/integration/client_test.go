@@ -17,9 +17,24 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+func clientResponseToRequest(c dto.ClientResponse) dto.ClientRequest {
+	output := dto.ClientRequest{
+		Name:     c.Name,
+		Surname:  c.Surname,
+		Birthday: c.Birthday,
+		Gender:   c.Gender,
+	}
+
+	if c.Address != nil {
+		output.Address = c.Address
+	}
+
+	return output
+}
+
 func (s *TestSuite) TestCreateClient() {
 	s.CleanTable()
-	givedData := dto.Client{
+	givedData := dto.ClientRequest{
 		Name:     "Adrianna",
 		Surname:  "Gopher",
 		Birthday: "2001-01-01",
@@ -48,7 +63,7 @@ func (s *TestSuite) TestCreateClient() {
 
 	s.Require().Len(client, 1)
 
-	basicData, err := mapper.ClientToDomain(givedData)
+	basicData, err := mapper.ClientRequestToDomain(givedData)
 	s.Require().NoError(err)
 
 	for _, c := range client {
@@ -59,12 +74,13 @@ func (s *TestSuite) TestCreateClient() {
 		s.Require().Equal(c.Address.Country, basicData.Address.Country)
 		s.Require().Equal(c.Address.City, basicData.Address.City)
 		s.Require().Equal(c.Address.Street, basicData.Address.Street)
+		s.Require().NotEmpty(c.Id)
 	}
 }
 
 func (s *TestSuite) TestCreateClientWithoutAddress() {
 	s.CleanTable()
-	givedData := dto.Client{
+	givedData := dto.ClientRequest{
 		Name:     "Adrianna",
 		Surname:  "Gopher",
 		Birthday: "2001-01-01",
@@ -89,13 +105,21 @@ func (s *TestSuite) TestCreateClientWithoutAddress() {
 
 	s.Require().Len(client, 1)
 
-	var checkData []dto.Client
+	var checkData []dto.ClientResponse
 
 	for _, c := range client {
-		checkData = append(checkData, mapper.ClientToDTO(c))
+		checkData = append(checkData, mapper.ClientDomainToClientResponse(c))
 	}
 
-	s.Require().Contains(checkData, givedData)
+	for _, c := range checkData {
+		s.Require().Equal(givedData.Name, c.Name)
+		s.Require().Equal(givedData.Surname, c.Surname)
+		s.Require().Equal(givedData.Gender, c.Gender)
+		s.Require().Equal(givedData.Birthday, c.Birthday)
+
+		// check id is contains or not
+		s.Require().NotEmpty(c.Id)
+	}
 
 	query := `SELECT COUNT(*) FROM address`
 
@@ -105,6 +129,7 @@ func (s *TestSuite) TestCreateClientWithoutAddress() {
 	s.Require().NoError(err)
 
 	s.Require().EqualValues(0, count)
+
 }
 
 func (s *TestSuite) TestCreateClientWithOneAddress() {
@@ -114,7 +139,7 @@ func (s *TestSuite) TestCreateClientWithOneAddress() {
 		City:    "Tokyo",
 		Street:  "Godzilla",
 	}
-	givedData := dto.Client{
+	givedData := dto.ClientRequest{
 		Name:     "Adrianna",
 		Surname:  "Gopher",
 		Birthday: "2001-01-01",
@@ -133,7 +158,7 @@ func (s *TestSuite) TestCreateClientWithOneAddress() {
 	s.Require().NoError(err)
 	s.Require().Equal(http.StatusCreated, resp.StatusCode)
 
-	givedData = dto.Client{
+	givedDataAnother := dto.ClientRequest{
 		Name:     "Adrian",
 		Surname:  "Gopher",
 		Birthday: "2005-01-01",
@@ -141,7 +166,7 @@ func (s *TestSuite) TestCreateClientWithOneAddress() {
 		Address:  &commonAddress,
 	}
 
-	send, err = json.Marshal(&givedData)
+	send, err = json.Marshal(&givedDataAnother)
 	s.Require().NoError(err)
 
 	url = fmt.Sprintf("http://%s:%s/api/v1/clients", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
@@ -175,25 +200,25 @@ func (s *TestSuite) TestCreateClientWithOneAddress() {
 	body, err := io.ReadAll(resp.Body)
 	s.Require().NoError(err)
 
-	var clients []dto.Client
+	var clients []dto.ClientResponse
 	err = json.Unmarshal(body, &clients)
 	s.Require().NoError(err)
 	s.Require().Len(clients, 2)
 
-	s.Require().Contains(clients, dto.Client{
-		Name:     "Adrianna",
-		Surname:  "Gopher",
-		Birthday: "2001-01-01",
-		Gender:   "female",
-		Address:  &commonAddress,
-	})
-	s.Require().Contains(clients, dto.Client{
-		Name:     "Adrian",
-		Surname:  "Gopher",
-		Birthday: "2005-01-01",
-		Gender:   "male",
-		Address:  &commonAddress,
-	})
+	var check []dto.ClientRequest
+
+	for _, c := range clients {
+		tmp := clientResponseToRequest(c)
+		check = append(check, tmp)
+	}
+
+	s.Require().Contains(check, givedData)
+	s.Require().Contains(check, givedDataAnother)
+
+	// check id is contains or not
+	for _, c := range clients {
+		s.Require().NotEmpty(c.Id)
+	}
 }
 
 func (s *TestSuite) TestGetClient() {
@@ -203,7 +228,7 @@ func (s *TestSuite) TestGetClient() {
 		City:    "Tokyo",
 		Street:  "Godzilla",
 	}
-	givedData := dto.Client{
+	givedData := dto.ClientRequest{
 		Name:     "Adrianna",
 		Surname:  "Gopher",
 		Birthday: "2001-01-01",
@@ -222,7 +247,7 @@ func (s *TestSuite) TestGetClient() {
 	s.Require().NoError(err)
 	s.Require().Equal(http.StatusCreated, resp.StatusCode)
 
-	givedData = dto.Client{
+	givedDataAnother := dto.ClientRequest{
 		Name:     "Adrian",
 		Surname:  "Gopher",
 		Birthday: "2005-01-01",
@@ -230,7 +255,7 @@ func (s *TestSuite) TestGetClient() {
 		Address:  &commonAddress,
 	}
 
-	send, err = json.Marshal(&givedData)
+	send, err = json.Marshal(&givedDataAnother)
 	s.Require().NoError(err)
 
 	url = fmt.Sprintf("http://%s:%s/api/v1/clients", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
@@ -251,25 +276,25 @@ func (s *TestSuite) TestGetClient() {
 	body, err := io.ReadAll(resp.Body)
 	s.Require().NoError(err)
 
-	var clients []dto.Client
+	var clients []dto.ClientResponse
 	err = json.Unmarshal(body, &clients)
 	s.Require().NoError(err)
 	s.Require().Len(clients, 2)
 
-	s.Require().Contains(clients, dto.Client{
-		Name:     "Adrianna",
-		Surname:  "Gopher",
-		Birthday: "2001-01-01",
-		Gender:   "female",
-		Address:  &commonAddress,
-	})
-	s.Require().Contains(clients, dto.Client{
-		Name:     "Adrian",
-		Surname:  "Gopher",
-		Birthday: "2005-01-01",
-		Gender:   "male",
-		Address:  &commonAddress,
-	})
+	var check []dto.ClientRequest
+
+	for _, c := range clients {
+		tmp := clientResponseToRequest(c)
+		check = append(check, tmp)
+	}
+
+	s.Require().Contains(check, givedData)
+	s.Require().Contains(check, givedDataAnother)
+
+	// check id is contains or not
+	for _, c := range clients {
+		s.Require().NotEmpty(c.Id)
+	}
 }
 
 func (s *TestSuite) TestGetClientByNameAndSurname() {
@@ -279,7 +304,7 @@ func (s *TestSuite) TestGetClientByNameAndSurname() {
 		City:    "Tokyo",
 		Street:  "Godzilla",
 	}
-	givedData := dto.Client{
+	givedData := dto.ClientRequest{
 		Name:     "Adrianna",
 		Surname:  "Gopher",
 		Birthday: "2001-01-01",
@@ -298,7 +323,7 @@ func (s *TestSuite) TestGetClientByNameAndSurname() {
 	s.Require().NoError(err)
 	s.Require().Equal(http.StatusCreated, resp.StatusCode)
 
-	givedData = dto.Client{
+	givedDataAnother := dto.ClientRequest{
 		Name:     "Adrian",
 		Surname:  "Gopher",
 		Birthday: "2005-01-01",
@@ -306,7 +331,7 @@ func (s *TestSuite) TestGetClientByNameAndSurname() {
 		Address:  &commonAddress,
 	}
 
-	send, err = json.Marshal(&givedData)
+	send, err = json.Marshal(&givedDataAnother)
 	s.Require().NoError(err)
 
 	url = fmt.Sprintf("http://%s:%s/api/v1/clients", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
@@ -327,18 +352,22 @@ func (s *TestSuite) TestGetClientByNameAndSurname() {
 	body, err := io.ReadAll(resp.Body)
 	s.Require().NoError(err)
 
-	var clients []dto.Client
+	var clients []dto.ClientResponse
 	err = json.Unmarshal(body, &clients)
 	s.Require().NoError(err)
 	s.Require().Len(clients, 1)
 
-	s.Require().Contains(clients, dto.Client{
-		Name:     "Adrian",
-		Surname:  "Gopher",
-		Birthday: "2005-01-01",
-		Gender:   "male",
-		Address:  &commonAddress,
-	})
+	var check []dto.ClientRequest
+
+	for _, c := range clients {
+		check = append(check, clientResponseToRequest(c))
+	}
+
+	s.Require().Contains(check, givedData)
+
+	for _, c := range clients {
+		s.Require().NotEmpty(c.Id)
+	}
 }
 
 func (s *TestSuite) TestGetClientByNameAndSurnameMulty() {
@@ -348,7 +377,7 @@ func (s *TestSuite) TestGetClientByNameAndSurnameMulty() {
 		City:    "Tokyo",
 		Street:  "Godzilla",
 	}
-	first := dto.Client{
+	first := dto.ClientRequest{
 		Name:     "Adrianna",
 		Surname:  "Gopher",
 		Birthday: "2001-01-01",
@@ -367,7 +396,7 @@ func (s *TestSuite) TestGetClientByNameAndSurnameMulty() {
 	s.Require().NoError(err)
 	s.Require().Equal(http.StatusCreated, resp.StatusCode)
 
-	second := dto.Client{
+	second := dto.ClientRequest{
 		Name:     "Adrian",
 		Surname:  "Gopher",
 		Birthday: "2005-01-01",
@@ -386,7 +415,7 @@ func (s *TestSuite) TestGetClientByNameAndSurnameMulty() {
 	s.Require().NoError(err)
 	s.Require().Equal(http.StatusCreated, resp.StatusCode)
 
-	third := dto.Client{
+	third := dto.ClientRequest{
 		Name:     "Adrian",
 		Surname:  "Gopher",
 		Birthday: "2001-01-01",
@@ -418,19 +447,28 @@ func (s *TestSuite) TestGetClientByNameAndSurnameMulty() {
 	body, err := io.ReadAll(resp.Body)
 	s.Require().NoError(err)
 
-	var clients []dto.Client
+	var clients []dto.ClientResponse
 	err = json.Unmarshal(body, &clients)
 	s.Require().NoError(err)
 	s.Require().Len(clients, 2)
+	var check []dto.ClientRequest
 
-	s.Require().Contains(clients, second)
-	s.Require().Contains(clients, third)
+	for _, c := range clients {
+		check = append(check, clientResponseToRequest(c))
+	}
+
+	s.Require().Contains(check, second)
+	s.Require().Contains(check, third)
+
+	for _, c := range clients {
+		s.Require().NotEmpty(c.Id)
+	}
 }
 
 func (s *TestSuite) TestClientUpdateAddress() {
 	s.CleanTable()
 
-	first := dto.Client{
+	first := dto.ClientRequest{
 		Name:     "Adrianna",
 		Surname:  "Gopher",
 		Birthday: "2001-01-01",
@@ -442,7 +480,7 @@ func (s *TestSuite) TestClientUpdateAddress() {
 		},
 	}
 
-	second := dto.Client{
+	second := dto.ClientRequest{
 		Name:     "Adrian",
 		Surname:  "Gopher",
 		Birthday: "2005-01-01",
@@ -454,14 +492,14 @@ func (s *TestSuite) TestClientUpdateAddress() {
 		},
 	}
 
-	third := dto.Client{
+	third := dto.ClientRequest{
 		Name:     "Kazui",
 		Surname:  "Franclin",
 		Birthday: "2001-01-01",
 		Gender:   "male",
 	}
 
-	dataBank := []dto.Client{first, second, third}
+	dataBank := []dto.ClientRequest{first, second, third}
 
 	for _, data := range dataBank {
 		send, err := json.Marshal(&data)
@@ -542,11 +580,16 @@ func (s *TestSuite) TestClientUpdateAddress() {
 	body, err := io.ReadAll(resp.Body)
 	s.Require().NoError(err)
 
-	var clients []dto.Client
+	var clients []dto.ClientResponse
 	err = json.Unmarshal(body, &clients)
 	s.Require().NoError(err)
+	var checkClient []dto.ClientRequest
 
-	s.Require().Contains(clients, dto.Client{
+	for _, c := range clients {
+		checkClient = append(checkClient, clientResponseToRequest(c))
+	}
+
+	s.Require().Contains(checkClient, dto.ClientRequest{
 		Name:     "Adrian",
 		Surname:  "Gopher",
 		Birthday: "2005-01-01",
@@ -563,7 +606,7 @@ func (s *TestSuite) TestClientUpdateAddress() {
 func (s *TestSuite) TestClientUpdateAddressOnEmpty() {
 	s.CleanTable()
 
-	first := dto.Client{
+	first := dto.ClientRequest{
 		Name:     "Adrianna",
 		Surname:  "Gopher",
 		Birthday: "2001-01-01",
@@ -575,7 +618,7 @@ func (s *TestSuite) TestClientUpdateAddressOnEmpty() {
 		},
 	}
 
-	second := dto.Client{
+	second := dto.ClientRequest{
 		Name:     "Adrian",
 		Surname:  "Gopher",
 		Birthday: "2005-01-01",
@@ -587,14 +630,14 @@ func (s *TestSuite) TestClientUpdateAddressOnEmpty() {
 		},
 	}
 
-	third := dto.Client{
+	third := dto.ClientRequest{
 		Name:     "Kazui",
 		Surname:  "Franclin",
 		Birthday: "2001-01-01",
 		Gender:   "male",
 	}
 
-	dataBank := []dto.Client{first, second, third}
+	dataBank := []dto.ClientRequest{first, second, third}
 
 	for _, data := range dataBank {
 		send, err := json.Marshal(&data)
@@ -668,17 +711,22 @@ func (s *TestSuite) TestClientUpdateAddressOnEmpty() {
 	body, err := io.ReadAll(resp.Body)
 	s.Require().NoError(err)
 
-	var clients []dto.Client
+	var clients []dto.ClientResponse
 	err = json.Unmarshal(body, &clients)
 	s.Require().NoError(err)
+	var checkClient []dto.ClientRequest
 
-	s.Require().Contains(clients, second)
+	for _, c := range clients {
+		checkClient = append(checkClient, clientResponseToRequest(c))
+	}
+
+	s.Require().Contains(checkClient, second)
 }
 
 func (s *TestSuite) TestClientUpdateAddressOnEmpty_2() {
 	s.CleanTable()
 
-	first := dto.Client{
+	first := dto.ClientRequest{
 		Name:     "Adrianna",
 		Surname:  "Gopher",
 		Birthday: "2001-01-01",
@@ -690,7 +738,7 @@ func (s *TestSuite) TestClientUpdateAddressOnEmpty_2() {
 		},
 	}
 
-	second := dto.Client{
+	second := dto.ClientRequest{
 		Name:     "Adrian",
 		Surname:  "Gopher",
 		Birthday: "2005-01-01",
@@ -702,14 +750,14 @@ func (s *TestSuite) TestClientUpdateAddressOnEmpty_2() {
 		},
 	}
 
-	third := dto.Client{
+	third := dto.ClientRequest{
 		Name:     "Kazui",
 		Surname:  "Franclin",
 		Birthday: "2001-01-01",
 		Gender:   "male",
 	}
 
-	dataBank := []dto.Client{first, second, third}
+	dataBank := []dto.ClientRequest{first, second, third}
 
 	for _, data := range dataBank {
 		send, err := json.Marshal(&data)
@@ -777,17 +825,22 @@ func (s *TestSuite) TestClientUpdateAddressOnEmpty_2() {
 	body, err := io.ReadAll(resp.Body)
 	s.Require().NoError(err)
 
-	var clients []dto.Client
+	var clients []dto.ClientResponse
 	err = json.Unmarshal(body, &clients)
 	s.Require().NoError(err)
+	var checkClients []dto.ClientRequest
 
-	s.Require().Contains(clients, second)
+	for _, c := range clients {
+		checkClients = append(checkClients, clientResponseToRequest(c))
+	}
+
+	s.Require().Contains(checkClients, second)
 }
 
 func (s *TestSuite) TestClientDelete() {
 	s.CleanTable()
 
-	first := dto.Client{
+	first := dto.ClientRequest{
 		Name:     "Adrianna",
 		Surname:  "Gopher",
 		Birthday: "2001-01-01",
@@ -799,7 +852,7 @@ func (s *TestSuite) TestClientDelete() {
 		},
 	}
 
-	second := dto.Client{
+	second := dto.ClientRequest{
 		Name:     "Adrian",
 		Surname:  "Gopher",
 		Birthday: "2005-01-01",
@@ -811,14 +864,14 @@ func (s *TestSuite) TestClientDelete() {
 		},
 	}
 
-	third := dto.Client{
+	third := dto.ClientRequest{
 		Name:     "Kazui",
 		Surname:  "Franclin",
 		Birthday: "2001-01-01",
 		Gender:   "male",
 	}
 
-	dataBank := []dto.Client{first, second, third}
+	dataBank := []dto.ClientRequest{first, second, third}
 
 	for _, data := range dataBank {
 		send, err := json.Marshal(&data)
@@ -886,7 +939,7 @@ func (s *TestSuite) TestClientDelete() {
 	body, err := io.ReadAll(resp.Body)
 	s.Require().NoError(err)
 
-	var clients []dto.Client
+	var clients []dto.ClientRequest
 	err = json.Unmarshal(body, &clients)
 	s.Require().NoError(err)
 
@@ -897,7 +950,7 @@ func (s *TestSuite) TestClientDelete() {
 func (s *TestSuite) TestClientDeleteGhost() {
 	s.CleanTable()
 
-	first := dto.Client{
+	first := dto.ClientRequest{
 		Name:     "Adrianna",
 		Surname:  "Gopher",
 		Birthday: "2001-01-01",
@@ -909,7 +962,7 @@ func (s *TestSuite) TestClientDeleteGhost() {
 		},
 	}
 
-	second := dto.Client{
+	second := dto.ClientRequest{
 		Name:     "Adrian",
 		Surname:  "Gopher",
 		Birthday: "2005-01-01",
@@ -921,14 +974,14 @@ func (s *TestSuite) TestClientDeleteGhost() {
 		},
 	}
 
-	third := dto.Client{
+	third := dto.ClientRequest{
 		Name:     "Kazui",
 		Surname:  "Franclin",
 		Birthday: "2001-01-01",
 		Gender:   "male",
 	}
 
-	dataBank := []dto.Client{first, second, third}
+	dataBank := []dto.ClientRequest{first, second, third}
 
 	for _, data := range dataBank {
 		send, err := json.Marshal(&data)
@@ -990,19 +1043,24 @@ func (s *TestSuite) TestClientDeleteGhost() {
 	body, err := io.ReadAll(resp.Body)
 	s.Require().NoError(err)
 
-	var clients []dto.Client
+	var clients []dto.ClientResponse
 	err = json.Unmarshal(body, &clients)
 	s.Require().NoError(err)
+	var checkClients []dto.ClientRequest
 
-	s.Require().Contains(clients, first)
-	s.Require().Contains(clients, second)
-	s.Require().Contains(clients, third)
+	for _, c := range clients {
+		checkClients = append(checkClients, clientResponseToRequest(c))
+	}
+
+	s.Require().Contains(checkClients, first)
+	s.Require().Contains(checkClients, second)
+	s.Require().Contains(checkClients, third)
 }
 
 func (s *TestSuite) TestClientDeleteWithAddress() {
 	s.CleanTable()
 
-	first := dto.Client{
+	first := dto.ClientRequest{
 		Name:     "Adrianna",
 		Surname:  "Gopher",
 		Birthday: "2001-01-01",
@@ -1014,7 +1072,7 @@ func (s *TestSuite) TestClientDeleteWithAddress() {
 		},
 	}
 
-	second := dto.Client{
+	second := dto.ClientRequest{
 		Name:     "Adrian",
 		Surname:  "Gopher",
 		Birthday: "2005-01-01",
@@ -1026,14 +1084,14 @@ func (s *TestSuite) TestClientDeleteWithAddress() {
 		},
 	}
 
-	third := dto.Client{
+	third := dto.ClientRequest{
 		Name:     "Kazui",
 		Surname:  "Franclin",
 		Birthday: "2001-01-01",
 		Gender:   "male",
 	}
 
-	dataBank := []dto.Client{first, second, third}
+	dataBank := []dto.ClientRequest{first, second, third}
 
 	for _, data := range dataBank {
 		send, err := json.Marshal(&data)
@@ -1124,7 +1182,7 @@ func (s *TestSuite) TestClientDeleteWithAddress() {
 	body, err := io.ReadAll(resp.Body)
 	s.Require().NoError(err)
 
-	var clients []dto.Client
+	var clients []dto.ClientRequest
 	err = json.Unmarshal(body, &clients)
 	s.Require().NoError(err)
 
