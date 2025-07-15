@@ -15,29 +15,22 @@ import (
 	"github.com/google/uuid"
 )
 
-// func createSuppliers(data []dto.Supplier, url string) error {
-// 	for _, s := range data {
-// 		payload, err := json.Marshal(&s)
-// 		if err != nil {
-// 			return err
-// 		}
+func supplierResponseToRequest(supplier dto.SupplierResponse) dto.SupplierRequest {
+	out := dto.SupplierRequest{
+		Name:        supplier.Name,
+		PhoneNumber: supplier.PhoneNumber,
+	}
 
-// 		resp, err := http.Post(url, "application/json", strings.NewReader(string(payload)))
-// 		if err != nil {
-// 			return err
-// 		}
+	if supplier.Address != nil {
+		out.Address = supplier.Address
+	}
 
-// 		if resp.StatusCode != http.StatusCreated {
-// 			return fmt.Errorf("status: %d", resp.StatusCode)
-// 		}
-// 	}
-
-// 	return nil
-// }
+	return out
+}
 
 func (s *TestSuite) TestCreateSupplier() {
 	s.CleanTable()
-	givedData := dto.Supplier{
+	givedData := dto.SupplierRequest{
 		Name:        "Aboba Inc.",
 		PhoneNumber: "8-800-555-35-35",
 		Address: &dto.Address{
@@ -66,16 +59,21 @@ func (s *TestSuite) TestCreateSupplier() {
 	data, err := io.ReadAll(getResp.Body)
 	s.Require().NoError(err)
 
-	exctractedData := []dto.Supplier{}
+	exctractedData := []dto.SupplierResponse{}
 	err = json.Unmarshal(data, &exctractedData)
 	s.Require().NoError(err)
+	var checkSupplier []dto.SupplierRequest
 
-	s.Require().Contains(exctractedData, givedData)
+	for _, sup := range exctractedData {
+		checkSupplier = append(checkSupplier, supplierResponseToRequest(sup))
+	}
+
+	s.Require().Contains(checkSupplier, givedData)
 }
 
 func (s *TestSuite) TestCreateSupplierWithoutAddress() {
 	s.CleanTable()
-	givedData := dto.Supplier{
+	givedData := dto.SupplierRequest{
 		Name:        "Aboba Inc.",
 		PhoneNumber: "8-800-555-35-35",
 	}
@@ -100,7 +98,7 @@ func (s *TestSuite) TestCreateSupplierWithoutAddress() {
 
 func (s *TestSuite) TestCreateEmptySupplier() {
 	s.CleanTable()
-	data := dto.Supplier{}
+	data := dto.SupplierRequest{}
 
 	payload, err := json.Marshal(data)
 	s.Require().NoError(err)
@@ -118,7 +116,7 @@ func (s *TestSuite) TestCreateEmptySupplier() {
 
 func (s *TestSuite) TestCreateSupplierDuplicate() {
 	s.CleanTable()
-	supplier := dto.Supplier{
+	supplier := dto.SupplierRequest{
 		Name:        "Aboba Inc.",
 		PhoneNumber: "8-800-555-35-35",
 		Address: &dto.Address{
@@ -128,7 +126,7 @@ func (s *TestSuite) TestCreateSupplierDuplicate() {
 		},
 	}
 
-	duplicate := dto.Supplier{
+	duplicate := dto.SupplierRequest{
 		Name:        "Aboba Inc.",
 		PhoneNumber: "8-800-555-35-35",
 		Address: &dto.Address{
@@ -167,7 +165,7 @@ func (s *TestSuite) TestCreateSupplierDuplicate() {
 	rawData, err := io.ReadAll(getResp.Body)
 	s.Require().NoError(err)
 
-	var check []dto.Supplier
+	var check []dto.SupplierResponse
 	err = json.Unmarshal(rawData, &check)
 	s.Require().NoError(err)
 
@@ -176,7 +174,7 @@ func (s *TestSuite) TestCreateSupplierDuplicate() {
 
 func (s *TestSuite) TestCreateSupplierWithSameAddress() {
 	s.CleanTable()
-	first := dto.Supplier{
+	first := dto.SupplierRequest{
 		Name:        "Aboba Inc.",
 		PhoneNumber: "8-800-555-35-35",
 		Address: &dto.Address{
@@ -186,7 +184,7 @@ func (s *TestSuite) TestCreateSupplierWithSameAddress() {
 		},
 	}
 
-	second := dto.Supplier{
+	second := dto.SupplierRequest{
 		Name:        "Aboba Tech Inc.",
 		PhoneNumber: "8-800-532-35-35",
 		Address: &dto.Address{
@@ -225,13 +223,18 @@ func (s *TestSuite) TestCreateSupplierWithSameAddress() {
 	rawData, err := io.ReadAll(getResp.Body)
 	s.Require().NoError(err)
 
-	var check []dto.Supplier
+	var check []dto.SupplierResponse
 	err = json.Unmarshal(rawData, &check)
 	s.Require().NoError(err)
+	var checkSupplier []dto.SupplierRequest
+
+	for _, sup := range check {
+		checkSupplier = append(checkSupplier, supplierResponseToRequest(sup))
+	}
 
 	s.Require().Len(check, 2)
-	s.Require().Contains(check, first)
-	s.Require().Contains(check, second)
+	s.Require().Contains(checkSupplier, first)
+	s.Require().Contains(checkSupplier, second)
 
 	query := `SELECT COUNT(id) FROM address`
 	var count int
@@ -242,7 +245,7 @@ func (s *TestSuite) TestCreateSupplierWithSameAddress() {
 
 func (s *TestSuite) TestCreateSupplierWithDifferentAddress() {
 	s.CleanTable()
-	first := dto.Supplier{
+	first := dto.SupplierRequest{
 		Name:        "Aboba Inc.",
 		PhoneNumber: "8-800-555-35-35",
 		Address: &dto.Address{
@@ -252,7 +255,7 @@ func (s *TestSuite) TestCreateSupplierWithDifferentAddress() {
 		},
 	}
 
-	second := dto.Supplier{
+	second := dto.SupplierRequest{
 		Name:        "Aboba Tech Inc.",
 		PhoneNumber: "8-800-532-35-35",
 		Address: &dto.Address{
@@ -291,13 +294,18 @@ func (s *TestSuite) TestCreateSupplierWithDifferentAddress() {
 	rawData, err := io.ReadAll(getResp.Body)
 	s.Require().NoError(err)
 
-	var check []dto.Supplier
+	var check []dto.SupplierResponse
 	err = json.Unmarshal(rawData, &check)
 	s.Require().NoError(err)
+	var checkSupplier []dto.SupplierRequest
+
+	for _, sup := range check {
+		checkSupplier = append(checkSupplier, supplierResponseToRequest(sup))
+	}
 
 	s.Require().Len(check, 2)
-	s.Require().Contains(check, first)
-	s.Require().Contains(check, second)
+	s.Require().Contains(checkSupplier, first)
+	s.Require().Contains(checkSupplier, second)
 
 	query := `SELECT COUNT(id) FROM address`
 	var count int
@@ -308,7 +316,7 @@ func (s *TestSuite) TestCreateSupplierWithDifferentAddress() {
 
 func (s *TestSuite) TestGetAllSupplier() {
 	s.CleanTable()
-	suppliers := []dto.Supplier{
+	suppliers := []dto.SupplierRequest{
 		{
 			Name:        "Global Supplies Inc.",
 			PhoneNumber: "+1-202-555-0123",
@@ -505,19 +513,24 @@ func (s *TestSuite) TestGetAllSupplier() {
 	data, err := io.ReadAll(resp.Body)
 	s.Require().NoError(err)
 
-	var check []dto.Supplier
+	var check []dto.SupplierResponse
 	err = json.Unmarshal(data, &check)
 	s.Require().NoError(err)
 	s.Require().Len(check, 10)
+	var checkSupplier []dto.SupplierRequest
+
+	for _, sup := range check {
+		checkSupplier = append(checkSupplier, supplierResponseToRequest(sup))
+	}
 
 	for i := range 10 {
-		s.Require().Contains(check, suppliers[i])
+		s.Require().Contains(checkSupplier, suppliers[i])
 	}
 }
 
 func (s *TestSuite) TestGetAllSupplierWithLimitAndOffset() {
 	s.CleanTable()
-	suppliers := []dto.Supplier{
+	suppliers := []dto.SupplierRequest{
 		{
 			Name:        "Global Supplies Inc.",
 			PhoneNumber: "+1-202-555-0123",
@@ -715,19 +728,24 @@ func (s *TestSuite) TestGetAllSupplierWithLimitAndOffset() {
 	data, err := io.ReadAll(resp.Body)
 	s.Require().NoError(err)
 
-	var check []dto.Supplier
+	var check []dto.SupplierResponse
 	err = json.Unmarshal(data, &check)
 	s.Require().NoError(err)
 	s.Require().Len(check, 5)
+	var checkSupplier []dto.SupplierRequest
+
+	for _, sup := range check {
+		checkSupplier = append(checkSupplier, supplierResponseToRequest(sup))
+	}
 
 	for i := range 5 {
-		s.Require().Contains(check, suppliers[i+3])
+		s.Require().Contains(checkSupplier, suppliers[i+3])
 	}
 }
 
 func (s *TestSuite) TestGetByIdSupplier() {
 	s.CleanTable()
-	suppliers := []dto.Supplier{
+	suppliers := []dto.SupplierRequest{
 		{
 			Name:        "Global Supplies Inc.",
 			PhoneNumber: "+1-202-555-0123",
@@ -866,16 +884,17 @@ func (s *TestSuite) TestGetByIdSupplier() {
 	rawData, err := io.ReadAll(resp.Body)
 	s.Require().NoError(err)
 
-	var check dto.Supplier
+	var check dto.SupplierResponse
 	err = json.Unmarshal(rawData, &check)
 	s.Require().NoError(err)
+	convertCheck := supplierResponseToRequest(check)
 
-	s.Require().Equal(suppliers[len(suppliers)-1], check)
+	s.Require().Equal(suppliers[len(suppliers)-1], convertCheck)
 }
 
 func (s *TestSuite) TestGetByIdGhostSupplier() {
 	s.CleanTable()
-	suppliers := []dto.Supplier{
+	suppliers := []dto.SupplierRequest{
 		{
 			Name:        "Global Supplies Inc.",
 			PhoneNumber: "+1-202-555-0123",
@@ -1023,7 +1042,7 @@ func (s *TestSuite) TestGetByIdSupplierInvalidUUID() {
 
 func (s *TestSuite) TestUpdateAddressSupplier() {
 	s.CleanTable()
-	supplier := dto.Supplier{
+	supplier := dto.SupplierRequest{
 		Name:        "Aboba Tech Inc.",
 		PhoneNumber: "1232913",
 		Address: &dto.Address{
@@ -1039,9 +1058,10 @@ func (s *TestSuite) TestUpdateAddressSupplier() {
 	s.Require().NoError(err)
 	sR := postgres.NewSupplierRepository(s.db, s.logger)
 	takedData, err := sR.GetByName(context.Background(), supplier.Name)
-	check := mapper.SupplierToDTO(*takedData)
+	check := mapper.SupplierDomainToSupplierResponse(*takedData)
 	s.Require().NoError(err)
-	s.Require().Equal(supplier, check)
+	convertCheck := supplierResponseToRequest(check)
+	s.Require().Equal(supplier, convertCheck)
 
 	httpClient := http.Client{}
 	patchUrl := fmt.Sprintf("http://%s:%s/api/v1/suppliers/%s", s.cfg.CrudService.Address, s.cfg.CrudService.Port, takedData.Id)
@@ -1080,16 +1100,16 @@ func (s *TestSuite) TestUpdateAddressSupplier() {
 	raw, err := io.ReadAll(getResp.Body)
 	s.Require().NoError(err)
 
-	var controllCheck dto.Supplier
+	var controllCheck dto.SupplierResponse
 	err = json.Unmarshal(raw, &controllCheck)
 	s.Require().NoError(err)
-	validData := mapper.SupplierToDTO(*takedData)
+	validData := mapper.SupplierDomainToSupplierResponse(*takedData)
 	s.Require().Equal(validData, controllCheck)
 }
 
 func (s *TestSuite) TestUpdateAddressSupplierNotLinkedAddressBehavior() {
 	s.CleanTable()
-	first := dto.Supplier{
+	first := dto.SupplierRequest{
 		Name:        "Servo Inc.",
 		PhoneNumber: "+7 999 233 13 23",
 		Address: &dto.Address{
@@ -1099,7 +1119,7 @@ func (s *TestSuite) TestUpdateAddressSupplierNotLinkedAddressBehavior() {
 		},
 	}
 
-	second := dto.Supplier{
+	second := dto.SupplierRequest{
 		Name:        "Servo Tech Inc.",
 		PhoneNumber: "+231312312312",
 		Address: &dto.Address{
@@ -1118,7 +1138,7 @@ func (s *TestSuite) TestUpdateAddressSupplierNotLinkedAddressBehavior() {
 
 	supRepo := postgres.NewSupplierRepository(s.db, s.logger)
 	secondSupplier, err := supRepo.GetByName(context.Background(), second.Name)
-	verifiable := mapper.SupplierToDTO(*secondSupplier)
+	verifiable := mapper.SupplierDomainToSupplierResponse(*secondSupplier)
 	s.Require().NoError(err)
 	s.Require().Equal(verifiable.Address, second.Address)
 
@@ -1156,7 +1176,7 @@ func (s *TestSuite) TestUpdateAddressSupplierNotLinkedAddressBehavior() {
 	raw, err := io.ReadAll(getResp.Body)
 	s.Require().NoError(err)
 
-	var check dto.Supplier
+	var check dto.SupplierResponse
 	err = json.Unmarshal(raw, &check)
 	s.Require().NoError(err)
 	s.Require().Equal(newAddress, *check.Address)
@@ -1164,7 +1184,7 @@ func (s *TestSuite) TestUpdateAddressSupplierNotLinkedAddressBehavior() {
 
 func (s *TestSuite) TestUpdateAddressSupplierFromSameAddress() {
 	s.CleanTable()
-	first := dto.Supplier{
+	first := dto.SupplierRequest{
 		Name:        "Mech Inc.",
 		PhoneNumber: "+7 999 233 13 23",
 		Address: &dto.Address{
@@ -1174,7 +1194,7 @@ func (s *TestSuite) TestUpdateAddressSupplierFromSameAddress() {
 		},
 	}
 
-	second := dto.Supplier{
+	second := dto.SupplierRequest{
 		Name:        "Mech Tech Inc.",
 		PhoneNumber: "+231312312312",
 		Address: &dto.Address{
@@ -1195,7 +1215,7 @@ func (s *TestSuite) TestUpdateAddressSupplierFromSameAddress() {
 	supRepo := postgres.NewSupplierRepository(s.db, s.logger)
 	takedData, err := supRepo.GetByName(context.Background(), second.Name)
 	s.Require().NoError(err)
-	checkTakedData := mapper.SupplierToDTO(*takedData)
+	checkTakedData := mapper.SupplierDomainToSupplierResponse(*takedData)
 	s.Require().Equal(checkTakedData.Address, second.Address)
 
 	newAddress := dto.Address{
@@ -1232,7 +1252,7 @@ func (s *TestSuite) TestUpdateAddressSupplierFromSameAddress() {
 	raw, err := io.ReadAll(getResp.Body)
 	s.Require().NoError(err)
 
-	var check dto.Supplier
+	var check dto.SupplierResponse
 	err = json.Unmarshal(raw, &check)
 	s.Require().NoError(err)
 	s.Require().Equal(newAddress, *check.Address)
@@ -1240,7 +1260,7 @@ func (s *TestSuite) TestUpdateAddressSupplierFromSameAddress() {
 
 func (s *TestSuite) TestUpdateAddressSupplier2() {
 	s.CleanTable()
-	first := dto.Supplier{
+	first := dto.SupplierRequest{
 		Name:        "Terra Inc.",
 		PhoneNumber: "+7 999 233 13 23",
 		Address: &dto.Address{
@@ -1250,7 +1270,7 @@ func (s *TestSuite) TestUpdateAddressSupplier2() {
 		},
 	}
 
-	second := dto.Supplier{
+	second := dto.SupplierRequest{
 		Name:        "Terra Tech Inc.",
 		PhoneNumber: "+231312312312",
 		Address: &dto.Address{
@@ -1260,7 +1280,7 @@ func (s *TestSuite) TestUpdateAddressSupplier2() {
 		},
 	}
 
-	third := dto.Supplier{
+	third := dto.SupplierRequest{
 		Name:        "Dominion Inc.",
 		PhoneNumber: "+231312312312",
 		Address: &dto.Address{
@@ -1284,7 +1304,7 @@ func (s *TestSuite) TestUpdateAddressSupplier2() {
 	supRepo := postgres.NewSupplierRepository(s.db, s.logger)
 	firstCheck, err := supRepo.GetByName(context.Background(), third.Name)
 	s.Require().NoError(err)
-	firstCheckConv := mapper.SupplierToDTO(*firstCheck)
+	firstCheckConv := mapper.SupplierDomainToSupplierResponse(*firstCheck)
 	s.Require().Equal(third.Address, firstCheckConv.Address)
 
 	newAddress := dto.Address{
@@ -1321,7 +1341,7 @@ func (s *TestSuite) TestUpdateAddressSupplier2() {
 	raw, err := io.ReadAll(getResp.Body)
 	s.Require().NoError(err)
 
-	var check dto.Supplier
+	var check dto.SupplierResponse
 	err = json.Unmarshal(raw, &check)
 	s.Require().NoError(err)
 	s.Require().Equal(newAddress, *check.Address)
@@ -1330,7 +1350,7 @@ func (s *TestSuite) TestUpdateAddressSupplier2() {
 func (s *TestSuite) TestDeleteSupplier() {
 	s.CleanTable()
 
-	first := dto.Supplier{
+	first := dto.SupplierRequest{
 		Name:        "Terra Inc.",
 		PhoneNumber: "+7 999 233 13 23",
 		Address: &dto.Address{
@@ -1340,7 +1360,7 @@ func (s *TestSuite) TestDeleteSupplier() {
 		},
 	}
 
-	second := dto.Supplier{
+	second := dto.SupplierRequest{
 		Name:        "Terra Tech Inc.",
 		PhoneNumber: "+231312312312",
 		Address: &dto.Address{
@@ -1350,7 +1370,7 @@ func (s *TestSuite) TestDeleteSupplier() {
 		},
 	}
 
-	third := dto.Supplier{
+	third := dto.SupplierRequest{
 		Name:        "Dominion Inc.",
 		PhoneNumber: "+231312312312",
 		Address: &dto.Address{
@@ -1378,7 +1398,7 @@ func (s *TestSuite) TestDeleteSupplier() {
 
 	temp, err := io.ReadAll(resp.Body)
 	s.Require().NoError(err)
-	var firstCheck []dto.Supplier
+	var firstCheck []dto.SupplierResponse
 	err = json.Unmarshal(temp, &firstCheck)
 	s.Require().NoError(err)
 	s.Require().Len(firstCheck, 3)
@@ -1414,11 +1434,18 @@ func (s *TestSuite) TestDeleteSupplier() {
 	s.Require().Equal(http.StatusOK, resp.StatusCode)
 	temp, err = io.ReadAll(resp.Body)
 	s.Require().NoError(err)
-	var secondCheck []dto.Supplier
+	var secondCheck []dto.SupplierResponse
 	err = json.Unmarshal(temp, &secondCheck)
 	s.Require().NoError(err)
 	s.Require().Len(secondCheck, 2)
-	s.Require().NotContains(secondCheck, second)
+
+	var convertCheckSecond []dto.SupplierRequest
+
+	for _, sc := range secondCheck {
+		convertCheckSecond = append(convertCheckSecond, supplierResponseToRequest(sc))
+	}
+
+	s.Require().NotContains(convertCheckSecond, second)
 }
 
 func (s *TestSuite) TestDeleteSupplierEmptyTable() {
@@ -1439,7 +1466,7 @@ func (s *TestSuite) TestDeleteSupplierEmptyTable() {
 func (s *TestSuite) TestDeleteSupplier2() {
 	s.CleanTable()
 
-	supplier := dto.Supplier{
+	supplier := dto.SupplierRequest{
 		Name:        "Terra Inc.",
 		PhoneNumber: "+7 999 233 13 23",
 		Address: &dto.Address{
