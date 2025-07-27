@@ -83,7 +83,7 @@ func (ctrl *SupplierController) Create(c *gin.Context) {
 	}
 
 	ctrl.logger.Debug("Supplier created", "op", op)
-	c.Status(http.StatusCreated)
+	ctrl.responce(c, http.StatusCreated, supplier)
 }
 
 // GetAllSupplier godoc

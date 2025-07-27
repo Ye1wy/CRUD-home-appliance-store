@@ -87,7 +87,7 @@ func (ctrl *ProductController) Create(c *gin.Context) {
 	}
 
 	ctrl.logger.Debug("Product created", "id", product.Id, "op", op)
-	c.Status(http.StatusCreated)
+	ctrl.responce(c, http.StatusCreated, product)
 }
 
 // GetAllProduct godoc

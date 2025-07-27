@@ -27,14 +27,16 @@ func NewSupplierRepository(db DB, logger *logger.Logger) *SupplierRepo {
 
 func (r *SupplierRepo) Create(ctx context.Context, supplier *domain.Supplier) error {
 	op := "repository.postgres.supplierRepository.Create"
-	sqlStatement := "INSERT INTO supplier(name, address_id, phone_number) VALUES (@name, @address_id, @phone_number);"
+	sqlStatement := `INSERT INTO supplier(name, address_id, phone_number) 
+					 VALUES (@name, @address_id, @phone_number)
+					 RETURNING id;`
 	args := pgx.NamedArgs{
 		"name":         supplier.Name,
 		"address_id":   supplier.Address.Id,
 		"phone_number": supplier.PhoneNumber,
 	}
 
-	_, err := r.db.Exec(ctx, sqlStatement, args)
+	err := r.db.QueryRow(ctx, sqlStatement, args).Scan(&supplier.Id)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {

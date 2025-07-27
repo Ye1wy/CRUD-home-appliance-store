@@ -26,7 +26,8 @@ func (r *ClientRepo) Create(ctx context.Context, client *domain.Client) error {
 	op := "repositories.postgres.clientRepository.Create"
 	sqlStatement := `
 	INSERT INTO client(name, surname, birthday, gender, address_id)
-	VALUES (@clientName, @clientSurname, @clientBirthday, @clientGender, @clientAddressId);
+	VALUES (@clientName, @clientSurname, @clientBirthday, @clientGender, @clientAddressId) 
+	RETURNING id;
 	`
 	var addressId any = nil
 
@@ -42,7 +43,7 @@ func (r *ClientRepo) Create(ctx context.Context, client *domain.Client) error {
 		"clientAddressId": addressId,
 	}
 
-	_, err := r.db.Exec(ctx, sqlStatement, args)
+	err := r.db.QueryRow(ctx, sqlStatement, args).Scan(&client.Id)
 	if err != nil {
 		r.logger.Error("failed to create Client", logger.Err(err), "op", op)
 		return fmt.Errorf("%s: unable to insert row: %v", op, err)
