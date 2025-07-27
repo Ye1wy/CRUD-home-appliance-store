@@ -124,8 +124,8 @@ func (ctrl *ImageController) Create(c *gin.Context) {
 		return
 	}
 
-	ctrl.logger.Debug("Image created", "op", op)
-	ctrl.responce(c, http.StatusCreated, image)
+	resp := mapper.ImageDomainToImageResponse(image)
+	ctrl.responce(c, http.StatusCreated, resp)
 }
 
 // GetAllImages godoc

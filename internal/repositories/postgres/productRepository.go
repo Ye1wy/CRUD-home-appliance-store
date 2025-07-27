@@ -64,7 +64,7 @@ func (r *ProductRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.P
 		a.city,
 		a.street,
 		i.id,
-		i.image
+		i.data
 		FROM product p
 		LEFT JOIN supplier s ON p.supplier_id = s.id
 		LEFT JOIN address a ON s.address_id = a.id
@@ -84,7 +84,12 @@ func (r *ProductRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.P
 	var products []domain.Product
 
 	for rows.Next() {
-		var product domain.Product
+		var (
+			product                                                            domain.Product
+			imageData                                                          []byte
+			supplierAddressId                                                  *uuid.UUID
+			supplierAddressCountry, supplierAddressCity, supplierAddressStreet *string
+		)
 
 		err := rows.Scan(
 			&product.Id,
@@ -95,17 +100,36 @@ func (r *ProductRepo) GetAll(ctx context.Context, limit, offset int) ([]domain.P
 			&product.Supplier.Id,
 			&product.Supplier.Name,
 			&product.Supplier.PhoneNumber,
-			&product.Supplier.Address.Id,
-			&product.Supplier.Address.Country,
-			&product.Supplier.Address.City,
-			&product.Supplier.Address.Street,
+			&supplierAddressId,
+			&supplierAddressCountry,
+			&supplierAddressCity,
+			&supplierAddressStreet,
 			&product.Image.Id,
-			&product.Image.Data,
+			&imageData,
 		)
 
 		if err != nil {
 			r.logger.Warn("scan unable", logger.Err(err), "op", op)
 			continue
+		}
+
+		if supplierAddressId != nil && imageData != nil {
+			product.Supplier.Address = &domain.Address{
+				Id:      *supplierAddressId,
+				Country: *supplierAddressCountry,
+				City:    *supplierAddressCity,
+				Street:  *supplierAddressStreet,
+			}
+			product.Image.Data = imageData
+
+		} else {
+			if imageData == nil {
+				r.logger.Error("WRONG! Unthinkable, a image without data, this can't be", "op", op)
+				return nil, fmt.Errorf("%s: Image data is %w", op, crud_errors.ErrProductImageDataEmpty)
+			}
+
+			r.logger.Error("WRONG! Unthinkable, a supplier without an address, this can't be", "op", op)
+			return nil, fmt.Errorf("%s: Supplier Address is %w", op, crud_errors.ErrProductSupplerAddressEmpty)
 		}
 
 		products = append(products, product)
@@ -135,7 +159,7 @@ func (r *ProductRepo) GetById(ctx context.Context, id uuid.UUID) (*domain.Produc
 		a.city,
 		a.street,
 		i.id,
-		i.image
+		i.data
 		FROM product p
 		LEFT JOIN supplier s ON p.supplier_id = s.id
 		LEFT JOIN address a ON s.address_id = a.id
@@ -146,7 +170,12 @@ func (r *ProductRepo) GetById(ctx context.Context, id uuid.UUID) (*domain.Produc
 	}
 
 	row := r.db.QueryRow(ctx, sqlStatement, arg)
-	product := domain.Product{}
+	var (
+		product                                                            domain.Product
+		imageData                                                          []byte
+		supplierAddressId                                                  *uuid.UUID
+		supplierAddressCountry, supplierAddressCity, supplierAddressStreet *string
+	)
 	err := row.Scan(
 		&product.Id,
 		&product.Name,
@@ -156,16 +185,36 @@ func (r *ProductRepo) GetById(ctx context.Context, id uuid.UUID) (*domain.Produc
 		&product.Supplier.Id,
 		&product.Supplier.Name,
 		&product.Supplier.PhoneNumber,
-		&product.Supplier.Address.Id,
-		&product.Supplier.Address.Country,
-		&product.Supplier.Address.City,
-		&product.Supplier.Address.Street,
+		&supplierAddressId,
+		&supplierAddressCountry,
+		&supplierAddressCity,
+		&supplierAddressStreet,
 		&product.Image.Id,
-		&product.Image.Data,
+		&imageData,
 	)
+
 	if errors.Is(err, pgx.ErrNoRows) {
 		r.logger.Debug("product not found", "op", op)
 		return nil, fmt.Errorf("%s: %w", op, crud_errors.ErrNotFound)
+	}
+
+	if supplierAddressId != nil && imageData != nil {
+		product.Supplier.Address = &domain.Address{
+			Id:      *supplierAddressId,
+			Country: *supplierAddressCountry,
+			City:    *supplierAddressCity,
+			Street:  *supplierAddressStreet,
+		}
+		product.Image.Data = imageData
+
+	} else {
+		if imageData == nil {
+			r.logger.Error("WRONG! Unthinkable, a image without data, this can't be", "op", op)
+			return nil, fmt.Errorf("%s: Image data is %w", op, crud_errors.ErrProductImageDataEmpty)
+		}
+
+		r.logger.Error("WRONG! Unthinkable, a supplier without an address, this can't be", "op", op)
+		return nil, fmt.Errorf("%s: Supplier Address is %w", op, crud_errors.ErrProductSupplerAddressEmpty)
 	}
 
 	if err != nil {
@@ -181,6 +230,7 @@ func (r *ProductRepo) Update(ctx context.Context, id uuid.UUID, decrease int) er
 	sqlStatement := "UPDATE product SET available_stock = available_stock - @decrease WHERE id = @id"
 	args := pgx.NamedArgs{
 		"decrease": decrease,
+		"id":       id,
 	}
 
 	tag, err := r.db.Exec(ctx, sqlStatement, args)

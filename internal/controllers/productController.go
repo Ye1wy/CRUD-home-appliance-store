@@ -86,8 +86,10 @@ func (ctrl *ProductController) Create(c *gin.Context) {
 		return
 	}
 
+	resp := mapper.ProductDomainToProductResponse(product)
+
 	ctrl.logger.Debug("Product created", "id", product.Id, "op", op)
-	ctrl.responce(c, http.StatusCreated, product)
+	ctrl.responce(c, http.StatusCreated, resp)
 }
 
 // GetAllProduct godoc

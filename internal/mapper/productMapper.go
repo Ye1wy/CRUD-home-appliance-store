@@ -6,8 +6,22 @@ import (
 )
 
 func ProductDomainToProductResponse(product domain.Product) dto.ProductResponse {
-	supplier := SupplierDomainToSupplierResponse(product.Supplier)
-	image := ImageDomainToImageResponse(product.Image)
+	var supplier dto.SupplierResponse
+	var image dto.ImageResponse
+
+	if product.Supplier.Address == nil {
+		supplier.Id = product.Supplier.Id
+
+	} else {
+		supplier = SupplierDomainToSupplierResponse(product.Supplier)
+	}
+
+	if product.Image.Data == nil {
+		image.Id = product.Image.Id
+
+	} else {
+		image = ImageDomainToImageResponse(product.Image)
+	}
 
 	return dto.ProductResponse{
 		Id:             product.Id,
