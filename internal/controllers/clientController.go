@@ -79,7 +79,7 @@ func (ctrl *ClientController) Create(c *gin.Context) {
 	}
 
 	ctrl.logger.Debug("Client created", "op", op)
-	c.Status(http.StatusCreated)
+	ctrl.responce(c, http.StatusCreated, client)
 }
 
 // GetAllClient godoc

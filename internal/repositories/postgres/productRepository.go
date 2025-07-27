@@ -28,7 +28,8 @@ func (r *ProductRepo) Create(ctx context.Context, product *domain.Product) error
 	op := "repositories.postgres.productRepository.Create"
 	sqlStatement := `
 	INSERT INTO product(name, category, price, available_stock,  supplier_id, image_id) 
-	VALUES (@name, @category, @price, @available_stock, @supplier_id, @image_id);`
+	VALUES (@name, @category, @price, @available_stock, @supplier_id, @image_id)
+	RETURNING id;`
 	args := pgx.NamedArgs{
 		"name":            product.Name,
 		"category":        product.Category,
@@ -38,7 +39,7 @@ func (r *ProductRepo) Create(ctx context.Context, product *domain.Product) error
 		"image_id":        product.Image.Id,
 	}
 
-	_, err := r.db.Exec(ctx, sqlStatement, args)
+	err := r.db.QueryRow(ctx, sqlStatement, args).Scan(&product.Id)
 	if err != nil {
 		r.logger.Error("failed to create product", logger.Err(err), "op", op)
 		return fmt.Errorf("%s: unable to insert row: %v", op, err)

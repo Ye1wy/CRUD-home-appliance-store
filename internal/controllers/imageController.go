@@ -125,7 +125,7 @@ func (ctrl *ImageController) Create(c *gin.Context) {
 	}
 
 	ctrl.logger.Debug("Image created", "op", op)
-	c.Status(http.StatusCreated)
+	ctrl.responce(c, http.StatusCreated, image)
 }
 
 // GetAllImages godoc
