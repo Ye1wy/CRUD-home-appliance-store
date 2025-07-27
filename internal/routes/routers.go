@@ -44,7 +44,7 @@ func NewRouter(cfg RouterConfig) routes {
 		productGroup.GET("", cfg.ProductController.GetAll)
 		productGroup.POST("", cfg.ProductController.Create)
 		productGroup.GET("/:id", cfg.ProductController.GetById)
-		productGroup.PATCH("/:id/decrease", cfg.ProductController.Update)
+		productGroup.PATCH("/:id", cfg.ProductController.Update)
 		productGroup.DELETE("/:id", cfg.ProductController.Delete)
 	}
 

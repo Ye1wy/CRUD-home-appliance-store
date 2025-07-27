@@ -82,8 +82,8 @@ func (ctrl *SupplierController) Create(c *gin.Context) {
 		return
 	}
 
-	ctrl.logger.Debug("Supplier created", "op", op)
-	ctrl.responce(c, http.StatusCreated, supplier)
+	resp := mapper.SupplierDomainToSupplierResponse(supplier)
+	ctrl.responce(c, http.StatusCreated, resp)
 }
 
 // GetAllSupplier godoc

@@ -78,8 +78,8 @@ func (ctrl *ClientController) Create(c *gin.Context) {
 		return
 	}
 
-	ctrl.logger.Debug("Client created", "op", op)
-	ctrl.responce(c, http.StatusCreated, client)
+	resp := mapper.ClientDomainToClientResponse(client)
+	ctrl.responce(c, http.StatusCreated, resp)
 }
 
 // GetAllClient godoc
