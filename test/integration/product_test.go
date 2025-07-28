@@ -1,8 +1,11 @@
 package integration
 
 import (
+	"CRUD-HOME-APPLIANCE-STORE/internal/model/domain"
 	"CRUD-HOME-APPLIANCE-STORE/internal/model/dto"
+	"CRUD-HOME-APPLIANCE-STORE/pkg/logger"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -761,7 +764,7 @@ func (s *TestSuite) TestGetProdcutByIdNotContained() {
 	s.Require().Equal(http.StatusNotFound, getReq.StatusCode)
 }
 
-func (s *TestSuite) TestUpdateStock() {
+func (s *TestSuite) TestUpdateProductStock() {
 	s.CleanTable()
 	client := &http.Client{}
 	supplierPostUrl := fmt.Sprintf("http://%s:%s/api/v1/suppliers", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
@@ -887,4 +890,726 @@ func (s *TestSuite) TestUpdateStock() {
 	s.Require().NoError(err)
 
 	s.Require().Equal(products[testId].AvailableStock-10, checkProduct.AvailableStock)
+}
+
+func (s *TestSuite) TestUpdateProductStockInvalidValue() {
+	s.CleanTable()
+	client := &http.Client{}
+	supplierPostUrl := fmt.Sprintf("http://%s:%s/api/v1/suppliers", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
+	supplierData := dto.SupplierRequest{
+		Name:        "Narin Inc.",
+		PhoneNumber: "66-77-77-13-13",
+		Address: &dto.Address{
+			Country: "Korea",
+			City:    "Seoul",
+			Street:  "Dongdaemun",
+		},
+	}
+
+	supplierPack, err := json.Marshal(&supplierData)
+	s.Require().NoError(err)
+
+	supplierPostResp, err := http.Post(supplierPostUrl, "application/json", bytes.NewBuffer(supplierPack))
+	s.Require().NoError(err)
+
+	s.Require().Equal(http.StatusCreated, supplierPostResp.StatusCode)
+
+	// extraction supplier id
+	rawSupplierResp, err := io.ReadAll(supplierPostResp.Body)
+	defer supplierPostResp.Body.Close()
+	s.Require().NoError(err)
+
+	var supplierResp dto.SupplierResponse // id extract
+
+	err = json.Unmarshal(rawSupplierResp, &supplierResp)
+	s.Require().NoError(err)
+
+	path := "../data/bear.png"
+	filename := filepath.Base(path)
+	buf, err := extractImageData(path, filename)
+	s.Require().NoError(err)
+
+	imagePostUrl := fmt.Sprintf("http://%s:%s/api/v1/images", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
+
+	imageReq, err := http.NewRequest(http.MethodPost, imagePostUrl, bytes.NewReader(buf.Bytes()))
+	s.Require().NoError(err)
+
+	imageReq.Header.Set("Content-Type", "application/octet-stream")
+	imageReq.Header.Set("X-Image-Title", filename)
+
+	imagePostResp, err := client.Do(imageReq)
+	s.Require().NoError(err)
+
+	s.Require().Equal(http.StatusCreated, imagePostResp.StatusCode)
+
+	// extraction image id
+	rawImageResp, err := io.ReadAll(imagePostResp.Body)
+	defer imagePostResp.Body.Close()
+	s.Require().NoError(err)
+
+	var imageResp dto.ImageResponse // id extract
+
+	err = json.Unmarshal(rawImageResp, &imageResp)
+	s.Require().NoError(err)
+
+	productPostUrl := fmt.Sprintf("http://%s:%s/api/v1/products", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
+	products := make([]dto.ProductRequest, 15)
+
+	for i := 0; i < 15; i++ {
+		products[i] = dto.ProductRequest{
+			Name:           fmt.Sprintf("Abiba %02d", i+1),
+			Category:       "Cleaner",
+			Price:          120032.23,
+			AvailableStock: 999999,
+			SupplierId:     supplierResp.Id,
+			ImageId:        imageResp.Id,
+		}
+	}
+
+	var neededId uuid.UUID
+	testId := len(products) / 2
+
+	for i, p := range products {
+		productBuf, err := json.Marshal(&p)
+		s.Require().NoError(err)
+
+		productPostResp, err := http.Post(productPostUrl, "application/json", bytes.NewReader(productBuf))
+		s.Require().NoError(err)
+		s.Require().Equal(http.StatusCreated, productPostResp.StatusCode)
+
+		if i == testId {
+			buf, err := io.ReadAll(productPostResp.Body)
+			s.Require().NoError(err)
+
+			var temp dto.ClientResponse
+			err = json.Unmarshal(buf, &temp)
+			s.Require().NoError(err)
+			neededId = temp.Id
+		}
+	}
+
+	for _, p := range products {
+		productBuf, err := json.Marshal(&p)
+		s.Require().NoError(err)
+
+		productPostResp, err := http.Post(productPostUrl, "application/json", bytes.NewReader(productBuf))
+		s.Require().NoError(err)
+		s.Require().Equal(http.StatusCreated, productPostResp.StatusCode)
+	}
+
+	productPatchUrl := fmt.Sprintf("http://%s:%s/api/v1/products/%s?decrease=-10", s.cfg.CrudService.Address, s.cfg.CrudService.Port, neededId.String())
+
+	patchReq, err := http.NewRequest(http.MethodPatch, productPatchUrl, nil)
+	s.Require().NoError(err)
+	patchResp, err := client.Do(patchReq)
+	s.Require().NoError(err)
+
+	s.Require().Equal(http.StatusBadRequest, patchResp.StatusCode)
+}
+
+func (s *TestSuite) TestUpdateProductStockDecreaseGreaterThanAvailableStock() {
+	s.CleanTable()
+	client := &http.Client{}
+	supplierPostUrl := fmt.Sprintf("http://%s:%s/api/v1/suppliers", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
+	supplierData := dto.SupplierRequest{
+		Name:        "Narin Inc.",
+		PhoneNumber: "66-77-77-13-13",
+		Address: &dto.Address{
+			Country: "Korea",
+			City:    "Seoul",
+			Street:  "Dongdaemun",
+		},
+	}
+
+	supplierPack, err := json.Marshal(&supplierData)
+	s.Require().NoError(err)
+
+	supplierPostResp, err := http.Post(supplierPostUrl, "application/json", bytes.NewBuffer(supplierPack))
+	s.Require().NoError(err)
+
+	s.Require().Equal(http.StatusCreated, supplierPostResp.StatusCode)
+
+	// extraction supplier id
+	rawSupplierResp, err := io.ReadAll(supplierPostResp.Body)
+	defer supplierPostResp.Body.Close()
+	s.Require().NoError(err)
+
+	var supplierResp dto.SupplierResponse // id extract
+
+	err = json.Unmarshal(rawSupplierResp, &supplierResp)
+	s.Require().NoError(err)
+
+	path := "../data/bear.png"
+	filename := filepath.Base(path)
+	buf, err := extractImageData(path, filename)
+	s.Require().NoError(err)
+
+	imagePostUrl := fmt.Sprintf("http://%s:%s/api/v1/images", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
+
+	imageReq, err := http.NewRequest(http.MethodPost, imagePostUrl, bytes.NewReader(buf.Bytes()))
+	s.Require().NoError(err)
+
+	imageReq.Header.Set("Content-Type", "application/octet-stream")
+	imageReq.Header.Set("X-Image-Title", filename)
+
+	imagePostResp, err := client.Do(imageReq)
+	s.Require().NoError(err)
+
+	s.Require().Equal(http.StatusCreated, imagePostResp.StatusCode)
+
+	// extraction image id
+	rawImageResp, err := io.ReadAll(imagePostResp.Body)
+	defer imagePostResp.Body.Close()
+	s.Require().NoError(err)
+
+	var imageResp dto.ImageResponse // id extract
+
+	err = json.Unmarshal(rawImageResp, &imageResp)
+	s.Require().NoError(err)
+
+	productPostUrl := fmt.Sprintf("http://%s:%s/api/v1/products", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
+	products := make([]dto.ProductRequest, 15)
+
+	for i := 0; i < 15; i++ {
+		products[i] = dto.ProductRequest{
+			Name:           fmt.Sprintf("Abiba %02d", i+1),
+			Category:       "Cleaner",
+			Price:          120032.23,
+			AvailableStock: 999999,
+			SupplierId:     supplierResp.Id,
+			ImageId:        imageResp.Id,
+		}
+	}
+
+	var neededId uuid.UUID
+	testId := len(products) / 2
+
+	for i, p := range products {
+		productBuf, err := json.Marshal(&p)
+		s.Require().NoError(err)
+
+		productPostResp, err := http.Post(productPostUrl, "application/json", bytes.NewReader(productBuf))
+		s.Require().NoError(err)
+		s.Require().Equal(http.StatusCreated, productPostResp.StatusCode)
+
+		if i == testId {
+			buf, err := io.ReadAll(productPostResp.Body)
+			s.Require().NoError(err)
+
+			var temp dto.ClientResponse
+			err = json.Unmarshal(buf, &temp)
+			s.Require().NoError(err)
+			neededId = temp.Id
+		}
+	}
+
+	for _, p := range products {
+		productBuf, err := json.Marshal(&p)
+		s.Require().NoError(err)
+
+		productPostResp, err := http.Post(productPostUrl, "application/json", bytes.NewReader(productBuf))
+		s.Require().NoError(err)
+		s.Require().Equal(http.StatusCreated, productPostResp.StatusCode)
+	}
+
+	productPatchUrl := fmt.Sprintf("http://%s:%s/api/v1/products/%s?decrease=10000000", s.cfg.CrudService.Address, s.cfg.CrudService.Port, neededId.String())
+
+	patchReq, err := http.NewRequest(http.MethodPatch, productPatchUrl, nil)
+	s.Require().NoError(err)
+	patchResp, err := client.Do(patchReq)
+	s.Require().NoError(err)
+
+	s.Require().Equal(http.StatusBadRequest, patchResp.StatusCode)
+}
+
+func (s *TestSuite) TestDeleteProduct() {
+	s.CleanTable()
+	client := &http.Client{}
+	supplierPostUrl := fmt.Sprintf("http://%s:%s/api/v1/suppliers", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
+	supplierData := dto.SupplierRequest{
+		Name:        "Narin Inc.",
+		PhoneNumber: "66-77-77-13-13",
+		Address: &dto.Address{
+			Country: "Korea",
+			City:    "Seoul",
+			Street:  "Dongdaemun",
+		},
+	}
+
+	supplierPack, err := json.Marshal(&supplierData)
+	s.Require().NoError(err)
+
+	supplierPostResp, err := http.Post(supplierPostUrl, "application/json", bytes.NewBuffer(supplierPack))
+	s.Require().NoError(err)
+
+	s.Require().Equal(http.StatusCreated, supplierPostResp.StatusCode)
+
+	// extraction supplier id
+	rawSupplierResp, err := io.ReadAll(supplierPostResp.Body)
+	defer supplierPostResp.Body.Close()
+	s.Require().NoError(err)
+
+	var supplierResp dto.SupplierResponse // id extract
+
+	err = json.Unmarshal(rawSupplierResp, &supplierResp)
+	s.Require().NoError(err)
+
+	path := "../data/bear.png"
+	filename := filepath.Base(path)
+	buf, err := extractImageData(path, filename)
+	s.Require().NoError(err)
+
+	imagePostUrl := fmt.Sprintf("http://%s:%s/api/v1/images", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
+
+	imageReq, err := http.NewRequest(http.MethodPost, imagePostUrl, bytes.NewReader(buf.Bytes()))
+	s.Require().NoError(err)
+
+	imageReq.Header.Set("Content-Type", "application/octet-stream")
+	imageReq.Header.Set("X-Image-Title", filename)
+
+	imagePostResp, err := client.Do(imageReq)
+	s.Require().NoError(err)
+
+	s.Require().Equal(http.StatusCreated, imagePostResp.StatusCode)
+
+	// extraction image id
+	rawImageResp, err := io.ReadAll(imagePostResp.Body)
+	defer imagePostResp.Body.Close()
+	s.Require().NoError(err)
+
+	var imageResp dto.ImageResponse // id extract
+
+	err = json.Unmarshal(rawImageResp, &imageResp)
+	s.Require().NoError(err)
+
+	productPostUrl := fmt.Sprintf("http://%s:%s/api/v1/products", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
+	products := make([]dto.ProductRequest, 15)
+
+	for i := 0; i < 15; i++ {
+		products[i] = dto.ProductRequest{
+			Name:           fmt.Sprintf("Abiba %02d", i+1),
+			Category:       "Cleaner",
+			Price:          120032.23,
+			AvailableStock: 999999,
+			SupplierId:     supplierResp.Id,
+			ImageId:        imageResp.Id,
+		}
+	}
+
+	var neededId uuid.UUID
+	testId := len(products) / 2
+
+	for i, p := range products {
+		productBuf, err := json.Marshal(&p)
+		s.Require().NoError(err)
+
+		productPostResp, err := http.Post(productPostUrl, "application/json", bytes.NewReader(productBuf))
+		s.Require().NoError(err)
+		s.Require().Equal(http.StatusCreated, productPostResp.StatusCode)
+
+		if i == testId {
+			buf, err := io.ReadAll(productPostResp.Body)
+			s.Require().NoError(err)
+
+			var temp dto.ClientResponse
+			err = json.Unmarshal(buf, &temp)
+			s.Require().NoError(err)
+			neededId = temp.Id
+		}
+	}
+
+	productDeleteUrl := fmt.Sprintf("http://%s:%s/api/v1/products/%s", s.cfg.CrudService.Address, s.cfg.CrudService.Port, neededId.String())
+	productDeleteReq, err := http.NewRequest(http.MethodDelete, productDeleteUrl, nil)
+	s.Require().NoError(err)
+	productDeleteResp, err := client.Do(productDeleteReq)
+	s.Require().NoError(err)
+
+	s.Require().Equal(http.StatusNoContent, productDeleteResp.StatusCode)
+
+	checkSupplerSqlReq := `SELECT id FROM supplier`
+	rowsS, err := s.db.Query(context.Background(), checkSupplerSqlReq)
+	s.Require().NoError(err)
+
+	var supplerCheck []domain.Supplier
+
+	for rowsS.Next() {
+		supplier := domain.Supplier{
+			Address: &domain.Address{},
+		}
+
+		err := rowsS.Scan(
+			&supplier.Id,
+		)
+		if err != nil {
+			s.logger.Warn("failed binding data", logger.Err(err))
+			continue
+		}
+
+		supplerCheck = append(supplerCheck, supplier)
+	}
+
+	s.Require().Len(supplerCheck, 1)
+
+	checkImageSqlReq := `SELECT id FROM image`
+	rowsI, err := s.db.Query(context.Background(), checkImageSqlReq)
+	s.Require().NoError(err)
+
+	var imageCheck []domain.Image
+
+	for rowsI.Next() {
+		var image domain.Image
+
+		err := rowsS.Scan(
+			&image.Id,
+		)
+		if err != nil {
+			s.logger.Warn("failed binding data", logger.Err(err))
+			continue
+		}
+
+		imageCheck = append(imageCheck, image)
+	}
+
+	s.Require().Len(imageCheck, 1)
+
+	checkProductSqlReq := `SELECT id FROM product`
+	rowsP, err := s.db.Query(context.Background(), checkProductSqlReq)
+	s.Require().NoError(err)
+
+	var productCheck []domain.Product
+
+	for rowsP.Next() {
+		var product domain.Product
+
+		err := rowsP.Scan(
+			&product.Id,
+		)
+
+		if err != nil {
+			s.logger.Warn("scan unable", logger.Err(err))
+			continue
+		}
+
+		productCheck = append(productCheck, product)
+	}
+
+	s.Require().Len(productCheck, 14)
+}
+
+func (s *TestSuite) TestDeleteProductNoProduct() {
+	s.CleanTable()
+	client := &http.Client{}
+	supplierPostUrl := fmt.Sprintf("http://%s:%s/api/v1/suppliers", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
+	supplierData := dto.SupplierRequest{
+		Name:        "Narin Inc.",
+		PhoneNumber: "66-77-77-13-13",
+		Address: &dto.Address{
+			Country: "Korea",
+			City:    "Seoul",
+			Street:  "Dongdaemun",
+		},
+	}
+
+	supplierPack, err := json.Marshal(&supplierData)
+	s.Require().NoError(err)
+
+	supplierPostResp, err := http.Post(supplierPostUrl, "application/json", bytes.NewBuffer(supplierPack))
+	s.Require().NoError(err)
+
+	s.Require().Equal(http.StatusCreated, supplierPostResp.StatusCode)
+
+	// extraction supplier id
+	rawSupplierResp, err := io.ReadAll(supplierPostResp.Body)
+	defer supplierPostResp.Body.Close()
+	s.Require().NoError(err)
+
+	var supplierResp dto.SupplierResponse // id extract
+
+	err = json.Unmarshal(rawSupplierResp, &supplierResp)
+	s.Require().NoError(err)
+
+	path := "../data/bear.png"
+	filename := filepath.Base(path)
+	buf, err := extractImageData(path, filename)
+	s.Require().NoError(err)
+
+	imagePostUrl := fmt.Sprintf("http://%s:%s/api/v1/images", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
+
+	imageReq, err := http.NewRequest(http.MethodPost, imagePostUrl, bytes.NewReader(buf.Bytes()))
+	s.Require().NoError(err)
+
+	imageReq.Header.Set("Content-Type", "application/octet-stream")
+	imageReq.Header.Set("X-Image-Title", filename)
+
+	imagePostResp, err := client.Do(imageReq)
+	s.Require().NoError(err)
+
+	s.Require().Equal(http.StatusCreated, imagePostResp.StatusCode)
+
+	// extraction image id
+	rawImageResp, err := io.ReadAll(imagePostResp.Body)
+	defer imagePostResp.Body.Close()
+	s.Require().NoError(err)
+
+	var imageResp dto.ImageResponse // id extract
+
+	err = json.Unmarshal(rawImageResp, &imageResp)
+	s.Require().NoError(err)
+
+	productPostUrl := fmt.Sprintf("http://%s:%s/api/v1/products", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
+	products := make([]dto.ProductRequest, 15)
+
+	for i := 0; i < 15; i++ {
+		products[i] = dto.ProductRequest{
+			Name:           fmt.Sprintf("Abiba %02d", i+1),
+			Category:       "Cleaner",
+			Price:          120032.23,
+			AvailableStock: 999999,
+			SupplierId:     supplierResp.Id,
+			ImageId:        imageResp.Id,
+		}
+	}
+
+	for _, p := range products {
+		productBuf, err := json.Marshal(&p)
+		s.Require().NoError(err)
+
+		productPostResp, err := http.Post(productPostUrl, "application/json", bytes.NewReader(productBuf))
+		s.Require().NoError(err)
+		s.Require().Equal(http.StatusCreated, productPostResp.StatusCode)
+	}
+
+	productDeleteUrl := fmt.Sprintf("http://%s:%s/api/v1/products/%s", s.cfg.CrudService.Address, s.cfg.CrudService.Port, uuid.New())
+	productDeleteReq, err := http.NewRequest(http.MethodDelete, productDeleteUrl, nil)
+	s.Require().NoError(err)
+	productDeleteResp, err := client.Do(productDeleteReq)
+	s.Require().NoError(err)
+
+	s.Require().Equal(http.StatusNoContent, productDeleteResp.StatusCode)
+
+	checkSupplerSqlReq := `SELECT id FROM supplier`
+	rowsS, err := s.db.Query(context.Background(), checkSupplerSqlReq)
+	s.Require().NoError(err)
+
+	var supplerCheck []domain.Supplier
+
+	for rowsS.Next() {
+		supplier := domain.Supplier{}
+
+		err := rowsS.Scan(
+			&supplier.Id,
+		)
+		if err != nil {
+			s.logger.Warn("failed binding data", logger.Err(err))
+			continue
+		}
+
+		supplerCheck = append(supplerCheck, supplier)
+	}
+
+	s.Require().Len(supplerCheck, 1)
+
+	checkImageSqlReq := `SELECT id FROM image`
+	rowsI, err := s.db.Query(context.Background(), checkImageSqlReq)
+	s.Require().NoError(err)
+
+	var imageCheck []domain.Image
+
+	for rowsI.Next() {
+		var image domain.Image
+
+		err := rowsS.Scan(
+			&image.Id,
+		)
+		if err != nil {
+			s.logger.Warn("failed binding data", logger.Err(err))
+			continue
+		}
+
+		imageCheck = append(imageCheck, image)
+	}
+
+	s.Require().Len(imageCheck, 1)
+
+	checkProductSqlReq := `SELECT id FROM product`
+	rowsP, err := s.db.Query(context.Background(), checkProductSqlReq)
+	s.Require().NoError(err)
+
+	var productCheck []domain.Product
+
+	for rowsP.Next() {
+		var product domain.Product
+
+		err := rowsP.Scan(
+			&product.Id,
+		)
+
+		if err != nil {
+			s.logger.Warn("scan unable", logger.Err(err))
+			continue
+		}
+
+		productCheck = append(productCheck, product)
+	}
+
+	s.Require().Len(productCheck, 15)
+}
+
+func (s *TestSuite) TestDeleteProductInvalidId() {
+	s.CleanTable()
+	client := &http.Client{}
+	supplierPostUrl := fmt.Sprintf("http://%s:%s/api/v1/suppliers", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
+	supplierData := dto.SupplierRequest{
+		Name:        "Narin Inc.",
+		PhoneNumber: "66-77-77-13-13",
+		Address: &dto.Address{
+			Country: "Korea",
+			City:    "Seoul",
+			Street:  "Dongdaemun",
+		},
+	}
+
+	supplierPack, err := json.Marshal(&supplierData)
+	s.Require().NoError(err)
+
+	supplierPostResp, err := http.Post(supplierPostUrl, "application/json", bytes.NewBuffer(supplierPack))
+	s.Require().NoError(err)
+
+	s.Require().Equal(http.StatusCreated, supplierPostResp.StatusCode)
+
+	// extraction supplier id
+	rawSupplierResp, err := io.ReadAll(supplierPostResp.Body)
+	defer supplierPostResp.Body.Close()
+	s.Require().NoError(err)
+
+	var supplierResp dto.SupplierResponse // id extract
+
+	err = json.Unmarshal(rawSupplierResp, &supplierResp)
+	s.Require().NoError(err)
+
+	path := "../data/bear.png"
+	filename := filepath.Base(path)
+	buf, err := extractImageData(path, filename)
+	s.Require().NoError(err)
+
+	imagePostUrl := fmt.Sprintf("http://%s:%s/api/v1/images", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
+
+	imageReq, err := http.NewRequest(http.MethodPost, imagePostUrl, bytes.NewReader(buf.Bytes()))
+	s.Require().NoError(err)
+
+	imageReq.Header.Set("Content-Type", "application/octet-stream")
+	imageReq.Header.Set("X-Image-Title", filename)
+
+	imagePostResp, err := client.Do(imageReq)
+	s.Require().NoError(err)
+
+	s.Require().Equal(http.StatusCreated, imagePostResp.StatusCode)
+
+	// extraction image id
+	rawImageResp, err := io.ReadAll(imagePostResp.Body)
+	defer imagePostResp.Body.Close()
+	s.Require().NoError(err)
+
+	var imageResp dto.ImageResponse // id extract
+
+	err = json.Unmarshal(rawImageResp, &imageResp)
+	s.Require().NoError(err)
+
+	productPostUrl := fmt.Sprintf("http://%s:%s/api/v1/products", s.cfg.CrudService.Address, s.cfg.CrudService.Port)
+	products := make([]dto.ProductRequest, 15)
+
+	for i := 0; i < 15; i++ {
+		products[i] = dto.ProductRequest{
+			Name:           fmt.Sprintf("Abiba %02d", i+1),
+			Category:       "Cleaner",
+			Price:          120032.23,
+			AvailableStock: 999999,
+			SupplierId:     supplierResp.Id,
+			ImageId:        imageResp.Id,
+		}
+	}
+
+	for _, p := range products {
+		productBuf, err := json.Marshal(&p)
+		s.Require().NoError(err)
+
+		productPostResp, err := http.Post(productPostUrl, "application/json", bytes.NewReader(productBuf))
+		s.Require().NoError(err)
+		s.Require().Equal(http.StatusCreated, productPostResp.StatusCode)
+	}
+
+	productDeleteUrl := fmt.Sprintf("http://%s:%s/api/v1/products/%s", s.cfg.CrudService.Address, s.cfg.CrudService.Port, "ds1")
+	productDeleteReq, err := http.NewRequest(http.MethodDelete, productDeleteUrl, nil)
+	s.Require().NoError(err)
+	productDeleteResp, err := client.Do(productDeleteReq)
+	s.Require().NoError(err)
+
+	s.Require().Equal(http.StatusBadRequest, productDeleteResp.StatusCode)
+
+	checkSupplerSqlReq := `SELECT id FROM supplier`
+	rowsS, err := s.db.Query(context.Background(), checkSupplerSqlReq)
+	s.Require().NoError(err)
+
+	var supplerCheck []domain.Supplier
+
+	for rowsS.Next() {
+		supplier := domain.Supplier{}
+
+		err := rowsS.Scan(
+			&supplier.Id,
+		)
+		if err != nil {
+			s.logger.Warn("failed binding data", logger.Err(err))
+			continue
+		}
+
+		supplerCheck = append(supplerCheck, supplier)
+	}
+
+	s.Require().Len(supplerCheck, 1)
+
+	checkImageSqlReq := `SELECT id FROM image`
+	rowsI, err := s.db.Query(context.Background(), checkImageSqlReq)
+	s.Require().NoError(err)
+
+	var imageCheck []domain.Image
+
+	for rowsI.Next() {
+		var image domain.Image
+
+		err := rowsS.Scan(
+			&image.Id,
+		)
+		if err != nil {
+			s.logger.Warn("failed binding data", logger.Err(err))
+			continue
+		}
+
+		imageCheck = append(imageCheck, image)
+	}
+
+	s.Require().Len(imageCheck, 1)
+
+	checkProductSqlReq := `SELECT id FROM product`
+	rowsP, err := s.db.Query(context.Background(), checkProductSqlReq)
+	s.Require().NoError(err)
+
+	var productCheck []domain.Product
+
+	for rowsP.Next() {
+		var product domain.Product
+
+		err := rowsP.Scan(
+			&product.Id,
+		)
+
+		if err != nil {
+			s.logger.Warn("scan unable", logger.Err(err))
+			continue
+		}
+
+		productCheck = append(productCheck, product)
+	}
+
+	s.Require().Len(productCheck, 15)
 }
