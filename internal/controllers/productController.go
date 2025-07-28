@@ -72,6 +72,12 @@ func (ctrl *ProductController) Create(c *gin.Context) {
 		return
 	}
 
+	if input.AvailableStock < 0 {
+		ctrl.logger.Warn("Invalid payload: stock is nagative", "op", op)
+		ctrl.responce(c, http.StatusBadRequest, gin.H{"massage": "Invalid request payload: invalid available stock (cannot be negative)"})
+		return
+	}
+
 	product := mapper.ProductRequestToDomain(input)
 
 	if err := ctrl.service.Create(c.Request.Context(), &product); err != nil {

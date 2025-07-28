@@ -159,7 +159,7 @@ func (s *productService) GetById(ctx context.Context, id uuid.UUID) (*domain.Pro
 
 func (s *productService) Update(ctx context.Context, id uuid.UUID, decrease int) error {
 	op := "services.productsService.Update"
-	if decrease <= 0 {
+	if decrease < 0 {
 		s.logger.Error("not valid input value", "value", decrease, "op", op)
 		return fmt.Errorf("%s: %w", op, crud_errors.ErrInvalidParam)
 	}
@@ -172,13 +172,35 @@ func (s *productService) Update(ctx context.Context, id uuid.UUID, decrease int)
 			return fmt.Errorf("%s: get product repository generator is unable: %v", uowOp, err)
 		}
 
-		productRepo, ok := productRepoGen.(productWriter)
+		productRepoRead, ok := productRepoGen.(productReader)
 		if !ok {
-			s.logger.Error("Conversion problem, not contained expected convesion", "op", op)
+			s.logger.Error("conversion problem, not contained expected convesion", "op", op)
 			return fmt.Errorf("%s: %w", uowOp, crud_errors.ErrConversionProblem)
 		}
 
-		if err := productRepo.Update(ctx, id, decrease); err != nil {
+		checkStock, err := productRepoRead.GetById(ctx, id)
+		if err != nil {
+			if errors.Is(err, crud_errors.ErrNotFound) {
+				s.logger.Warn("product not found", "op", op)
+				return fmt.Errorf("%s: %w", uowOp, err)
+			}
+
+			s.logger.Error("failed get product by id", logger.Err(err), "op", uowOp)
+			return fmt.Errorf("%s: %w", uowOp, err)
+		}
+
+		if checkStock.AvailableStock < int64(decrease) {
+			s.logger.Warn("decrease value is greater than available stock", "op", uowOp)
+			return fmt.Errorf("%s: failed to update stock: %w", uowOp, crud_errors.ErrInvalidParam)
+		}
+
+		productRepoWrite, ok := productRepoGen.(productWriter)
+		if !ok {
+			s.logger.Error("conversion problem, not contained expected convesion", "op", op)
+			return fmt.Errorf("%s: %w", uowOp, crud_errors.ErrConversionProblem)
+		}
+
+		if err := productRepoWrite.Update(ctx, id, decrease); err != nil {
 			if errors.Is(err, crud_errors.ErrNotFound) {
 				s.logger.Debug("product not found", "op", uowOp)
 				return fmt.Errorf("%s, %w", uowOp, err)
