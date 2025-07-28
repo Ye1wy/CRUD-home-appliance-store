@@ -46,3 +46,6 @@ CREATE TABLE IF NOT EXISTS product (
     FOREIGN KEY (supplier_id) REFERENCES supplier (id),
     FOREIGN KEY (image_id) REFERENCES image (id)
 );
+
+ALTER TABLE product
+ADD CONSTRAINT product_stock_nonnegative CHECK (available_stock >= 0);
